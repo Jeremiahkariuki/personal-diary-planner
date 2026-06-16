@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethereal Diary | Personal Planner</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <nav class="glass-nav">
+            <div class="logo">Ethereal</div>
+            <div class="nav-links">
+                <a href="#" class="active">Dashboard</a>
+                <a href="#">Diary</a>
+                <a href="#">Events</a>
+                <a href="#">Settings</a>
+            </div>
+            <div class="user-profile">
+                <div class="avatar"></div>
+            </div>
+        </nav>
+
+        <main class="dashboard">
+            <header class="dashboard-header">
+                <h1>Good Afternoon, User</h1>
+                <p>Tuesday, June 16, 2026</p>
+            </header>
+
+            <div class="stats-grid">
+                <div class="glass-card stat-item">
+                    <span class="label">Upcoming Events</span>
+                    <span class="value">3</span>
+                </div>
+                <div class="glass-card stat-item">
+                    <span class="label">Tasks Pending</span>
+                    <span class="value">8</span>
+                </div>
+                <div class="glass-card stat-item">
+                    <span class="label">Mood Streak</span>
+                    <span class="value">5 Days</span>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <section class="events-section glass-card">
+                    <h2>Upcoming Events</h2>
+                    <div class="event-list">
+                        <div class="event-card">
+                            <div class="event-time">14:00</div>
+                            <div class="event-details">
+                                <h3>Project Sync</h3>
+                                <p>Team Meeting Room</p>
+                            </div>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-time">18:30</div>
+                            <div class="event-details">
+                                <h3>Gym Session</h3>
+                                <p>Health Club</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="add-btn">+ Add Event</button>
+                </section>
+
+                <section class="diary-section glass-card">
+                    <h2>Recent Diary</h2>
+                    <div class="diary-preview">
+                        <p class="preview-text">"Today started with a burst of clarity. I feel like the new project has
+                            so much potential..."</p>
+                        <span class="date">Earlier Today</span>
+                    </div>
+                    <button class="add-btn primary-btn">Write Today's Entry</button>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="modal-overlay hidden">
+        <div class="glass-card modal-content">
+            <header class="modal-header">
+                <h2>Add New Event</h2>
+                <button id="closeModal" class="close-btn">&times;</button>
+            </header>
+            <form id="eventForm">
+                <div class="input-group">
+                    <label for="eventTitle">Event Title</label>
+                    <input type="text" id="eventTitle" placeholder="e.g. Yoga Session" required>
+                </div>
+                <div class="input-group">
+                    <label for="eventTime">Time</label>
+                    <input type="time" id="eventTime" required>
+                </div>
+                <div class="input-group">
+                    <label for="eventLocation">Location</label>
+                    <input type="text" id="eventLocation" placeholder="e.g. Main Hall">
+                </div>
+                <button type="submit" class="add-btn primary-btn">Save Event</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/app.js' %}"></script>
+</body>
+
+</html>
