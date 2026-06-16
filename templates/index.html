@@ -24,11 +24,12 @@
                 <a href="#" class="active">Dashboard</a>
                 <a href="#">Diary</a>
                 <a href="#">Events</a>
-                <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
             </div>
-            <div class="user-profile">
-                <div class="avatar"></div>
-            </div>
+            <a href="{% url 'logout' %}" class="user-profile-link" title="Logout">
+                <div class="user-profile">
+                    <div class="avatar"></div>
+                </div>
+            </a>
         </nav>
 
         <main class="dashboard">
