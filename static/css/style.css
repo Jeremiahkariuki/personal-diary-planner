@@ -128,22 +128,20 @@ body {
     font-weight: 600;
 }
 
-.logout-btn {
-    display: none;
-    /* Removed from nav, keep for safety or delete */
+.user-menu-container {
+    position: relative;
 }
 
-.user-profile-link {
-    text-decoration: none;
+.profile-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
     transition: transform 0.3s ease;
 }
 
-.user-profile-link:hover {
-    transform: scale(1.1);
-}
-
-.user-profile-link:hover .avatar {
-    box-shadow: 0 0 15px var(--accent-primary);
+.profile-btn:hover {
+    transform: scale(1.05);
 }
 
 .avatar {
@@ -152,7 +150,83 @@ body {
     border-radius: 50%;
     background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
     border: 2px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
     transition: all 0.3s ease;
+}
+
+.avatar svg {
+    width: 20px;
+    height: 20px;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: 0;
+    width: 220px;
+    padding: 1rem 0;
+    z-index: 1000;
+    animation: dropdownIn 0.3s ease-out;
+}
+
+@keyframes dropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-menu.hidden {
+    display: none;
+}
+
+.dropdown-header {
+    padding: 0.5rem 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 0.5rem 0;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 1.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.dropdown-item svg {
+    width: 18px;
+    height: 18px;
+}
+
+.logout-link:hover {
+    color: #f87171;
 }
 
 /* Dashboard Content */

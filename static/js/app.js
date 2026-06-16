@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Ethereal Diary Initialized');
+    console.log('Jdiary Initialized');
 
     // Selectors
+    const profileBtn = document.getElementById('profileBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
     const headerDate = document.querySelector('.dashboard-header p');
     const eventList = document.querySelector('.event-list');
     const eventModal = document.getElementById('eventModal');
@@ -107,6 +109,18 @@ document.addEventListener('DOMContentLoaded', () => {
         renderEvents();
         eventForm.reset();
         eventModal.classList.add('hidden');
+    });
+
+    // Profile Dropdown Toggle
+    profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
+            profileDropdown.classList.add('hidden');
+        }
     });
 
     // Init
