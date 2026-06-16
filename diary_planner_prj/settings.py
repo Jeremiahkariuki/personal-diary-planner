@@ -123,6 +123,11 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'login'
 
+# Password Hashers (Fast MD5 for development only)
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

@@ -125,7 +125,7 @@
                 </div>
                 {% endfor %}
 
-                <button type="submit" class="add-btn primary-btn">Create Account</button>
+                <button type="submit" id="submitBtn" class="add-btn primary-btn">Create Account</button>
             </form>
 
             <footer class="auth-footer">
@@ -141,6 +141,11 @@
             if (label) {
                 input.setAttribute('placeholder', label.textContent);
             }
+        });
+
+        // Add loading state on form submit
+        document.querySelector('.auth-form').addEventListener('submit', function () {
+            document.getElementById('submitBtn').classList.add('btn-loading');
         });
     </script>
 </body>

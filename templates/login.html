@@ -114,7 +114,7 @@
                 </div>
                 {% endfor %}
 
-                <button type="submit" class="add-btn primary-btn">Sign In</button>
+                <button type="submit" id="submitBtn" class="add-btn primary-btn">Sign In</button>
             </form>
 
             <footer class="auth-footer">
@@ -127,6 +127,11 @@
         // Enhance Django form inputs with CSS classes
         document.querySelectorAll('.auth-form input').forEach(input => {
             input.setAttribute('placeholder', input.parentElement.querySelector('label').textContent);
+        });
+
+        // Add loading state on form submit
+        document.querySelector('.auth-form').addEventListener('submit', function () {
+            document.getElementById('submitBtn').classList.add('btn-loading');
         });
     </script>
 </body>
