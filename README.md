@@ -1,4 +1,4 @@
-# Personal Diary Planner
+# Jdiary
 
 A personal diary and planner application built with Python and Django.
 
