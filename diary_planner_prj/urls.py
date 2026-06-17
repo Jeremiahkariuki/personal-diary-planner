@@ -25,4 +25,8 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),
     path('diary/save/', views.save_diary_entry, name='save_diary_entry'),
+    path('tasks/', views.manage_tasks, name='manage_tasks'),
+    path('tasks/toggle/<int:task_id>/', views.toggle_task, name='toggle_task'),
+    path('tasks/delete/<int:task_id>/', views.delete_task, name='delete_task'),
+    path('events/', views.manage_events, name='manage_events'),
 ]

@@ -22,8 +22,8 @@
             <div class="logo">Jdiary</div>
             <div class="nav-links">
                 <a href="#" class="active">Dashboard</a>
-                <a href="#diaryPreview">Diary</a>
-                <a href="#">Events</a>
+                <a href="#diarySection">Diary</a>
+                <a href="#eventsSection">Events</a>
             </div>
             <div class="user-menu-container">
                 <button id="profileBtn" class="profile-btn" title="Account">
@@ -62,41 +62,57 @@
             <div class="stats-grid">
                 <div class="glass-card stat-item">
                     <span class="label">Upcoming Events</span>
-                    <span class="value">3</span>
+                    <span class="value" id="eventCountStat">{{ event_count }}</span>
                 </div>
                 <div class="glass-card stat-item">
                     <span class="label">Tasks Pending</span>
-                    <span class="value">8</span>
+                    <span class="value" id="taskCountStat">{{ task_count }}</span>
                 </div>
                 <div class="glass-card stat-item">
                     <span class="label">Mood Streak</span>
-                    <span class="value">5 Days</span>
+                    <span class="value">{{ mood_streak }} Days</span>
                 </div>
             </div>
 
             <div class="content-grid">
-                <section class="events-section glass-card">
+                <section id="eventsSection" class="events-section glass-card">
                     <h2>Upcoming Events</h2>
                     <div class="event-list">
-                        <div class="event-card">
-                            <div class="event-time">14:00</div>
+                        {% for event in upcoming_events %}
+                        <div class="event-card" data-id="{{ event.id }}">
+                            <div class="event-time">{{ event.event_time|time:"H:i" }}</div>
                             <div class="event-details">
-                                <h3>Project Sync</h3>
-                                <p>Team Meeting Room</p>
+                                <h3>{{ event.title }}</h3>
+                                <p>{{ event.location|default:"No location" }}</p>
                             </div>
                         </div>
-                        <div class="event-card">
-                            <div class="event-time">18:30</div>
-                            <div class="event-details">
-                                <h3>Gym Session</h3>
-                                <p>Health Club</p>
-                            </div>
-                        </div>
+                        {% empty %}
+                        <p class="empty-msg">No upcoming events.</p>
+                        {% endfor %}
                     </div>
                     <button class="add-btn">+ Add Event</button>
                 </section>
 
-                <section class="diary-section glass-card">
+                <section class="tasks-section glass-card">
+                    <h2>Tasks Pending</h2>
+                    <div class="task-list">
+                        {% for task in tasks %}
+                        <div class="task-item {% if task.completed %}completed{% endif %}" data-id="{{ task.id }}">
+                            <input type="checkbox" {% if task.completed %}checked{% endif %} class="task-checkbox">
+                            <span class="task-title">{{ task.title }}</span>
+                            <button class="delete-task-btn">&times;</button>
+                        </div>
+                        {% empty %}
+                        <p class="empty-msg">No tasks yet.</p>
+                        {% endfor %}
+                    </div>
+                    <form id="quickTaskForm" class="quick-task-form">
+                        <input type="text" id="newTaskTitle" placeholder="Add a quick task..." required>
+                        <button type="submit">+</button>
+                    </form>
+                </section>
+
+                <section id="diarySection" class="diary-section glass-card">
                     <h2>Recent Diary</h2>
                     <div class="diary-preview" id="diaryPreview">
                         {% if latest_entry %}
@@ -122,6 +138,25 @@
             </header>
             <form id="diaryForm">
                 {% csrf_token %}
+                <div class="input-group">
+                    <label>How are you feeling?</label>
+                    <div class="mood-selector">
+                        <input type="radio" name="mood" value="happy" id="moodHappy" checked>
+                        <label for="moodHappy" title="Happy">😊</label>
+
+                        <input type="radio" name="mood" value="neutral" id="moodNeutral">
+                        <label for="moodNeutral" title="Neutral">😐</label>
+
+                        <input type="radio" name="mood" value="sad" id="moodSad">
+                        <label for="moodSad" title="Sad">😔</label>
+
+                        <input type="radio" name="mood" value="excited" id="moodExcited">
+                        <label for="moodExcited" title="Excited">🤩</label>
+
+                        <input type="radio" name="mood" value="stressed" id="moodStressed">
+                        <label for="moodStressed" title="Stressed">😫</label>
+                    </div>
+                </div>
                 <div class="input-group">
                     <label for="diaryContent">How was your day?</label>
                     <textarea id="diaryContent" rows="8" placeholder="Start writing here..." required></textarea>

@@ -6,42 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileDropdown = document.getElementById('profileDropdown');
     const headerDate = document.querySelector('.dashboard-header p');
     const eventList = document.querySelector('.event-list');
+    const taskList = document.querySelector('.task-list');
     const eventModal = document.getElementById('eventModal');
     const eventForm = document.getElementById('eventForm');
+    const quickTaskForm = document.getElementById('quickTaskForm');
     const openModalBtn = document.querySelector('.events-section .add-btn');
     const closeModalBtn = document.getElementById('closeModal');
-
-    // State
-    let events = JSON.parse(localStorage.getItem('ethereal_events')) || [];
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     // Functions
     function updateHeader() {
         const now = new Date();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         headerDate.textContent = now.toLocaleDateString('en-US', options);
-    }
-
-    function renderEvents() {
-        eventList.innerHTML = '';
-        const upcomingEvents = events
-            .filter(e => !e.completed)
-            .sort((a, b) => a.time.localeCompare(b.time));
-
-        upcomingEvents.forEach(event => {
-            const card = document.createElement('div');
-            card.className = 'event-card';
-            card.innerHTML = `
-                <div class="event-time">${event.time}</div>
-                <div class="event-details">
-                    <h3>${event.title}</h3>
-                    <p>${event.location || 'No location'}</p>
-                </div>
-            `;
-            eventList.appendChild(card);
-        });
-
-        // Update stats
-        document.querySelector('.stat-item:first-child .value').textContent = upcomingEvents.length;
     }
 
     function showNotification(title, message) {
@@ -66,88 +43,168 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
 
-    function checkNotifications() {
-        const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-        events.forEach(event => {
-            if (event.time === currentTime && !event.notified) {
-                showNotification(`Reminder: ${event.title}`, `Happening now at ${event.location}`);
-                event.notified = true;
-                localStorage.setItem('ethereal_events', JSON.stringify(events));
+    // --- Tasks Logic ---
+    async function addTask(title) {
+        try {
+            const response = await fetch('/tasks/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({ 'title': title })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                renderTask(data.task);
+                updateStats();
+                quickTaskForm.reset();
             }
-        });
+        } catch (error) {
+            console.error('Error adding task:', error);
+        }
     }
 
-    // Event Listeners
-    openModalBtn.addEventListener('click', () => {
-        eventModal.classList.remove('hidden');
-    });
+    function renderTask(task) {
+        const item = document.createElement('div');
+        item.className = `task-item ${task.completed ? 'completed' : ''}`;
+        item.dataset.id = task.id;
+        item.innerHTML = `
+            <input type="checkbox" ${task.completed ? 'checked' : ''} class="task-checkbox">
+            <span class="task-title">${task.title}</span>
+            <button class="delete-task-btn">&times;</button>
+        `;
+        
+        // Remove empty message if it exists
+        const emptyMsg = taskList.querySelector('.empty-msg');
+        if (emptyMsg) emptyMsg.remove();
+        
+        taskList.appendChild(item);
+    }
 
-    closeModalBtn.addEventListener('click', () => {
-        eventModal.classList.add('hidden');
-    });
+    taskList.addEventListener('click', async (e) => {
+        const taskItem = e.target.closest('.task-item');
+        if (!taskItem) return;
+        const taskId = taskItem.dataset.id;
 
-    eventModal.addEventListener('click', (e) => {
-        if (e.target === eventModal) eventModal.classList.add('hidden');
-    });
-
-    eventForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const newEvent = {
-            id: Date.now(),
-            title: document.getElementById('eventTitle').value,
-            time: document.getElementById('eventTime').value,
-            location: document.getElementById('eventLocation').value,
-            notified: false,
-            completed: false
-        };
-
-        events.push(newEvent);
-        localStorage.setItem('ethereal_events', JSON.stringify(events));
-
-        renderEvents();
-        eventForm.reset();
-        eventModal.classList.add('hidden');
-    });
-
-    // Profile Dropdown Toggle
-    profileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        profileDropdown.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
-            profileDropdown.classList.add('hidden');
+        if (e.target.classList.contains('task-checkbox')) {
+            try {
+                const response = await fetch(`/tasks/toggle/${taskId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    taskItem.classList.toggle('completed', data.completed);
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Error toggling task:', error);
+            }
+        } else if (e.target.classList.contains('delete-task-btn')) {
+            try {
+                const response = await fetch(`/tasks/delete/${taskId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    taskItem.remove();
+                    updateStats();
+                    if (taskList.children.length === 0) {
+                        taskList.innerHTML = '<p class="empty-msg">No tasks yet.</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting task:', error);
+            }
         }
     });
 
-    // Diary Modal Selectors
+    quickTaskForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = document.getElementById('newTaskTitle').value;
+        if (title) addTask(title);
+    });
+
+    // --- Events Logic ---
+    async function fetchEvents() {
+        try {
+            const response = await fetch('/events/');
+            const data = await response.json();
+            if (data.status === 'success') {
+                renderEventsList(data.events);
+            }
+        } catch (error) {
+            console.error('Error fetching events:', error);
+        }
+    }
+
+    function renderEventsList(events) {
+        eventList.innerHTML = '';
+        if (events.length === 0) {
+            eventList.innerHTML = '<p class="empty-msg">No upcoming events.</p>';
+            return;
+        }
+        events.forEach(event => {
+            const card = document.createElement('div');
+            card.className = 'event-card';
+            card.dataset.id = event.id;
+            card.innerHTML = `
+                <div class="event-time">${event.time}</div>
+                <div class="event-details">
+                    <h3>${event.title}</h3>
+                    <p>${event.location || 'No location'}</p>
+                </div>
+            `;
+            eventList.appendChild(card);
+        });
+        updateStats();
+    }
+
+    eventForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('eventTitle').value;
+        const time = document.getElementById('eventTime').value;
+        const location = document.getElementById('eventLocation').value;
+
+        try {
+            const response = await fetch('/events/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({
+                    'title': title,
+                    'event_time': time,
+                    'location': location
+                })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                showNotification('Success', 'Event added!');
+                fetchEvents();
+                eventForm.reset();
+                eventModal.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Error adding event:', error);
+        }
+    });
+
+    // --- Diary Logic ---
     const diaryModal = document.getElementById('diaryModal');
     const diaryForm = document.getElementById('diaryForm');
     const openDiaryModalBtn = document.getElementById('openDiaryModal');
     const closeDiaryModalBtn = document.getElementById('closeDiaryModal');
     const diaryPreview = document.getElementById('diaryPreview');
 
-    // Diary Event Listeners
-    openDiaryModalBtn.addEventListener('click', () => {
-        diaryModal.classList.remove('hidden');
-    });
-
-    closeDiaryModalBtn.addEventListener('click', () => {
-        diaryModal.classList.add('hidden');
-    });
-
-    diaryModal.addEventListener('click', (e) => {
-        if (e.target === diaryModal) diaryModal.classList.add('hidden');
-    });
-
     diaryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveBtn = document.getElementById('saveDiaryBtn');
         const content = document.getElementById('diaryContent').value;
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const mood = document.querySelector('input[name="mood"]:checked').value;
 
         saveBtn.classList.add('btn-loading');
 
@@ -159,7 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRFToken': csrfToken
                 },
                 body: new URLSearchParams({
-                    'content': content
+                    'content': content,
+                    'mood': mood
                 })
             });
 
@@ -168,16 +226,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.status === 'success') {
                 showNotification('Success', 'Diary entry saved!');
                 
+                // Mood icon mapping
+                const moodIcons = {
+                    'happy': '😊',
+                    'neutral': '😐',
+                    'sad': '😔',
+                    'excited': '🤩',
+                    'stressed': '😫'
+                };
+
                 // Update Preview UI
                 diaryPreview.innerHTML = `
-                    <p class="preview-text">"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"</p>
+                    <p class="preview-text">"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}" ${moodIcons[mood]}</p>
                     <span class="date">${data.entry.created_at}</span>
                 `;
 
                 diaryForm.reset();
                 diaryModal.classList.add('hidden');
-            } else {
-                showNotification('Error', data.message);
             }
         } catch (error) {
             console.error('Error saving diary:', error);
@@ -187,8 +252,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Helpers ---
+    function updateStats() {
+        const pendingTasks = taskList.querySelectorAll('.task-item:not(.completed)').length;
+        const upcomingEvents = eventList.querySelectorAll('.event-card').length;
+        
+        const taskStat = document.getElementById('taskCountStat');
+        const eventStat = document.getElementById('eventCountStat');
+        
+        if (taskStat) taskStat.textContent = pendingTasks;
+        if (eventStat) eventStat.textContent = upcomingEvents;
+    }
+
+    // Modal Helpers
+    openModalBtn.addEventListener('click', () => eventModal.classList.remove('hidden'));
+    closeModalBtn.addEventListener('click', () => eventModal.classList.add('hidden'));
+    eventModal.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.add('hidden'); });
+
+    openDiaryModalBtn.addEventListener('click', () => diaryModal.classList.remove('hidden'));
+    closeDiaryModalBtn.addEventListener('click', () => diaryModal.classList.add('hidden'));
+    diaryModal.addEventListener('click', (e) => { if (e.target === diaryModal) diaryModal.classList.add('hidden'); });
+
+    profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
+            profileDropdown.classList.add('hidden');
+        }
+    });
+
     // Init
     updateHeader();
-    renderEvents();
-    setInterval(checkNotifications, 30000); // Check every 30 seconds
+    // fetchEvents(); // Initial state is rendered by Django template
 });
