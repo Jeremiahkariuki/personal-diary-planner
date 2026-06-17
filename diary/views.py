@@ -10,7 +10,7 @@ from datetime import date
 def index(request):
     latest_entry = DiaryEntry.objects.filter(user=request.user).first()
     tasks = Task.objects.filter(user=request.user)
-    upcoming_events = Event.objects.filter(user=request.user, completed=False)
+    upcoming_events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')
     
     # Calculate mood streak (very simple version: consecutive days with entries)
     today = date.today()
@@ -27,6 +27,7 @@ def index(request):
         'task_count': tasks.filter(completed=False).count(),
         'event_count': upcoming_events.count(),
         'mood_streak': streak,
+        'today': today,
     }
     return render(request, 'index.html', context)
 
@@ -114,19 +115,28 @@ def manage_events(request):
         title = request.POST.get('title')
         location = request.POST.get('location')
         event_time = request.POST.get('event_time')
-        if title and event_time:
-            event = Event.objects.create(user=request.user, title=title, location=location, event_time=event_time)
+        event_date = request.POST.get('date')
+        if title and event_time and event_date:
+            event = Event.objects.create(
+                user=request.user, 
+                title=title, 
+                location=location, 
+                event_time=event_time,
+                date=event_date
+            )
             return JsonResponse({'status': 'success', 'event': {
                 'id': event.id,
                 'title': event.title,
                 'location': event.location,
-                'time': event.event_time.strftime('%H:%M')
+                'time': event.event_time.strftime('%H:%M'),
+                'date': event.date.strftime('%Y-%m-%d')
             }})
     
-    events = Event.objects.filter(user=request.user, completed=False)
+    events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')
     return JsonResponse({'status': 'success', 'events': [{
         'id': e.id,
         'title': e.title,
         'location': e.location,
-        'time': e.event_time.strftime('%H:%M')
+        'time': e.event_time.strftime('%H:%M'),
+        'date': e.date.strftime('%Y-%m-%d')
     } for e in events]})

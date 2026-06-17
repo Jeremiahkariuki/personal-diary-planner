@@ -78,13 +78,28 @@
                 <section id="eventsSection" class="events-section glass-card">
                     <h2>Upcoming Events</h2>
                     <div class="event-list">
-                        {% for event in upcoming_events %}
-                        <div class="event-card" data-id="{{ event.id }}">
-                            <div class="event-time">{{ event.event_time|time:"H:i" }}</div>
-                            <div class="event-details">
-                                <h3>{{ event.title }}</h3>
-                                <p>{{ event.location|default:"No location" }}</p>
+                        {% regroup upcoming_events by date as events_by_date %}
+                        {% for group in events_by_date %}
+                        <div class="date-group">
+                            <h3 class="date-header">
+                                {% if group.grouper == today %}
+                                Today
+                                {% else %}
+                                {{ group.grouper|date:"F d, Y" }}
+                                {% endif %}
+                            </h3>
+                            {% for event in group.list %}
+                            <div class="event-card {% if group.grouper == today %}today-highlight{% endif %}"
+                                data-id="{{ event.id }}">
+                                <div class="event-time">
+                                    {{ event.event_time|time:"H:i" }}
+                                </div>
+                                <div class="event-details">
+                                    <h3>{{ event.title }}</h3>
+                                    <p>{{ event.location|default:"No location" }}</p>
+                                </div>
                             </div>
+                            {% endfor %}
                         </div>
                         {% empty %}
                         <p class="empty-msg">No upcoming events.</p>
@@ -181,6 +196,10 @@
                 <div class="input-group">
                     <label for="eventTime">Time</label>
                     <input type="time" id="eventTime" required>
+                </div>
+                <div class="input-group">
+                    <label for="eventDate">Date</label>
+                    <input type="date" id="eventDate" required>
                 </div>
                 <div class="input-group">
                     <label for="eventLocation">Location</label>

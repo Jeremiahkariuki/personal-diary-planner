@@ -74,11 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="task-title">${task.title}</span>
             <button class="delete-task-btn">&times;</button>
         `;
-        
+
         // Remove empty message if it exists
         const emptyMsg = taskList.querySelector('.empty-msg');
         if (emptyMsg) emptyMsg.remove();
-        
+
         taskList.appendChild(item);
     }
 
@@ -146,18 +146,43 @@ document.addEventListener('DOMContentLoaded', () => {
             eventList.innerHTML = '<p class="empty-msg">No upcoming events.</p>';
             return;
         }
-        events.forEach(event => {
-            const card = document.createElement('div');
-            card.className = 'event-card';
-            card.dataset.id = event.id;
-            card.innerHTML = `
-                <div class="event-time">${event.time}</div>
-                <div class="event-details">
-                    <h3>${event.title}</h3>
-                    <p>${event.location || 'No location'}</p>
-                </div>
-            `;
-            eventList.appendChild(card);
+
+        // Group by date
+        const grouped = events.reduce((acc, event) => {
+            if (!acc[event.date]) acc[event.date] = [];
+            acc[event.date].push(event);
+            return acc;
+        }, {});
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        Object.keys(grouped).sort().forEach(date => {
+            const dateGroup = document.createElement('div');
+            dateGroup.className = 'date-group';
+
+            const d = new Date(date);
+            const dateHeader = document.createElement('h3');
+            dateHeader.className = 'date-header';
+            dateHeader.textContent = (date === todayStr) ? 'Today' : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+            dateGroup.appendChild(dateHeader);
+
+            grouped[date].forEach(event => {
+                const card = document.createElement('div');
+                card.className = `event-card ${date === todayStr ? 'today-highlight' : ''}`;
+                card.dataset.id = event.id;
+
+                card.innerHTML = `
+                    <div class="event-time">${event.time}</div>
+                    <div class="event-details">
+                        <h3>${event.title}</h3>
+                        <p>${event.location || 'No location'}</p>
+                    </div>
+                `;
+                dateGroup.appendChild(card);
+            });
+
+            eventList.appendChild(dateGroup);
         });
         updateStats();
     }
@@ -166,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const title = document.getElementById('eventTitle').value;
         const time = document.getElementById('eventTime').value;
+        const date = document.getElementById('eventDate').value;
         const location = document.getElementById('eventLocation').value;
 
         try {
@@ -178,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: new URLSearchParams({
                     'title': title,
                     'event_time': time,
+                    'date': date,
                     'location': location
                 })
             });
@@ -225,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.status === 'success') {
                 showNotification('Success', 'Diary entry saved!');
-                
+
                 // Mood icon mapping
                 const moodIcons = {
                     'happy': '😊',
@@ -256,10 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStats() {
         const pendingTasks = taskList.querySelectorAll('.task-item:not(.completed)').length;
         const upcomingEvents = eventList.querySelectorAll('.event-card').length;
-        
+
         const taskStat = document.getElementById('taskCountStat');
         const eventStat = document.getElementById('eventCountStat');
-        
+
         if (taskStat) taskStat.textContent = pendingTasks;
         if (eventStat) eventStat.textContent = upcomingEvents;
     }

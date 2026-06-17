@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from datetime import date
 
 class DiaryEntry(models.Model):
     MOOD_CHOICES = [
@@ -38,12 +39,12 @@ class Event(models.Model):
     title = models.CharField(max_length=200)
     location = models.CharField(max_length=200, blank=True, null=True)
     event_time = models.TimeField()
-    date = models.DateField(auto_now_add=True) # For simplicity, current date
+    date = models.DateField(default=date.today)
     completed = models.BooleanField(default=False)
     notified = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['event_time']
+        ordering = ['date', 'event_time']
 
     def __str__(self):
         return f"{self.title} at {self.event_time}"
