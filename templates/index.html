@@ -114,7 +114,15 @@
                         {% for task in tasks %}
                         <div class="task-item {% if task.completed %}completed{% endif %}" data-id="{{ task.id }}">
                             <input type="checkbox" {% if task.completed %}checked{% endif %} class="task-checkbox">
-                            <span class="task-title">{{ task.title }}</span>
+                            <div class="task-info">
+                                <span class="task-title">{{ task.title }}</span>
+                                {% if task.due_date %}
+                                <span class="task-due-date">
+                                    📅 {{ task.due_date|date:"M d" }} {% if task.due_time %}{{ task.due_time|time:"H:i"
+                                    }}{% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
                             <button class="delete-task-btn">&times;</button>
                         </div>
                         {% empty %}
@@ -122,7 +130,14 @@
                         {% endfor %}
                     </div>
                     <form id="quickTaskForm" class="quick-task-form">
-                        <input type="text" id="newTaskTitle" placeholder="Add a quick task..." required>
+                        {% csrf_token %}
+                        <div class="quick-task-inputs">
+                            <input type="text" id="newTaskTitle" placeholder="Add a quick task..." required>
+                            <div class="task-time-inputs">
+                                <input type="date" id="newTaskDate" title="Due Date">
+                                <input type="time" id="newTaskTime" title="Due Time">
+                            </div>
+                        </div>
                         <button type="submit">+</button>
                     </form>
                 </section>

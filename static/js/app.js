@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Tasks Logic ---
-    async function addTask(title) {
+    async function addTask(title, dueDate, dueTime) {
         try {
             const response = await fetch('/tasks/', {
                 method: 'POST',
@@ -52,13 +52,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRFToken': csrfToken
                 },
-                body: new URLSearchParams({ 'title': title })
+                body: new URLSearchParams({
+                    'title': title,
+                    'due_date': dueDate || '',
+                    'due_time': dueTime || ''
+                })
             });
             const data = await response.json();
+            console.log('Task saved response:', data);
             if (data.status === 'success') {
                 renderTask(data.task);
                 updateStats();
                 quickTaskForm.reset();
+                showNotification('Success', 'Task added!');
+            } else {
+                showNotification('Error', 'Failed to save task.');
             }
         } catch (error) {
             console.error('Error adding task:', error);
@@ -69,9 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = document.createElement('div');
         item.className = `task-item ${task.completed ? 'completed' : ''}`;
         item.dataset.id = task.id;
+
+        let dueHtml = '';
+        if (task.due_date) {
+            // Very simple format for brevity
+            const d = new Date(task.due_date);
+            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            dueHtml = `<span class="task-due-date">📅 ${dateStr} ${task.due_time || ''}</span>`;
+        }
+
         item.innerHTML = `
             <input type="checkbox" ${task.completed ? 'checked' : ''} class="task-checkbox">
-            <span class="task-title">${task.title}</span>
+            <div class="task-info">
+                <span class="task-title">${task.title}</span>
+                ${dueHtml}
+            </div>
             <button class="delete-task-btn">&times;</button>
         `;
 
@@ -124,7 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
     quickTaskForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const title = document.getElementById('newTaskTitle').value;
-        if (title) addTask(title);
+        const dueDate = document.getElementById('newTaskDate').value;
+        const dueTime = document.getElementById('newTaskTime').value;
+        if (title) addTask(title, dueDate, dueTime);
     });
 
     // --- Events Logic ---

@@ -83,12 +83,31 @@ def logout_view(request):
 def manage_tasks(request):
     if request.method == 'POST':
         title = request.POST.get('title')
+        due_date = request.POST.get('due_date')
+        due_time = request.POST.get('due_time')
         if title:
-            task = Task.objects.create(user=request.user, title=title)
-            return JsonResponse({'status': 'success', 'task': {'id': task.id, 'title': task.title, 'completed': task.completed}})
+            task = Task.objects.create(
+                user=request.user, 
+                title=title,
+                due_date=due_date if due_date else None,
+                due_time=due_time if due_time else None
+            )
+            return JsonResponse({'status': 'success', 'task': {
+                'id': task.id, 
+                'title': task.title, 
+                'completed': task.completed,
+                'due_date': task.due_date.strftime('%Y-%m-%d') if task.due_date else None,
+                'due_time': task.due_time.strftime('%H:%M') if task.due_time else None
+            }})
     
-    tasks = Task.objects.filter(user=request.user)
-    return JsonResponse({'status': 'success', 'tasks': list(tasks.values())})
+    tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
+    return JsonResponse({'status': 'success', 'tasks': [{
+        'id': t.id,
+        'title': t.title,
+        'completed': t.completed,
+        'due_date': t.due_date.strftime('%Y-%m-%d') if t.due_date else None,
+        'due_time': t.due_time.strftime('%H:%M') if t.due_time else None
+    } for t in tasks]})
 
 @login_required
 def toggle_task(request, task_id):
