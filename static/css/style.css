@@ -303,6 +303,32 @@ h2 {
     margin-bottom: 0;
 }
 
+.task-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .task-sections {
+        grid-template-columns: 1fr;
+    }
+}
+
+.task-list {
+    min-height: 50px;
+}
+
+.completed-tasks .task-title {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.completed-tasks .task-due-date {
+    opacity: 0.5;
+}
+
 .text-btn {
     background: none;
     border: none;

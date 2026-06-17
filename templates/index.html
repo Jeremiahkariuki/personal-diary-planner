@@ -109,28 +109,57 @@
                 </section>
 
                 <section class="tasks-section glass-card">
-                    <div class="section-header">
-                        <h2>Tasks Pending</h2>
-                        <button id="clearTasksBtn" class="text-btn">Clear All</button>
-                    </div>
-                    <div class="task-list">
-                        {% for task in tasks %}
-                        <div class="task-item {% if task.completed %}completed{% endif %}" data-id="{{ task.id }}">
-                            <input type="checkbox" {% if task.completed %}checked{% endif %} class="task-checkbox">
-                            <div class="task-info">
-                                <span class="task-title">{{ task.title }}</span>
-                                {% if task.due_date %}
-                                <span class="task-due-date">
-                                    📅 {{ task.due_date|date:"M d" }} {% if task.due_time %}{{ task.due_time|time:"H:i"
-                                    }}{% endif %}
-                                </span>
-                                {% endif %}
+                    <div class="task-sections">
+                        <div class="task-column pending-column">
+                            <div class="section-header">
+                                <h2>Pending</h2>
+                                <button id="clearTasksBtn" class="text-btn">Clear All</button>
                             </div>
-                            <button class="delete-task-btn">&times;</button>
+                            <div class="task-list pending-tasks">
+                                {% for task in tasks %}
+                                {% if not task.completed %}
+                                <div class="task-item" data-id="{{ task.id }}">
+                                    <input type="checkbox" class="task-checkbox">
+                                    <div class="task-info">
+                                        <span class="task-title">{{ task.title }}</span>
+                                        {% if task.due_date %}
+                                        <span class="task-due-date">
+                                            📅 {{ task.due_date|date:"M d" }} {% if task.due_time %}{{
+                                            task.due_time|time:"H:i" }}{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <button class="delete-task-btn">&times;</button>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
-                        {% empty %}
-                        <p class="empty-msg">No tasks yet.</p>
-                        {% endfor %}
+
+                        <div class="task-column completed-column">
+                            <div class="section-header">
+                                <h2>Completed</h2>
+                            </div>
+                            <div class="task-list completed-tasks">
+                                {% for task in tasks %}
+                                {% if task.completed %}
+                                <div class="task-item completed" data-id="{{ task.id }}">
+                                    <input type="checkbox" checked class="task-checkbox">
+                                    <div class="task-info">
+                                        <span class="task-title">{{ task.title }}</span>
+                                        {% if task.due_date %}
+                                        <span class="task-due-date">
+                                            📅 {{ task.due_date|date:"M d" }} {% if task.due_time %}{{
+                                            task.due_time|time:"H:i" }}{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <button class="delete-task-btn">&times;</button>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                     <form id="quickTaskForm" class="quick-task-form">
                         {% csrf_token %}

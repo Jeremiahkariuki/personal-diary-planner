@@ -6,7 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileDropdown = document.getElementById('profileDropdown');
     const headerDate = document.querySelector('.dashboard-header p');
     const eventList = document.querySelector('.event-list');
-    const taskList = document.querySelector('.task-list');
+    const pendingTaskList = document.querySelector('.pending-tasks');
+    const completedTaskList = document.querySelector('.completed-tasks');
     const eventModal = document.getElementById('eventModal');
     const eventForm = document.getElementById('eventForm');
     const quickTaskForm = document.getElementById('quickTaskForm');
@@ -80,7 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let dueHtml = '';
         if (task.due_date) {
-            // Very simple format for brevity
             const d = new Date(task.due_date);
             const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             dueHtml = `<span class="task-due-date">📅 ${dateStr} ${task.due_time || ''}</span>`;
@@ -95,50 +95,49 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="delete-task-btn">&times;</button>
         `;
 
-        // Remove empty message if it exists
-        const emptyMsg = taskList.querySelector('.empty-msg');
-        if (emptyMsg) emptyMsg.remove();
-
-        taskList.appendChild(item);
+        const targetList = task.completed ? completedTaskList : pendingTaskList;
+        targetList.appendChild(item);
     }
 
-    taskList.addEventListener('click', async (e) => {
-        const taskItem = e.target.closest('.task-item');
-        if (!taskItem) return;
-        const taskId = taskItem.dataset.id;
+    // Delegate clicks for both lists
+    [pendingTaskList, completedTaskList].forEach(list => {
+        list.addEventListener('click', async (e) => {
+            const taskItem = e.target.closest('.task-item');
+            if (!taskItem) return;
+            const taskId = taskItem.dataset.id;
 
-        if (e.target.classList.contains('task-checkbox')) {
-            try {
-                const response = await fetch(`/tasks/toggle/${taskId}/`, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrfToken }
-                });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    taskItem.classList.toggle('completed', data.completed);
-                    updateStats();
-                }
-            } catch (error) {
-                console.error('Error toggling task:', error);
-            }
-        } else if (e.target.classList.contains('delete-task-btn')) {
-            try {
-                const response = await fetch(`/tasks/delete/${taskId}/`, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrfToken }
-                });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    taskItem.remove();
-                    updateStats();
-                    if (taskList.children.length === 0) {
-                        taskList.innerHTML = '<p class="empty-msg">No tasks yet.</p>';
+            if (e.target.classList.contains('task-checkbox')) {
+                try {
+                    const response = await fetch(`/tasks/toggle/${taskId}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken }
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        taskItem.classList.toggle('completed', data.completed);
+                        const targetList = data.completed ? completedTaskList : pendingTaskList;
+                        targetList.appendChild(taskItem); // Move element
+                        updateStats();
                     }
+                } catch (error) {
+                    console.error('Error toggling task:', error);
                 }
-            } catch (error) {
-                console.error('Error deleting task:', error);
+            } else if (e.target.classList.contains('delete-task-btn')) {
+                try {
+                    const response = await fetch(`/tasks/delete/${taskId}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken }
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        taskItem.remove();
+                        updateStats();
+                    }
+                } catch (error) {
+                    console.error('Error deleting task:', error);
+                }
             }
-        }
+        });
     });
 
     quickTaskForm.addEventListener('submit', (e) => {
@@ -160,12 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
-                    // Only remove uncompleted tasks from UI
-                    document.querySelectorAll('.task-item:not(.completed)').forEach(el => el.remove());
+                    pendingTaskList.innerHTML = '';
                     updateStats();
-                    if (taskList.children.length === 0) {
-                        taskList.innerHTML = '<p class="empty-msg">No tasks yet.</p>';
-                    }
                     showNotification('Success', 'Cleared all pending tasks');
                 }
             } catch (error) {
@@ -328,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Helpers ---
     function updateStats() {
-        const pendingTasks = taskList.querySelectorAll('.task-item:not(.completed)').length;
+        const pendingTasks = pendingTaskList.querySelectorAll('.task-item').length;
         const upcomingEvents = eventList.querySelectorAll('.event-card').length;
 
         const taskStat = document.getElementById('taskCountStat');
