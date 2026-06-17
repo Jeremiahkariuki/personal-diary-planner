@@ -22,7 +22,7 @@
             <div class="logo">Jdiary</div>
             <div class="nav-links">
                 <a href="#" class="active">Dashboard</a>
-                <a href="#">Diary</a>
+                <a href="#diaryPreview">Diary</a>
                 <a href="#">Events</a>
             </div>
             <div class="user-menu-container">
@@ -98,15 +98,37 @@
 
                 <section class="diary-section glass-card">
                     <h2>Recent Diary</h2>
-                    <div class="diary-preview">
-                        <p class="preview-text">"Today started with a burst of clarity. I feel like the new project has
-                            so much potential..."</p>
-                        <span class="date">Earlier Today</span>
+                    <div class="diary-preview" id="diaryPreview">
+                        {% if latest_entry %}
+                        <p class="preview-text">"{{ latest_entry.content|truncatechars:100 }}"</p>
+                        <span class="date">{{ latest_entry.created_at|date:"F d, Y" }}</span>
+                        {% else %}
+                        <p class="preview-text">"No entries yet. Start writing your journey today..."</p>
+                        <span class="date">New Beginning</span>
+                        {% endif %}
                     </div>
-                    <button class="add-btn primary-btn">Write Today's Entry</button>
+                    <button id="openDiaryModal" class="add-btn primary-btn">Write Today's Entry</button>
                 </section>
             </div>
         </main>
+    </div>
+
+    <!-- Diary Modal -->
+    <div id="diaryModal" class="modal-overlay hidden">
+        <div class="glass-card modal-content" style="max-width: 600px;">
+            <header class="modal-header">
+                <h2>Write Today's Entry</h2>
+                <button id="closeDiaryModal" class="close-btn">&times;</button>
+            </header>
+            <form id="diaryForm">
+                {% csrf_token %}
+                <div class="input-group">
+                    <label for="diaryContent">How was your day?</label>
+                    <textarea id="diaryContent" rows="8" placeholder="Start writing here..." required></textarea>
+                </div>
+                <button type="submit" id="saveDiaryBtn" class="add-btn primary-btn">Save Entry</button>
+            </form>
+        </div>
     </div>
 
     <!-- Event Modal -->

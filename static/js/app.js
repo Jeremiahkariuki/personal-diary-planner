@@ -123,6 +123,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Diary Modal Selectors
+    const diaryModal = document.getElementById('diaryModal');
+    const diaryForm = document.getElementById('diaryForm');
+    const openDiaryModalBtn = document.getElementById('openDiaryModal');
+    const closeDiaryModalBtn = document.getElementById('closeDiaryModal');
+    const diaryPreview = document.getElementById('diaryPreview');
+
+    // Diary Event Listeners
+    openDiaryModalBtn.addEventListener('click', () => {
+        diaryModal.classList.remove('hidden');
+    });
+
+    closeDiaryModalBtn.addEventListener('click', () => {
+        diaryModal.classList.add('hidden');
+    });
+
+    diaryModal.addEventListener('click', (e) => {
+        if (e.target === diaryModal) diaryModal.classList.add('hidden');
+    });
+
+    diaryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('saveDiaryBtn');
+        const content = document.getElementById('diaryContent').value;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        saveBtn.classList.add('btn-loading');
+
+        try {
+            const response = await fetch('/diary/save/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({
+                    'content': content
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                showNotification('Success', 'Diary entry saved!');
+                
+                // Update Preview UI
+                diaryPreview.innerHTML = `
+                    <p class="preview-text">"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"</p>
+                    <span class="date">${data.entry.created_at}</span>
+                `;
+
+                diaryForm.reset();
+                diaryModal.classList.add('hidden');
+            } else {
+                showNotification('Error', data.message);
+            }
+        } catch (error) {
+            console.error('Error saving diary:', error);
+            showNotification('Error', 'Failed to save entry');
+        } finally {
+            saveBtn.classList.remove('btn-loading');
+        }
+    });
+
     // Init
     updateHeader();
     renderEvents();

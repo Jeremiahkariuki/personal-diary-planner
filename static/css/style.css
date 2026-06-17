@@ -476,7 +476,8 @@ h2 {
     font-size: 0.9rem;
 }
 
-.input-group input {
+.input-group input,
+.input-group textarea {
     width: 100%;
     padding: 1rem;
     background: rgba(255, 255, 255, 0.05);
@@ -485,10 +486,13 @@ h2 {
     color: var(--text-primary);
     font-family: inherit;
     outline: none;
+    resize: none;
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group textarea:focus {
     border-color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Notifications */
