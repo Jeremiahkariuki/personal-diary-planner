@@ -26,10 +26,12 @@ class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     completed = models.BooleanField(default=False)
+    due_date = models.DateField(blank=True, null=True)
+    due_time = models.TimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['completed', '-created_at']
+        ordering = ['completed', 'due_date', 'due_time', '-created_at']
 
     def __str__(self):
         return self.title
