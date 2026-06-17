@@ -324,12 +324,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Helpers ---
     function updateStats() {
         const pendingTasks = pendingTaskList.querySelectorAll('.task-item').length;
+        const completedTasksCount = completedTaskList.querySelectorAll('.task-item').length;
         const upcomingEvents = eventList.querySelectorAll('.event-card').length;
 
         const taskStat = document.getElementById('taskCountStat');
+        const taskCompletedStat = document.getElementById('taskCountCompletedStat');
         const eventStat = document.getElementById('eventCountStat');
 
         if (taskStat) taskStat.textContent = pendingTasks;
+        if (taskCompletedStat) taskCompletedStat.textContent = completedTasksCount;
         if (eventStat) eventStat.textContent = upcomingEvents;
     }
 

@@ -25,6 +25,7 @@ def index(request):
         'tasks': tasks,
         'upcoming_events': upcoming_events,
         'task_count': tasks.filter(completed=False).count(),
+        'completed_task_count': tasks.filter(completed=True).count(),
         'event_count': upcoming_events.count(),
         'mood_streak': streak,
         'today': today,
