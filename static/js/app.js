@@ -149,6 +149,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (title) addTask(title, dueDate, dueTime);
     });
 
+    const clearTasksBtn = document.getElementById('clearTasksBtn');
+    if (clearTasksBtn) {
+        clearTasksBtn.addEventListener('click', async () => {
+            if (!confirm('Clear all pending tasks?')) return;
+            try {
+                const response = await fetch('/tasks/clear-pending/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    // Only remove uncompleted tasks from UI
+                    document.querySelectorAll('.task-item:not(.completed)').forEach(el => el.remove());
+                    updateStats();
+                    if (taskList.children.length === 0) {
+                        taskList.innerHTML = '<p class="empty-msg">No tasks yet.</p>';
+                    }
+                    showNotification('Success', 'Cleared all pending tasks');
+                }
+            } catch (error) {
+                console.error('Error clearing tasks:', error);
+            }
+        });
+    }
+
     // --- Events Logic ---
     async function fetchEvents() {
         try {

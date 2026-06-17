@@ -129,6 +129,13 @@ def delete_task(request, task_id):
         return JsonResponse({'status': 'error', 'message': 'Task not found'}, status=404)
 
 @login_required
+def clear_pending_tasks(request):
+    if request.method == 'POST':
+        Task.objects.filter(user=request.user, completed=False).delete()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+@login_required
 def manage_events(request):
     if request.method == 'POST':
         title = request.POST.get('title')

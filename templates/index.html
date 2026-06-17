@@ -109,7 +109,10 @@
                 </section>
 
                 <section class="tasks-section glass-card">
-                    <h2>Tasks Pending</h2>
+                    <div class="section-header">
+                        <h2>Tasks Pending</h2>
+                        <button id="clearTasksBtn" class="text-btn">Clear All</button>
+                    </div>
                     <div class="task-list">
                         {% for task in tasks %}
                         <div class="task-item {% if task.completed %}completed{% endif %}" data-id="{{ task.id }}">
