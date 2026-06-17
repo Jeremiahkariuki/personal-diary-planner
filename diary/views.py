@@ -96,8 +96,8 @@ def manage_tasks(request):
                 'id': task.id, 
                 'title': task.title, 
                 'completed': task.completed,
-                'due_date': task.due_date.strftime('%Y-%m-%d') if task.due_date else None,
-                'due_time': task.due_time.strftime('%H:%M') if task.due_time else None
+                'due_date': due_date if due_date else None,
+                'due_time': due_time if due_time else None
             }})
     
     tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
