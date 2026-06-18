@@ -18,8 +18,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Functions
     function updateHeader() {
         const now = new Date();
+        const hour = now.getHours();
+        const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
+
+        const h1 = document.querySelector('.dashboard-header h1');
+        if (h1) h1.textContent = `${greeting}, ${h1.textContent.split(', ')[1] || h1.textContent}`;
+
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        headerDate.textContent = now.toLocaleDateString('en-US', options);
+        const dateDisplay = document.getElementById('currentDateDisplay');
+        if (dateDisplay) dateDisplay.textContent = now.toLocaleDateString('en-US', options);
+
+        displayDailyQuote();
+    }
+
+    async function displayDailyQuote() {
+        const quoteEl = document.getElementById('dailyQuote');
+        if (!quoteEl) return;
+
+        try {
+            const response = await fetch('/quote/random/');
+            const data = await response.json();
+            if (data.status === 'success') {
+                quoteEl.innerHTML = `"${data.quote.text}" <br> <span style="font-size: 0.8rem; font-style: normal; opacity: 0.7;">— ${data.quote.author}</span>`;
+            }
+        } catch (error) {
+            console.error('Error fetching quote:', error);
+            // Fallback for offline/error
+            quoteEl.textContent = '"Believe you can and you\'re halfway there."';
+        }
     }
 
     window.showNotification = function (title, message) {
@@ -170,61 +196,92 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Events Logic ---
+    let allUpcomingEvents = [];
+    let selectedDate = new Date().toISOString().split('T')[0];
+
     async function fetchEvents() {
         try {
             const response = await fetch('/events/');
             const data = await response.json();
             if (data.status === 'success') {
-                renderEventsList(data.events);
+                allUpcomingEvents = data.events;
+                renderDateStrip();
+                filterEvents(selectedDate);
             }
         } catch (error) {
             console.error('Error fetching events:', error);
         }
     }
 
-    function renderEventsList(events) {
+    function renderDateStrip() {
+        const dateStrip = document.getElementById('dateStrip');
+        if (!dateStrip) return;
+        dateStrip.innerHTML = '';
+
+        const today = new Date();
+        const daysToShow = 14;
+
+        for (let i = 0; i < daysToShow; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            const dateStr = d.toISOString().split('T')[0];
+
+            const card = document.createElement('div');
+            card.className = `date-card ${dateStr === selectedDate ? 'active' : ''}`;
+            card.dataset.date = dateStr;
+
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayNum = d.getDate();
+
+            // Check if this date has events
+            const hasEvents = allUpcomingEvents.some(e => e.date === dateStr);
+
+            card.innerHTML = `
+                <span class="day-name">${dayName}</span>
+                <span class="day-number">${dayNum}</span>
+                ${hasEvents ? '<div class="has-event-dot"></div>' : ''}
+            `;
+
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.date-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                selectedDate = dateStr;
+                filterEvents(dateStr);
+            });
+
+            dateStrip.appendChild(card);
+        }
+    }
+
+    function filterEvents(dateStr) {
+        const eventList = document.getElementById('eventList');
+        if (!eventList) return;
+
         eventList.innerHTML = '';
-        if (events.length === 0) {
-            eventList.innerHTML = '<p class="empty-msg">No upcoming events.</p>';
+        const filtered = allUpcomingEvents.filter(e => e.date === dateStr);
+
+        if (filtered.length === 0) {
+            eventList.innerHTML = `
+                <div class="empty-state">
+                    <p class="empty-msg">No events scheduled for this day.</p>
+                </div>
+            `;
             return;
         }
 
-        // Group by date
-        const grouped = events.reduce((acc, event) => {
-            if (!acc[event.date]) acc[event.date] = [];
-            acc[event.date].push(event);
-            return acc;
-        }, {});
+        filtered.forEach(event => {
+            const card = document.createElement('div');
+            card.className = 'event-card';
+            card.dataset.id = event.id;
 
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        Object.keys(grouped).sort().forEach(date => {
-            const dateGroup = document.createElement('div');
-            dateGroup.className = 'date-group';
-
-            const d = new Date(date);
-            const dateHeader = document.createElement('h3');
-            dateHeader.className = 'date-header';
-            dateHeader.textContent = (date === todayStr) ? 'Today' : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-            dateGroup.appendChild(dateHeader);
-
-            grouped[date].forEach(event => {
-                const card = document.createElement('div');
-                card.className = `event-card ${date === todayStr ? 'today-highlight' : ''}`;
-                card.dataset.id = event.id;
-
-                card.innerHTML = `
-                    <div class="event-time">${event.time}</div>
-                    <div class="event-details">
-                        <h3>${event.title}</h3>
-                        <p>${event.location || 'No location'}</p>
-                    </div>
-                `;
-                dateGroup.appendChild(card);
-            });
-
-            eventList.appendChild(dateGroup);
+            card.innerHTML = `
+                <div class="event-time">${event.time}</div>
+                <div class="event-details">
+                    <h3>${event.title}</h3>
+                    <p>${event.location || 'No location'}</p>
+                </div>
+            `;
+            eventList.appendChild(card);
         });
         updateStats();
     }
@@ -252,7 +309,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (data.status === 'success') {
-                window.location.replace('/');
+                // Instead of reloading, we can just fetch again and update UI
+                eventModal.classList.add('hidden');
+                eventForm.reset();
+                showNotification('Success', 'Event added!');
+                fetchEvents(); // Refresh data
             }
         } catch (error) {
             console.error('Error adding event:', error);
@@ -355,5 +416,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Init
     updateHeader();
-    // fetchEvents(); // Initial state is rendered by Django template
+    fetchEvents();
 });

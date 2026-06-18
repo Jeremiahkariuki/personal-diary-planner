@@ -169,3 +169,74 @@ def manage_events(request):
         'time': e.event_time.strftime('%H:%M'),
         'date': e.date.strftime('%Y-%m-%d')
     } for e in events]})
+
+@login_required
+def profile_view(request):
+    user = request.user
+    
+    # Ensure profile exists
+    from .models import Profile
+    profile, created = Profile.objects.get_or_create(user=user)
+    
+    # Aggregate stats
+    entry_count = DiaryEntry.objects.filter(user=user).count()
+    task_count = Task.objects.filter(user=user).count()
+    completed_tasks = Task.objects.filter(user=user, completed=True).count()
+    event_count = Event.objects.filter(user=user).count()
+    
+    # Mood statistics
+    mood_stats = []
+    for mood_val, mood_label in DiaryEntry.MOOD_CHOICES:
+        count = DiaryEntry.objects.filter(user=user, mood=mood_val).count()
+        # Split "😊 Happy" into "😊" and "Happy"
+        parts = mood_label.split(' ', 1)
+        mood_stats.append({
+            'emoji': parts[0] if len(parts) > 0 else '',
+            'name': parts[1] if len(parts) > 1 else mood_label,
+            'count': count
+        })
+    
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        avatar = request.FILES.get('avatar')
+        
+        if email:
+            user.email = email
+            user.save()
+            
+        if avatar:
+            profile.avatar = avatar
+            profile.save()
+            
+        if email or avatar:
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('profile')
+
+    context = {
+        'user': user,
+        'profile': profile,
+        'entry_count': entry_count,
+        'task_count': task_count,
+        'completed_tasks': completed_tasks,
+        'event_count': event_count,
+        'mood_stats': mood_stats,
+    }
+    return render(request, 'profile.html', context)
+def get_random_quote(request):
+    from .models import Quote
+    import random
+    
+    count = Quote.objects.count()
+    if count == 0:
+        return JsonResponse({'status': 'error', 'message': 'No quotes found'}, status=404)
+        
+    random_index = random.randint(0, count - 1)
+    quote = Quote.objects.all()[random_index]
+    
+    return JsonResponse({
+        'status': 'success',
+        'quote': {
+            'text': quote.text,
+            'author': quote.author or 'Unknown'
+        }
+    })

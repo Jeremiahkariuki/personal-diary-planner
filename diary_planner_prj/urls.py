@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from diary import views
 
 urlpatterns = [
@@ -30,4 +32,9 @@ urlpatterns = [
     path('tasks/delete/<int:task_id>/', views.delete_task, name='delete_task'),
     path('tasks/clear-pending/', views.clear_pending_tasks, name='clear_pending_tasks'),
     path('events/', views.manage_events, name='manage_events'),
+    path('profile/', views.profile_view, name='profile'),
+    path('quote/random/', views.get_random_quote, name='get_random_quote'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

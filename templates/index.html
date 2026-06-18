@@ -8,6 +8,13 @@
     <title>Jdiary | Personal Planner</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+        // Immediate theme application to prevent flicker
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
 
 <body>
@@ -25,30 +32,62 @@
                 <a href="#diarySection">Diary</a>
                 <a href="#eventsSection">Events</a>
             </div>
-            <div class="user-menu-container">
-                <button id="profileBtn" class="profile-btn" title="Account">
-                    <div class="avatar">
+            <div class="nav-actions">
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                         </svg>
-                    </div>
-                </button>
-                <div id="profileDropdown" class="glass-card dropdown-menu hidden">
-                    <div class="dropdown-header">
-                        <span class="user-name">{{ user.username }}</span>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <a href="{% url 'logout' %}" class="dropdown-item logout-link">
+                    </button>
+                    <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
-                        Logout
-                    </a>
+                    </button>
+                </div>
+                <div class="user-menu-container">
+                    <button id="profileBtn" class="profile-btn" title="Account">
+                        <div class="avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                    </button>
+                    <div id="profileDropdown" class="glass-card dropdown-menu hidden">
+                        <div class="dropdown-header">
+                            <span class="user-name">{{ user.username }}</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'profile' %}" class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Profile
+                        </a>
+                        <a href="{% url 'logout' %}" class="dropdown-item logout-link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Logout
+                        </a>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -56,7 +95,10 @@
         <main class="dashboard">
             <header class="dashboard-header">
                 <h1>Good Afternoon, {{ user.username }}</h1>
-                <p>Tuesday, June 16, 2026</p>
+                <p id="currentDateDisplay">Tuesday, June 16, 2026</p>
+                <div class="quote-container">
+                    <p id="dailyQuote" class="quote-text">"Believe you can and you're halfway there."</p>
+                </div>
             </header>
 
             <div class="stats-grid">
@@ -81,33 +123,14 @@
             <div class="content-grid">
                 <section id="eventsSection" class="events-section glass-card">
                     <h2>Upcoming Events</h2>
-                    <div class="event-list">
-                        {% regroup upcoming_events by date as events_by_date %}
-                        {% for group in events_by_date %}
-                        <div class="date-group">
-                            <h3 class="date-header">
-                                {% if group.grouper == today %}
-                                Today
-                                {% else %}
-                                {{ group.grouper|date:"F d, Y" }}
-                                {% endif %}
-                            </h3>
-                            {% for event in group.list %}
-                            <div class="event-card {% if group.grouper == today %}today-highlight{% endif %}"
-                                data-id="{{ event.id }}">
-                                <div class="event-time">
-                                    {{ event.event_time|time:"H:i" }}
-                                </div>
-                                <div class="event-details">
-                                    <h3>{{ event.title }}</h3>
-                                    <p>{{ event.location|default:"No location" }}</p>
-                                </div>
-                            </div>
-                            {% endfor %}
+                    <div id="dateStrip" class="date-strip">
+                        <!-- Dates will be generated by JS -->
+                    </div>
+                    <div class="event-list" id="eventList">
+                        <!-- Events will be filtered by selected date and rendered by JS -->
+                        <div class="loader-container">
+                            <div class="loader"></div>
                         </div>
-                        {% empty %}
-                        <p class="empty-msg">No upcoming events.</p>
-                        {% endfor %}
                     </div>
                     <button class="add-btn">+ Add Event</button>
                 </section>
@@ -261,19 +284,27 @@
         </div>
     </div>
 
+    <div id="django-messages" style="display: none;">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="django-message" data-tags="{{ message.tags|title|escapejs }}" data-content="{{ message|escapejs }}">
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}"></script>
     <script>
-        // Use a small delay to ensure app.js has initialized window.showNotification
         window.addEventListener('load', () => {
-            {% if messages %}
-            {% for message in messages %}
-            if (typeof window.showNotification === 'function') {
-                window.showNotification('{{ message.tags|title|escapejs }}', '{{ message|escapejs }}');
-            } else {
-                console.log('Django Message: {{ message|escapejs }}');
-            }
-            {% endfor %}
-            {% endif %}
+            const messages = document.querySelectorAll('.django-message');
+            messages.forEach(msg => {
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification(msg.dataset.tags, msg.dataset.content);
+                } else {
+                    console.log('Django Message:', msg.dataset.content);
+                }
+            });
         });
     </script>
 </body>

@@ -1,4 +1,5 @@
 :root {
+    /* Default Dark Theme */
     --bg-color: #0f172a;
     --glass-bg: rgba(255, 255, 255, 0.05);
     --glass-border: rgba(255, 255, 255, 0.1);
@@ -8,6 +9,17 @@
     --accent-primary: #818cf8;
     --accent-secondary: #c084fc;
     --font-main: 'Outfit', sans-serif;
+}
+
+[data-theme="light"] {
+    --bg-color: #f1f5f9;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.05);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-primary: #4f46e5;
+    --accent-secondary: #9333ea;
 }
 
 * {
@@ -128,6 +140,51 @@ body {
     font-weight: 600;
 }
 
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.theme-toggle {
+    display: flex;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.theme-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.theme-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.theme-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}
+
+.theme-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
 .user-menu-container {
     position: relative;
 }
@@ -236,18 +293,39 @@ body {
 
 .dashboard-header h1 {
     font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
 }
 
 .dashboard-header p {
     color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.quote-container {
+    padding: 0.8rem 1.2rem;
+    background: var(--glass-bg);
+    border-left: 3px solid var(--accent-primary);
+    border-radius: 4px 12px 12px 4px;
+    display: inline-block;
+    max-width: 600px;
+    animation: fadeIn 1s ease;
+}
+
+.quote-text {
+    font-style: italic;
+    color: var(--text-primary);
+    opacity: 0.9;
+    font-size: 1.05rem;
+    margin: 0 !important;
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-    margin-bottom: 3rem;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
 }
 
 .glass-card {
@@ -259,6 +337,8 @@ body {
     padding: 2rem;
     box-shadow: var(--glass-shadow);
     transition: transform 0.3s ease;
+    overflow: hidden;
+    /* Prevent internal content from expanding the card */
 }
 
 .glass-card:hover {
@@ -283,7 +363,7 @@ body {
 
 .content-grid {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 2rem;
 }
 
@@ -340,20 +420,137 @@ h2 {
     transition: opacity 0.2s;
 }
 
-.text-btn:hover {
-    opacity: 1;
+/* Events Section Enhancements */
+.date-strip {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 0.5rem 0.2rem 1.5rem 0.2rem;
+    margin-bottom: 1rem;
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
 }
 
-/* Events */
+.date-strip::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.date-card {
+    flex: 0 0 70px;
+    height: 85px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    user-select: none;
+}
+
+.date-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.date-card.active {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    box-shadow: 0 8px 20px rgba(129, 140, 248, 0.3);
+}
+
+.date-card .day-name {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.date-card.active .day-name {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.date-card .day-number {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.date-card.active .day-number {
+    color: white;
+}
+
+.date-card .has-event-dot {
+    position: absolute;
+    bottom: 8px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-secondary);
+    opacity: 0.8;
+}
+
+.date-card.active .has-event-dot {
+    background: white;
+}
+
+/* Loader */
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+}
+
+.loader {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top: 3px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Tasks */
 .event-list {
     margin-bottom: 2rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.event-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.event-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.event-list::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
 }
 
 .event-card {
     display: flex;
     align-items: center;
-    padding: 1rem;
+    padding: 0.8rem 1rem;
     border-bottom: 1px solid var(--glass-border);
+    transition: background 0.3s ease;
+}
+
+.event-card:hover {
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .event-time {
@@ -486,14 +683,44 @@ h2 {
     gap: 0.5rem;
 }
 
+.quick-task-inputs input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    padding: 0.8rem 1.2rem;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.quick-task-inputs input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 15px rgba(129, 140, 248, 0.1);
+}
+
 .task-time-inputs {
     display: flex;
     gap: 0.5rem;
 }
 
 .task-time-inputs input {
-    font-size: 0.8rem;
-    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+    flex: 1;
+}
+
+/* Custom Calendar/Clock Icons Color for Glass Theme */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.6);
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
 }
 
 .quick-task-form button {

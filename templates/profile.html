@@ -1,0 +1,307 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | Jdiary</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+        // Immediate theme application to prevent flicker
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .profile-avatar-container {
+            position: relative;
+        }
+
+        .profile-avatar-large {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            border: 4px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(129, 140, 248, 0.3);
+            overflow: hidden;
+            color: white;
+        }
+
+        .profile-avatar-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .edit-avatar-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 36px;
+            height: 36px;
+            background: var(--accent-primary);
+            border: 3px solid var(--bg-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .edit-avatar-btn:hover {
+            transform: scale(1.1);
+            background: var(--accent-secondary);
+        }
+
+        .edit-avatar-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        #avatarInput {
+            display: none;
+        }
+
+        .profile-info h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-info p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .mood-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .mood-stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .mood-stat-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-5px);
+        }
+
+        .mood-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .mood-count {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .mood-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .settings-section {
+            margin-top: 3rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 2rem;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <nav class="glass-nav" style="margin-bottom: 2rem;">
+            <div class="logo">Jdiary</div>
+            <div class="nav-actions">
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                        </svg>
+                    </button>
+                    <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <a href="{% url 'index' %}" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+        </a>
+
+        <div class="profile-container">
+            <header class="profile-header">
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar-large">
+                        {% if profile.avatar %}
+                        <img src="{{ profile.avatar.url }}" alt="Profile" id="avatarPreview">
+                        {% else %}
+                        {{ user.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="edit-avatar-btn" id="editAvatarBtn" title="Change Photo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <form id="avatarForm" method="POST" enctype="multipart/form-data" style="display: none;">
+                        {% csrf_token %}
+                        <input type="file" name="avatar" id="avatarInput" accept="image/*">
+                    </form>
+                </div>
+                <div class="profile-info">
+                    <h1>{{ user.username }}</h1>
+                    <p>Member since {{ user.date_joined|date:"F Y" }}</p>
+                </div>
+            </header>
+
+            <section class="stats-summary">
+                <div class="glass-card stat-item">
+                    <span class="label">Total Entries</span>
+                    <span class="value">{{ entry_count }}</span>
+                </div>
+                <div class="glass-card stat-item">
+                    <span class="label">Completed Tasks</span>
+                    <span class="value">{{ completed_tasks }}/{{ task_count }}</span>
+                </div>
+                <div class="glass-card stat-item">
+                    <span class="label">Events Saved</span>
+                    <span class="value">{{ event_count }}</span>
+                </div>
+            </section>
+
+            <section class="mood-exploration">
+                <h2>Mood Distribution</h2>
+                <div class="mood-stats-grid">
+                    {% for mood in mood_stats %}
+                    <div class="mood-stat-card">
+                        <span class="mood-icon">{{ mood.emoji }}</span>
+                        <div class="mood-count">{{ mood.count }}</div>
+                        <div class="mood-label">{{ mood.name }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="settings-section glass-card">
+                <h2>Profile Settings</h2>
+                {% if messages %}
+                {% for message in messages %}
+                <div class="notification-toast"
+                    style="position: relative; right: auto; bottom: auto; margin-bottom: 1rem; transform: none; animation: none;">
+                    <div class="notif-content">{{ message }}</div>
+                </div>
+                {% endfor %}
+                {% endif %}
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" value="{{ user.username }}" disabled
+                            style="opacity: 0.6; cursor: not-allowed;">
+                    </div>
+                    <div class="input-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" value="{{ user.email|default:'' }}"
+                            placeholder="e.g. jdiary@example.com">
+                    </div>
+                    <button type="submit" class="add-btn primary-btn">Update Profile</button>
+                </form>
+            </section>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        const editAvatarBtn = document.getElementById('editAvatarBtn');
+        const avatarInput = document.getElementById('avatarInput');
+        const avatarForm = document.getElementById('avatarForm');
+
+        if (editAvatarBtn && avatarInput) {
+            editAvatarBtn.addEventListener('click', () => {
+                avatarInput.click();
+            });
+
+            avatarInput.addEventListener('change', () => {
+                if (avatarInput.files.length > 0) {
+                    avatarForm.submit();
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

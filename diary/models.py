@@ -50,3 +50,17 @@ class Event(models.Model):
 
     def __str__(self):
         return f"{self.title} at {self.event_time}"
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    
+    def __str__(self):
+        return f"Profile for {self.user.username}"
+
+class Quote(models.Model):
+    text = models.TextField()
+    author = models.CharField(max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        return self.text[:50]
