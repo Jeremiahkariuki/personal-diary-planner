@@ -263,19 +263,15 @@
 
     <script src="{% static 'js/app.js' %}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Use a small delay to ensure app.js has initialized window.showNotification
+        window.addEventListener('load', () => {
             {% if messages %}
             {% for message in messages %}
-            // delay slightly to allow app.js initialization if needed
-            setTimeout(() => {
-                if (typeof showNotification === 'function') {
-                    showNotification('{{ message.tags|title }}', '{{ message }}');
-                } else {
-                    // Fallback if app.js functions aren't globally accessible (they are in the current app.js structure)
-                    // or if we need to expose them.
-                    console.log('{{ message }}');
-                }
-            }, 500);
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('{{ message.tags|title|escapejs }}', '{{ message|escapejs }}');
+            } else {
+                console.log('Django Message: {{ message|escapejs }}');
+            }
             {% endfor %}
             {% endif %}
         });

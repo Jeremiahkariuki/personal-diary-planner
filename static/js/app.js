@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (data.status === 'success') {
-                window.location.href = '/';
+                window.location.replace('/');
             }
         } catch (error) {
             console.error('Error adding event:', error);
