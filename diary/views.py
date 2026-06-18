@@ -3,6 +3,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.contrib import messages
 from .models import DiaryEntry, Task, Event
 from datetime import date
 
@@ -151,6 +152,7 @@ def manage_events(request):
                 event_time=event_time,
                 date=event_date
             )
+            messages.success(request, 'Event added successfully!')
             return JsonResponse({'status': 'success', 'event': {
                 'id': event.id,
                 'title': event.title,

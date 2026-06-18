@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headerDate.textContent = now.toLocaleDateString('en-US', options);
     }
 
-    function showNotification(title, message) {
+    window.showNotification = function (title, message) {
         const toast = document.createElement('div');
         toast.className = 'notification-toast';
         toast.innerHTML = `
@@ -252,10 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (data.status === 'success') {
-                showNotification('Success', 'Event added!');
-                fetchEvents();
-                eventForm.reset();
-                eventModal.classList.add('hidden');
+                window.location.href = '/';
             }
         } catch (error) {
             console.error('Error adding event:', error);

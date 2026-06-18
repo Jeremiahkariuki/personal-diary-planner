@@ -262,6 +262,24 @@
     </div>
 
     <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            {% if messages %}
+            {% for message in messages %}
+            // delay slightly to allow app.js initialization if needed
+            setTimeout(() => {
+                if (typeof showNotification === 'function') {
+                    showNotification('{{ message.tags|title }}', '{{ message }}');
+                } else {
+                    // Fallback if app.js functions aren't globally accessible (they are in the current app.js structure)
+                    // or if we need to expose them.
+                    console.log('{{ message }}');
+                }
+            }, 500);
+            {% endfor %}
+            {% endif %}
+        });
+    </script>
 </body>
 
 </html>
