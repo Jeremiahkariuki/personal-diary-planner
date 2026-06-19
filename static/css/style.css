@@ -609,6 +609,51 @@ h2 {
     border-radius: 4px 12px 12px 4px;
 }
 
+.event-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.event-card:hover .event-actions {
+    opacity: 1;
+}
+
+.edit-event-btn,
+.delete-event-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.edit-event-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: transparent;
+}
+
+.delete-event-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: transparent;
+}
+
+.edit-event-btn svg,
+.delete-event-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
 .task-list {
     margin-bottom: 1.5rem;
     max-height: 300px;

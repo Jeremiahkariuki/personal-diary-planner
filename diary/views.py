@@ -171,7 +171,44 @@ def manage_events(request):
     } for e in events]})
 
 @login_required
-def profile_view(request):
+def delete_event(request, event_id):
+    if request.method == 'POST':
+        try:
+            event = Event.objects.get(id=event_id, user=request.user)
+            event.delete()
+            return JsonResponse({'status': 'success'})
+        except Event.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Event not found'}, status=404)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+@login_required
+def update_event(request, event_id):
+    if request.method == 'POST':
+        try:
+            event = Event.objects.get(id=event_id, user=request.user)
+            title = request.POST.get('title')
+            location = request.POST.get('location')
+            event_time = request.POST.get('event_time')
+            event_date = request.POST.get('date')
+            
+            if title and event_time and event_date:
+                event.title = title
+                event.location = location
+                event.event_time = event_time
+                event.date = event_date
+                event.save()
+                
+                return JsonResponse({'status': 'success', 'event': {
+                    'id': event.id,
+                    'title': event.title,
+                    'location': event.location,
+                    'time': event_time,
+                    'date': event_date
+                }})
+            return JsonResponse({'status': 'error', 'message': 'Missing fields'}, status=400)
+        except Event.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Event not found'}, status=404)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
     user = request.user
     
     # Ensure profile exists

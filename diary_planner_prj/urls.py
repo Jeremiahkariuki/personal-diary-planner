@@ -32,6 +32,8 @@ urlpatterns = [
     path('tasks/delete/<int:task_id>/', views.delete_task, name='delete_task'),
     path('tasks/clear-pending/', views.clear_pending_tasks, name='clear_pending_tasks'),
     path('events/', views.manage_events, name='manage_events'),
+    path('events/update/<int:event_id>/', views.update_event, name='update_event'),
+    path('events/delete/<int:event_id>/', views.delete_event, name='delete_event'),
     path('profile/', views.profile_view, name='profile'),
     path('quote/random/', views.get_random_quote, name='get_random_quote'),
 ]

@@ -263,6 +263,8 @@
                 <button id="closeModal" class="close-btn">&times;</button>
             </header>
             <form id="eventForm">
+                {% csrf_token %}
+                <input type="hidden" id="eventId">
                 <div class="input-group">
                     <label for="eventTitle">Event Title</label>
                     <input type="text" id="eventTitle" placeholder="e.g. Yoga Session" required>

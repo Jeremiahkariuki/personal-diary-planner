@@ -288,18 +288,79 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3>${event.title}</h3>
                     <p>${event.location || 'No location'}</p>
                 </div>
+                <div class="event-actions">
+                    <button class="edit-event-btn" title="Edit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    <button class="delete-event-btn" title="Delete">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                </div>
             `;
             eventList.appendChild(card);
         });
         updateStats();
     }
 
+    // --- Events Logic Helpers ---
+    function openEditModal(eventId) {
+        const event = allUpcomingEvents.find(e => e.id == eventId);
+        if (!event) return;
+
+        // Populate form
+        document.getElementById('eventId').value = event.id;
+        document.getElementById('eventTitle').value = event.title;
+        document.getElementById('eventTime').value = event.time;
+        document.getElementById('eventDate').value = event.date;
+        document.getElementById('eventLocation').value = event.location || '';
+
+        // Change modal UI
+        const modalHeader = eventModal.querySelector('.modal-header h2');
+        const submitBtn = eventForm.querySelector('button[type="submit"]');
+        if (modalHeader) modalHeader.textContent = 'Edit Event';
+        if (submitBtn) submitBtn.textContent = 'Update Event';
+
+        eventModal.classList.remove('hidden');
+    }
+
+    async function deleteEvent(eventId) {
+        if (!confirm('Are you sure you want to delete this event?')) return;
+
+        try {
+            const response = await fetch(`/events/delete/${eventId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                allUpcomingEvents = allUpcomingEvents.filter(e => e.id != eventId);
+                showNotification('Success', 'Event deleted');
+                renderDateStrip();
+                filterEvents(selectedDate);
+            }
+        } catch (error) {
+            console.error('Error deleting event:', error);
+            showNotification('Error', 'Failed to delete event');
+        }
+    }
+
+    eventList.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-event-btn');
+        const deleteBtn = e.target.closest('.delete-event-btn');
+        const card = e.target.closest('.event-card');
+
+        if (card) {
+            const eventId = card.dataset.id;
+            if (editBtn) openEditModal(eventId);
+            if (deleteBtn) deleteEvent(eventId);
+        }
+    });
+
     let isSubmitting = false;
 
     eventForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // 1. Double-click protection (Global & Button level)
         if (isSubmitting) return;
         const saveBtn = eventForm.querySelector('button[type="submit"]');
 
@@ -309,10 +370,13 @@ document.addEventListener('DOMContentLoaded', () => {
             saveBtn.classList.add('btn-loading');
         }
 
+        const eventId = document.getElementById('eventId').value;
         const title = document.getElementById('eventTitle').value;
         const time = document.getElementById('eventTime').value;
         const date = document.getElementById('eventDate').value;
         const location = document.getElementById('eventLocation').value;
+
+        const url = eventId ? `/events/update/${eventId}/` : '/events/';
 
         try {
             const formData = new URLSearchParams({
@@ -322,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'location': location
             });
 
-            const response = await fetch('/events/', {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -336,18 +400,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.status === 'success') {
-                // 2. IMMEDIATE FEEDBACK: Close modal and reset form FIRST
                 eventModal.classList.add('hidden');
                 eventForm.reset();
-                showNotification('Success', 'Event added!');
+                showNotification('Success', eventId ? 'Event updated!' : 'Event added!');
 
-                // 3. Update local data
+                // Update local data
                 if (data.event) {
-                    allUpcomingEvents.push(data.event);
+                    if (eventId) {
+                        const index = allUpcomingEvents.findIndex(e => e.id == eventId);
+                        if (index !== -1) allUpcomingEvents[index] = data.event;
+                    } else {
+                        allUpcomingEvents.push(data.event);
+                    }
                     allUpcomingEvents.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
                 }
 
-                // 4. Update UI (with a tiny delay to ensure modal is hidden first)
                 selectedDate = date;
                 setTimeout(() => {
                     renderDateStrip();
@@ -357,10 +424,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification('Error', 'Failed to save event.');
             }
         } catch (error) {
-            console.error('Error adding event:', error);
+            console.error('Error saving event:', error);
             showNotification('Error', 'Something went wrong. Please try again.');
         } finally {
-            // 5. Release locks
             isSubmitting = false;
             if (saveBtn) {
                 saveBtn.disabled = false;
@@ -444,7 +510,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Modal Helpers
-    openModalBtn.addEventListener('click', () => eventModal.classList.remove('hidden'));
+    openModalBtn.addEventListener('click', () => {
+        document.getElementById('eventId').value = '';
+        eventForm.reset();
+        const modalHeader = eventModal.querySelector('.modal-header h2');
+        const submitBtn = eventForm.querySelector('button[type="submit"]');
+        if (modalHeader) modalHeader.textContent = 'Add New Event';
+        if (submitBtn) submitBtn.textContent = 'Save Event';
+        eventModal.classList.remove('hidden');
+    });
     closeModalBtn.addEventListener('click', () => eventModal.classList.add('hidden'));
     eventModal.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.add('hidden'); });
 
