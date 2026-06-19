@@ -573,17 +573,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Helpers ---
     function updateStats() {
-        const pendingTasks = pendingTaskList.querySelectorAll('.task-item').length;
+        const pendingTasksCount = pendingTaskList.querySelectorAll('.task-item').length;
         const completedTasksCount = completedTaskList.querySelectorAll('.task-item').length;
-        const upcomingEvents = eventList.querySelectorAll('.event-card').length;
+        const upcomingEventsCount = eventList.querySelectorAll('.event-card').length;
 
         const taskStat = document.getElementById('taskCountStat');
         const taskCompletedStat = document.getElementById('taskCountCompletedStat');
         const eventStat = document.getElementById('eventCountStat');
 
-        if (taskStat) taskStat.textContent = pendingTasks;
+        if (taskStat) taskStat.textContent = pendingTasksCount;
         if (taskCompletedStat) taskCompletedStat.textContent = completedTasksCount;
-        if (eventStat) eventStat.textContent = upcomingEvents;
+        if (eventStat) eventStat.textContent = upcomingEventsCount;
+
+        handleEmptyTasks(pendingTasksCount, completedTasksCount);
+    }
+
+    function handleEmptyTasks(pendingCount, completedCount) {
+        if (pendingCount === 0) {
+            pendingTaskList.innerHTML = `
+                <div class="empty-state">
+                    <p>No pending tasks. Relax or add a new one above!</p>
+                </div>
+            `;
+        }
+        if (completedCount === 0) {
+            completedTaskList.innerHTML = `
+                <div class="empty-state">
+                    <p>No completed tasks yet.</p>
+                </div>
+            `;
+        }
     }
 
     // Modal Helpers
