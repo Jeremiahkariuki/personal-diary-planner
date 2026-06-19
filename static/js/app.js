@@ -227,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Events Logic ---
     let allUpcomingEvents = [];
     let selectedDate = new Date().toISOString().split('T')[0];
+    let currentViewDate = new Date(); // Tracks which month is currently visible in the grid
 
     async function fetchEvents() {
         try {
@@ -234,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (data.status === 'success') {
                 allUpcomingEvents = data.events;
-                renderDateStrip();
+                renderCalendarGrid();
                 filterEvents(selectedDate);
             }
         } catch (error) {
@@ -242,53 +243,100 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderDateStrip() {
-        const dateStrip = document.getElementById('dateStrip');
-        if (!dateStrip) return;
-        dateStrip.innerHTML = '';
+    function renderCalendarGrid() {
+        const grid = document.getElementById('calendarGrid');
+        const monthYearLabel = document.getElementById('calendarMonthYear');
+        if (!grid || !monthYearLabel) return;
 
+        grid.innerHTML = '';
+        const year = currentViewDate.getFullYear();
+        const month = currentViewDate.getMonth();
+
+        // Update Label
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        monthYearLabel.textContent = `${monthNames[month]} ${year}`;
+
+        // Get days logic
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+        // Today's date for highlighting
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        const pastDays = 3;
-        const futureDays = 10;
 
-        for (let i = -pastDays; i <= futureDays; i++) {
-            const d = new Date(today);
-            d.setDate(today.getDate() + i);
-            const dateStr = d.toISOString().split('T')[0];
+        // 1. Previous Month Padding Days
+        for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+            const dayNum = daysInPrevMonth - i;
+            const card = createDayCard(year, month - 1, dayNum, true);
+            grid.appendChild(card);
+        }
 
-            const isPast = dateStr < todayStr;
-            const card = document.createElement('div');
-            card.className = `date-card ${dateStr === selectedDate ? 'active' : ''} ${isPast ? 'past' : ''}`;
-            card.dataset.date = dateStr;
+        // 2. Current Month Days
+        for (let i = 1; i <= daysInMonth; i++) {
+            const card = createDayCard(year, month, i, false);
+            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
 
-            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-            const dayNum = d.getDate();
+            if (dateStr === todayStr) card.classList.add('day-today');
+            if (dateStr === selectedDate) card.classList.add('day-selected');
 
-            // Check if this date has events
-            const hasEvents = allUpcomingEvents.some(e => e.date === dateStr);
+            grid.appendChild(card);
+        }
 
-            card.innerHTML = `
-                <span class="day-name">${dayName}</span>
-                <span class="day-number">${dayNum}</span>
-                ${hasEvents ? '<div class="has-event-dot"></div>' : ''}
-            `;
-
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.date-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                selectedDate = dateStr;
-                filterEvents(dateStr);
-            });
-
-            dateStrip.appendChild(card);
-
-            // Auto-scroll today's card into view
-            if (dateStr === selectedDate) {
-                setTimeout(() => card.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 100);
-            }
+        // 3. Next Month Padding Days
+        const totalSlots = 42; // 6 rows of 7 days
+        const remainingSlots = totalSlots - grid.children.length;
+        for (let i = 1; i <= remainingSlots; i++) {
+            const card = createDayCard(year, month + 1, i, true);
+            grid.appendChild(card);
         }
     }
+
+    function createDayCard(year, month, day, isOutside) {
+        // Correct date handling for cross-month navigation
+        const d = new Date(year, month, day);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const dayFormatted = d.getDate();
+        const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(dayFormatted).padStart(2, "0")}`;
+
+        const card = document.createElement('div');
+        card.className = `calendar-day ${isOutside ? 'day-outside' : ''}`;
+        card.innerHTML = `<span class="day-number">${day}</span>`;
+
+        // Check for events
+        const hasEvents = allUpcomingEvents.some(e => e.date === dateStr);
+        if (hasEvents) {
+            const dot = document.createElement('div');
+            dot.className = 'event-dot';
+            card.appendChild(dot);
+        }
+
+        card.addEventListener('click', () => {
+            selectedDate = dateStr;
+            if (isOutside) {
+                currentViewDate = new Date(year, month, 1);
+                renderCalendarGrid();
+            } else {
+                document.querySelectorAll('.calendar-day').forEach(cd => cd.classList.remove('day-selected'));
+                card.classList.add('day-selected');
+            }
+            filterEvents(selectedDate);
+        });
+
+        return card;
+    }
+
+    // Navigation Listeners
+    document.getElementById('prevMonthBtn')?.addEventListener('click', () => {
+        currentViewDate.setMonth(currentViewDate.getMonth() - 1);
+        renderCalendarGrid();
+    });
+
+    document.getElementById('nextMonthBtn')?.addEventListener('click', () => {
+        currentViewDate.setMonth(currentViewDate.getMonth() + 1);
+        renderCalendarGrid();
+    });
 
     function filterEvents(dateStr) {
         const eventList = document.getElementById('eventList');
@@ -364,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.status === 'success') {
                 allUpcomingEvents = allUpcomingEvents.filter(e => e.id != eventId);
                 showNotification('Success', 'Event deleted');
-                renderDateStrip();
+                renderCalendarGrid();
                 filterEvents(selectedDate);
             }
         } catch (error) {
@@ -446,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 selectedDate = date;
                 setTimeout(() => {
-                    renderDateStrip();
+                    renderCalendarGrid();
                     filterEvents(selectedDate);
                 }, 50);
             } else {
