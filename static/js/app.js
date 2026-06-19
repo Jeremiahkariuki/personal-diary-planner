@@ -589,19 +589,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleEmptyTasks(pendingCount, completedCount) {
+        // Handle Pending
+        const existingPendingEmpty = pendingTaskList.querySelector('.empty-state');
         if (pendingCount === 0) {
-            pendingTaskList.innerHTML = `
-                <div class="empty-state">
-                    <p>No pending tasks. Relax or add a new one above!</p>
-                </div>
-            `;
+            if (!existingPendingEmpty) {
+                pendingTaskList.innerHTML = `
+                    <div class="empty-state">
+                        <p>No pending tasks. Relax or add a new one above!</p>
+                    </div>
+                `;
+            }
+        } else if (existingPendingEmpty) {
+            existingPendingEmpty.remove();
         }
+
+        // Handle Completed
+        const existingCompletedEmpty = completedTaskList.querySelector('.empty-state');
         if (completedCount === 0) {
-            completedTaskList.innerHTML = `
-                <div class="empty-state">
-                    <p>No completed tasks yet.</p>
-                </div>
-            `;
+            if (!existingCompletedEmpty) {
+                completedTaskList.innerHTML = `
+                    <div class="empty-state">
+                        <p>No completed tasks yet.</p>
+                    </div>
+                `;
+            }
+        } else if (existingCompletedEmpty) {
+            existingCompletedEmpty.remove();
         }
     }
 
