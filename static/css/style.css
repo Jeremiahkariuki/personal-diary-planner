@@ -146,13 +146,18 @@ body {
     gap: 1rem;
 }
 
-.theme-toggle {
+.theme-toggle,
+.sound-toggle {
     display: flex;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 4px;
     gap: 4px;
+}
+
+.theme-btn svg.hidden {
+    display: none;
 }
 
 .theme-btn {

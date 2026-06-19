@@ -48,7 +48,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.showNotification = function (title, message) {
+    // Sound Toggle Logic
+    let isMuted = localStorage.getItem('isMuted') === 'true';
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundOnIcon = document.querySelector('.sound-on-icon');
+    const soundOffIcon = document.querySelector('.sound-off-icon');
+
+    function updateSoundUI() {
+        if (isMuted) {
+            soundOnIcon.classList.add('hidden');
+            soundOffIcon.classList.remove('hidden');
+        } else {
+            soundOnIcon.classList.remove('hidden');
+            soundOffIcon.classList.add('hidden');
+        }
+    }
+
+    if (soundToggleBtn) {
+        updateSoundUI();
+        soundToggleBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            localStorage.setItem('isMuted', isMuted);
+            updateSoundUI();
+            // Show notification without playing the sound itself during toggle
+            showNotification('Sound', isMuted ? 'Muted' : 'Unmuted', false);
+        });
+    }
+
+    window.showNotification = function (title, message, playAudio = true) {
         const toast = document.createElement('div');
         toast.className = 'notification-toast';
         toast.innerHTML = `
@@ -60,9 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.body.appendChild(toast);
 
-        // play a standard sound (optional/placeholder)
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        audio.play().catch(() => console.log('Audio playback prevented'));
+        // Play sound only if not muted AND audio is requested
+        if (!isMuted && playAudio) {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(() => console.log('Audio playback prevented'));
+        }
 
         setTimeout(() => {
             toast.style.animation = 'slideIn 0.5s ease reverse forwards';

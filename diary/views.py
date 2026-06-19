@@ -209,6 +209,9 @@ def update_event(request, event_id):
         except Event.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Event not found'}, status=404)
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+@login_required
+def profile_view(request):
     user = request.user
     
     # Ensure profile exists
