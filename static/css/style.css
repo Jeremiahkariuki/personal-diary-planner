@@ -502,6 +502,14 @@ h2 {
     background: white;
 }
 
+.date-card.past {
+    opacity: 0.55;
+}
+
+.date-card.past:hover {
+    opacity: 0.85;
+}
+
 /* Loader */
 .loader-container {
     display: flex;

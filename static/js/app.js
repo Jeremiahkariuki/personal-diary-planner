@@ -219,15 +219,18 @@ document.addEventListener('DOMContentLoaded', () => {
         dateStrip.innerHTML = '';
 
         const today = new Date();
-        const daysToShow = 14;
+        const todayStr = today.toISOString().split('T')[0];
+        const pastDays = 3;
+        const futureDays = 10;
 
-        for (let i = 0; i < daysToShow; i++) {
+        for (let i = -pastDays; i <= futureDays; i++) {
             const d = new Date(today);
             d.setDate(today.getDate() + i);
             const dateStr = d.toISOString().split('T')[0];
 
+            const isPast = dateStr < todayStr;
             const card = document.createElement('div');
-            card.className = `date-card ${dateStr === selectedDate ? 'active' : ''}`;
+            card.className = `date-card ${dateStr === selectedDate ? 'active' : ''} ${isPast ? 'past' : ''}`;
             card.dataset.date = dateStr;
 
             const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
@@ -250,6 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             dateStrip.appendChild(card);
+
+            // Auto-scroll today's card into view
+            if (dateStr === selectedDate) {
+                setTimeout(() => card.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 100);
+            }
         }
     }
 
@@ -286,37 +294,78 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStats();
     }
 
+    let isSubmitting = false;
+
     eventForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // 1. Double-click protection (Global & Button level)
+        if (isSubmitting) return;
+        const saveBtn = eventForm.querySelector('button[type="submit"]');
+
+        isSubmitting = true;
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.classList.add('btn-loading');
+        }
+
         const title = document.getElementById('eventTitle').value;
         const time = document.getElementById('eventTime').value;
         const date = document.getElementById('eventDate').value;
         const location = document.getElementById('eventLocation').value;
 
         try {
+            const formData = new URLSearchParams({
+                'title': title,
+                'event_time': time,
+                'date': date,
+                'location': location
+            });
+
             const response = await fetch('/events/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRFToken': csrfToken
                 },
-                body: new URLSearchParams({
-                    'title': title,
-                    'event_time': time,
-                    'date': date,
-                    'location': location
-                })
+                body: formData
             });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
             const data = await response.json();
+
             if (data.status === 'success') {
-                // Instead of reloading, we can just fetch again and update UI
+                // 2. IMMEDIATE FEEDBACK: Close modal and reset form FIRST
                 eventModal.classList.add('hidden');
                 eventForm.reset();
                 showNotification('Success', 'Event added!');
-                fetchEvents(); // Refresh data
+
+                // 3. Update local data
+                if (data.event) {
+                    allUpcomingEvents.push(data.event);
+                    allUpcomingEvents.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+                }
+
+                // 4. Update UI (with a tiny delay to ensure modal is hidden first)
+                selectedDate = date;
+                setTimeout(() => {
+                    renderDateStrip();
+                    filterEvents(selectedDate);
+                }, 50);
+            } else {
+                showNotification('Error', 'Failed to save event.');
             }
         } catch (error) {
             console.error('Error adding event:', error);
+            showNotification('Error', 'Something went wrong. Please try again.');
+        } finally {
+            // 5. Release locks
+            isSubmitting = false;
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('btn-loading');
+            }
         }
     });
 

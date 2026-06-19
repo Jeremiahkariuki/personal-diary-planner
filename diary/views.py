@@ -157,8 +157,8 @@ def manage_events(request):
                 'id': event.id,
                 'title': event.title,
                 'location': event.location,
-                'time': event.event_time.strftime('%H:%M'),
-                'date': event.date.strftime('%Y-%m-%d')
+                'time': event_time,
+                'date': event_date
             }})
     
     events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')
