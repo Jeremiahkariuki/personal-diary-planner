@@ -248,17 +248,75 @@
                 </section>
 
                 <section id="diarySection" class="diary-section glass-card">
-                    <h2>Recent Diary</h2>
-                    <div class="diary-preview" id="diaryPreview">
+                    <div class="section-header">
+                        <h2>Recent Diary</h2>
+                        <button id="viewHistoryBtn" class="text-btn">View History</button>
+                    </div>
+
+                    <div class="diary-card" id="diaryPreview">
                         {% if latest_entry %}
-                        <p class="preview-text">"{{ latest_entry.content|truncatechars:100 }}"</p>
-                        <span class="date">{{ latest_entry.created_at|date:"F d, Y" }}</span>
+                        <div class="diary-mood-badge mood-{{ latest_entry.mood }}">
+                            <span class="mood-icon">
+                                {% if latest_entry.mood == 'happy' %}😊
+                                {% elif latest_entry.mood == 'neutral' %}😐
+                                {% elif latest_entry.mood == 'sad' %}😔
+                                {% elif latest_entry.mood == 'excited' %}🤩
+                                {% elif latest_entry.mood == 'stressed' %}😫
+                                {% endif %}
+                            </span>
+                            <span class="mood-text">{{ latest_entry.mood|title }}</span>
+                        </div>
+                        <div class="diary-content-preview">
+                            <p class="preview-text">"{{ latest_entry.content|truncatechars:180 }}"</p>
+                        </div>
+                        <div class="diary-footer">
+                            <span class="date">{{ latest_entry.created_at|date:"F d, Y" }}</span>
+                            <div class="diary-card-actions">
+                                <button class="icon-btn edit-diary-btn" title="Edit Entry"
+                                    data-id="{{ latest_entry.id }}">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+                                        stroke-width="2" fill="none">
+                                        <path d="M12 20h9"></path>
+                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn delete-diary-btn" title="Delete Entry"
+                                    data-id="{{ latest_entry.id }}">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+                                        stroke-width="2" fill="none">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path
+                                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <button id="readMoreBtn" class="read-more-link" data-id="{{ latest_entry.id }}">Read Full
+                                Entry →</button>
+                        </div>
+                        <!-- Hidden full content for modal -->
+                        <div id="fullDiaryId" style="display:none;">{{ latest_entry.id }}</div>
+                        <div id="fullDiaryContent" style="display:none;">{{ latest_entry.content }}</div>
+                        <div id="fullDiaryMood" style="display:none;">{{ latest_entry.mood }}</div>
+                        <div id="fullDiaryDate" style="display:none;">{{ latest_entry.created_at|date:"F d, Y" }}</div>
                         {% else %}
-                        <p class="preview-text">"No entries yet. Start writing your journey today..."</p>
-                        <span class="date">New Beginning</span>
+                        <div class="empty-diary">
+                            <p class="preview-text">"No entries yet. Start writing your journey today..."</p>
+                            <span class="date">New Beginning</span>
+                        </div>
                         {% endif %}
                     </div>
-                    <button id="openDiaryModal" class="add-btn primary-btn">Write Today's Entry</button>
+
+                    <div class="diary-actions">
+                        <button id="openDiaryModal" class="add-btn primary-btn">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                            Write Today's Entry
+                        </button>
+                    </div>
                 </section>
             </div>
         </main>
@@ -271,34 +329,24 @@
                 <h2>Write Today's Entry</h2>
                 <button id="closeDiaryModal" class="close-btn">&times;</button>
             </header>
-            <form id="diaryForm">
-                {% csrf_token %}
-                <div class="input-group">
-                    <label>How are you feeling?</label>
-                    <div class="mood-selector">
-                        <input type="radio" name="mood" value="happy" id="moodHappy" checked>
-                        <label for="moodHappy" title="Happy">😊</label>
 
-                        <input type="radio" name="mood" value="neutral" id="moodNeutral">
-                        <label for="moodNeutral" title="Neutral">😐</label>
+            <input type="radio" name="mood" value="sad" id="moodSad">
+            <label for="moodSad" title="Sad">😔</label>
 
-                        <input type="radio" name="mood" value="sad" id="moodSad">
-                        <label for="moodSad" title="Sad">😔</label>
+            <input type="radio" name="mood" value="excited" id="moodExcited">
+            <label for="moodExcited" title="Excited">🤩</label>
 
-                        <input type="radio" name="mood" value="excited" id="moodExcited">
-                        <label for="moodExcited" title="Excited">🤩</label>
-
-                        <input type="radio" name="mood" value="stressed" id="moodStressed">
-                        <label for="moodStressed" title="Stressed">😫</label>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label for="diaryContent">How was your day?</label>
-                    <textarea id="diaryContent" rows="8" placeholder="Start writing here..." required></textarea>
-                </div>
-                <button type="submit" id="saveDiaryBtn" class="add-btn primary-btn">Save Entry</button>
-            </form>
+            <input type="radio" name="mood" value="stressed" id="moodStressed">
+            <label for="moodStressed" title="Stressed">😫</label>
         </div>
+    </div>
+    <div class="input-group">
+        <label for="diaryContent">How was your day?</label>
+        <textarea id="diaryContent" rows="8" placeholder="Start writing here..." required></textarea>
+    </div>
+    <button type="submit" id="saveDiaryBtn" class="add-btn primary-btn">Save Entry</button>
+    </form>
+    </div>
     </div>
 
     <!-- Event Modal -->
@@ -342,6 +390,28 @@
     </div>
 
     <script src="{% static 'js/theme.js' %}"></script>
+    <!-- Diary Detail Modal -->
+    <div id="diaryDetailModal" class="modal hidden">
+        <div class="modal-content glass-card diary-modal-large">
+            <div class="modal-header">
+                <div class="mood-header">
+                    <span id="detailMoodIcon" class="large-mood-icon">😐</span>
+                    <div>
+                        <h2 id="detailMoodText">Neutral</h2>
+                        <p id="detailDate" class="modal-subtitle">June 19, 2026</p>
+                    </div>
+                </div>
+                <button type="button" id="closeDetailModal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body diary-full-content">
+                <p id="detailContentText">Entry content goes here...</p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 1rem;">
+                <button type="button" class="add-btn secondary-btn" id="editEntryBtn">Edit Entry</button>
+                <button type="button" class="add-btn danger-btn" id="deleteEntryBtn">Delete Entry</button>
+            </div>
+        </div>
+    </div>
     <script src="{% static 'js/app.js' %}?v=3"></script>
     <script>
         window.addEventListener('load', () => {

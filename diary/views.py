@@ -44,6 +44,7 @@ def save_diary_entry(request):
                 'status': 'success',
                 'message': 'Entry saved successfully',
                 'entry': {
+                    'id': entry.id,
                     'content': entry.content,
                     'mood': entry.mood,
                     'created_at': entry.created_at.strftime('%B %d, %Y %H:%M')
@@ -51,6 +52,55 @@ def save_diary_entry(request):
             })
         return JsonResponse({'status': 'error', 'message': 'Content is required'}, status=400)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+@login_required
+def update_diary_entry(request, entry_id):
+    if request.method == 'POST':
+        try:
+            entry = DiaryEntry.objects.get(id=entry_id, user=request.user)
+            content = request.POST.get('content')
+            mood = request.POST.get('mood')
+            
+            if content:
+                entry.content = content
+                if mood:
+                    entry.mood = mood
+                entry.save()
+                return JsonResponse({
+                    'status': 'success',
+                    'entry': {
+                        'id': entry.id,
+                        'content': entry.content,
+                        'mood': entry.mood,
+                        'created_at': entry.created_at.strftime('%B %d, %Y %H:%M')
+                    }
+                })
+            return JsonResponse({'status': 'error', 'message': 'Content is required'}, status=400)
+        except DiaryEntry.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Entry not found'}, status=404)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+@login_required
+def delete_diary_entry(request, entry_id):
+    if request.method == 'POST':
+        try:
+            entry = DiaryEntry.objects.get(id=entry_id, user=request.user)
+            entry.delete()
+            
+            # Fetch the next latest entry to effortlessly update the dashboard preview seamlessly
+            latest = DiaryEntry.objects.filter(user=request.user).order_by('-created_at').first()
+            return JsonResponse({
+                'status': 'success',
+                'latest_entry': {
+                    'id': latest.id,
+                    'content': latest.content,
+                    'mood': latest.mood,
+                    'created_at': latest.created_at.strftime('%B %d, %Y %H:%M')
+                } if latest else None
+            })
+        except DiaryEntry.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Entry not found'}, status=404)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
 
 def login_view(request):
     if request.method == 'POST':
