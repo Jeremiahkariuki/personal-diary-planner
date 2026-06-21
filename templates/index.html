@@ -208,8 +208,10 @@
                                         <span class="task-title">{{ task.title }}</span>
                                         {% if task.due_date %}
                                         <span class="task-due-date">
-                                            📅 {{ task.due_date|date:"M d" }} {% if task.due_time %}{{
-                                            task.due_time|time:"H:i" }}{% endif %}
+                                            📅 {{ task.due_date|date:"M d" }}
+                                            {% if task.due_time %}
+                                            {{ task.due_time|time:"H:i" }}
+                                            {% endif %}
                                         </span>
                                         {% endif %}
                                     </div>
@@ -233,8 +235,10 @@
                                         <span class="task-title">{{ task.title }}</span>
                                         {% if task.due_date %}
                                         <span class="task-due-date">
-                                            📅 {{ task.due_date|date:"M d" }} {% if task.due_time %}{{
-                                            task.due_time|time:"H:i" }}{% endif %}
+                                            📅 {{ task.due_date|date:"M d" }}
+                                            {% if task.due_time %}
+                                            {{ task.due_time|time:"H:i" }}
+                                            {% endif %}
                                         </span>
                                         {% endif %}
                                     </div>
@@ -291,8 +295,6 @@
                                     </svg>
                                 </button>
                             </div>
-                            <button id="readMoreBtn" class="read-more-link" data-id="{{ latest_entry.id }}">Read Full
-                                Entry →</button>
                         </div>
                         <!-- Hidden full content for modal -->
                         <div id="fullDiaryId" style="display:none;">{{ latest_entry.id }}</div>
