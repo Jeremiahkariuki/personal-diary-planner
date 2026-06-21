@@ -329,24 +329,32 @@
                 <h2>Write Today's Entry</h2>
                 <button id="closeDiaryModal" class="close-btn">&times;</button>
             </header>
+            <form id="diaryForm">
+                {% csrf_token %}
+                <input type="hidden" id="diaryEntryId">
+                <div class="mood-selector">
+                    <input type="radio" name="mood" value="happy" id="moodHappy" checked>
+                    <label for="moodHappy" title="Happy">😊</label>
 
-            <input type="radio" name="mood" value="sad" id="moodSad">
-            <label for="moodSad" title="Sad">😔</label>
+                    <input type="radio" name="mood" value="neutral" id="moodNeutral">
+                    <label for="moodNeutral" title="Neutral">😐</label>
 
-            <input type="radio" name="mood" value="excited" id="moodExcited">
-            <label for="moodExcited" title="Excited">🤩</label>
+                    <input type="radio" name="mood" value="sad" id="moodSad">
+                    <label for="moodSad" title="Sad">😔</label>
 
-            <input type="radio" name="mood" value="stressed" id="moodStressed">
-            <label for="moodStressed" title="Stressed">😫</label>
+                    <input type="radio" name="mood" value="excited" id="moodExcited">
+                    <label for="moodExcited" title="Excited">🤩</label>
+
+                    <input type="radio" name="mood" value="stressed" id="moodStressed">
+                    <label for="moodStressed" title="Stressed">😫</label>
+                </div>
+                <div class="input-group">
+                    <label for="diaryContent">How was your day?</label>
+                    <textarea id="diaryContent" rows="8" placeholder="Start writing here..." required></textarea>
+                </div>
+                <button type="submit" id="saveDiaryBtn" class="add-btn primary-btn">Save Entry</button>
+            </form>
         </div>
-    </div>
-    <div class="input-group">
-        <label for="diaryContent">How was your day?</label>
-        <textarea id="diaryContent" rows="8" placeholder="Start writing here..." required></textarea>
-    </div>
-    <button type="submit" id="saveDiaryBtn" class="add-btn primary-btn">Save Entry</button>
-    </form>
-    </div>
     </div>
 
     <!-- Event Modal -->
