@@ -398,28 +398,6 @@
     </div>
 
     <script src="{% static 'js/theme.js' %}"></script>
-    <!-- Diary Detail Modal -->
-    <div id="diaryDetailModal" class="modal hidden">
-        <div class="modal-content glass-card diary-modal-large">
-            <div class="modal-header">
-                <div class="mood-header">
-                    <span id="detailMoodIcon" class="large-mood-icon">😐</span>
-                    <div>
-                        <h2 id="detailMoodText">Neutral</h2>
-                        <p id="detailDate" class="modal-subtitle">June 19, 2026</p>
-                    </div>
-                </div>
-                <button type="button" id="closeDetailModal" class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body diary-full-content">
-                <p id="detailContentText">Entry content goes here...</p>
-            </div>
-            <div class="modal-footer" style="display: flex; gap: 1rem;">
-                <button type="button" class="add-btn secondary-btn" id="editEntryBtn">Edit Entry</button>
-                <button type="button" class="add-btn danger-btn" id="deleteEntryBtn">Delete Entry</button>
-            </div>
-        </div>
-    </div>
     <script src="{% static 'js/app.js' %}?v=3"></script>
     <script>
         window.addEventListener('load', () => {

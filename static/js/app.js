@@ -13,8 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const quickTaskForm = document.getElementById('quickTaskForm');
     const openModalBtn = document.querySelector('.events-section .add-btn');
     const closeModalBtn = document.getElementById('closeModal');
-    const diaryDetailModal = document.getElementById('diaryDetailModal');
-    const closeDetailModalBtn = document.getElementById('closeDetailModal');
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     // Functions
@@ -164,20 +162,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const taskId = taskItem.dataset.id;
 
             if (e.target.classList.contains('task-checkbox')) {
+                const isCompleted = e.target.checked;
+                const originalList = taskItem.parentElement;
+
+                // Optimistic UI Update
+                taskItem.classList.toggle('completed', isCompleted);
+                const targetList = isCompleted ? completedTaskList : pendingTaskList;
+                targetList.appendChild(taskItem);
+                updateStats();
+
                 try {
                     const response = await fetch(`/tasks/toggle/${taskId}/`, {
                         method: 'POST',
                         headers: { 'X-CSRFToken': csrfToken }
                     });
                     const data = await response.json();
-                    if (data.status === 'success') {
-                        taskItem.classList.toggle('completed', data.completed);
-                        const targetList = data.completed ? completedTaskList : pendingTaskList;
-                        targetList.appendChild(taskItem); // Move element
-                        updateStats();
+                    if (data.status !== 'success') {
+                        throw new Error('Server update failed');
                     }
                 } catch (error) {
                     console.error('Error toggling task:', error);
+                    // Revert Optimistic Update
+                    taskItem.classList.toggle('completed', !isCompleted);
+                    e.target.checked = !isCompleted;
+                    originalList.appendChild(taskItem);
+                    updateStats();
+                    showNotification('Error', 'Failed to update task');
                 }
             } else if (e.target.classList.contains('delete-task-btn')) {
                 try {
@@ -579,7 +589,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </div>
-                        <button id="readMoreBtn" class="read-more-link" data-id="${data.entry.id}">Read Full Entry →</button>
                     </div>
                     <!-- Hidden full content for modal -->
                     <div id="fullDiaryId" style="display:none;">${data.entry.id}</div>
@@ -592,7 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('diaryEntryId').value = '';
                 saveBtn.textContent = 'Save Entry';
                 diaryModal.classList.add('hidden');
-                initDiaryDetailHandler(); // Re-attach listener to new button
             }
         } catch (error) {
             console.error('Error saving diary:', error);
@@ -602,38 +610,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function initDiaryDetailHandler() {
-        const readMoreBtn = document.getElementById('readMoreBtn');
-        if (readMoreBtn) {
-            readMoreBtn.addEventListener('click', () => {
-                const content = document.getElementById('fullDiaryContent').textContent;
-                const mood = document.getElementById('fullDiaryMood').textContent;
-                const date = document.getElementById('fullDiaryDate').textContent;
-
-                const moodIcons = {
-                    'happy': '😊', 'neutral': '😐', 'sad': '😔', 'excited': '🤩', 'stressed': '😫'
-                };
-
-                document.getElementById('detailMoodIcon').textContent = moodIcons[mood] || '😐';
-                document.getElementById('detailMoodText').textContent = mood.charAt(0).toUpperCase() + mood.slice(1);
-                document.getElementById('detailDate').textContent = date;
-                document.getElementById('detailContentText').textContent = content;
-
-                diaryDetailModal.classList.remove('hidden');
-            });
-        }
-    }
-
-    if (closeDetailModalBtn) {
-        closeDetailModalBtn.addEventListener('click', () => diaryDetailModal.classList.add('hidden'));
-    }
-
     // Edit and Delete Listeners
     document.addEventListener('click', async (e) => {
-        // Edit Entry (either from preview card or detail modal)
-        const editBtn = e.target.closest('.edit-diary-btn') || e.target.closest('#editEntryBtn');
+        // Edit Entry
+        const editBtn = e.target.closest('.edit-diary-btn');
         if (editBtn) {
-            const id = document.getElementById('fullDiaryId')?.textContent.trim();
+            const id = editBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
             const content = document.getElementById('fullDiaryContent')?.textContent.trim();
             const mood = document.getElementById('fullDiaryMood')?.textContent.trim();
             if (id) {
@@ -643,13 +625,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (moodRadio) moodRadio.checked = true;
 
                 document.getElementById('saveDiaryBtn').textContent = 'Update Entry';
-                diaryDetailModal.classList.add('hidden');
                 diaryModal.classList.remove('hidden');
             }
         }
 
         // Delete Entry
-        const deleteBtn = e.target.closest('.delete-diary-btn') || e.target.closest('#deleteEntryBtn');
+        const deleteBtn = e.target.closest('.delete-diary-btn');
         if (deleteBtn) {
             const id = deleteBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
             if (id && confirm('Are you sure you want to completely delete this diary entry?')) {
@@ -662,7 +643,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (data.status === 'success') {
                         showNotification('Success', 'Diary entry deleted.');
-                        diaryDetailModal.classList.add('hidden');
 
                         if (data.latest_entry) {
                             const entry = data.latest_entry;
@@ -676,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <p class="preview-text">"${entry.content.substring(0, 180)}${entry.content.length > 180 ? '...' : ''}"</p>
                                 </div>
                                 <div class="diary-footer">
-                                    <span class="date">${entry.created_at.split(' ')[0] + ' ' + entry.created_at.split(' ')[1] + ' ' + entry.created_at.split(' ')[2]}</span>
+                                    <span class="date">${entry.created_at}</span>
                                     <div class="diary-card-actions">
                                         <button class="icon-btn edit-diary-btn" title="Edit Entry" data-id="${entry.id}">
                                             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
@@ -685,15 +665,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                         </button>
                                     </div>
-                                    <button id="readMoreBtn" class="read-more-link" data-id="${entry.id}">Read Full Entry →</button>
                                 </div>
-                                <!-- Hidden full content for modal -->
                                 <div id="fullDiaryId" style="display:none;">${entry.id}</div>
                                 <div id="fullDiaryContent" style="display:none;">${entry.content}</div>
                                 <div id="fullDiaryMood" style="display:none;">${entry.mood}</div>
                                 <div id="fullDiaryDate" style="display:none;">${entry.created_at}</div>
                             `;
-                            initDiaryDetailHandler();
                         } else {
                             diaryPreview.innerHTML = `
                                 <div class="empty-diary">
@@ -710,14 +687,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-
-    // Modal click-outside logic for detail modal
-    diaryDetailModal?.addEventListener('click', (e) => {
-        if (e.target === diaryDetailModal) diaryDetailModal.classList.add('hidden');
-    });
-
-    // Initial attach
-    initDiaryDetailHandler();
 
     // --- Helpers ---
     function updateStats() {
