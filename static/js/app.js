@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const quickTaskForm = document.getElementById('quickTaskForm');
     const openModalBtn = document.querySelector('.events-section .add-btn');
     const closeModalBtn = document.getElementById('closeModal');
+    const diaryDetailModal = document.getElementById('diaryDetailModal');
+    const closeDetailModalBtn = document.getElementById('closeDetailModal');
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     // Functions
@@ -556,10 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'stressed': '😫'
                 };
 
-                // Update Preview UI
-                const moodIcons = {
-                    'happy': '😊', 'neutral': '😐', 'sad': '😔', 'excited': '🤩', 'stressed': '😫'
-                };
+                // Update Preview UI with professional layout
 
                 // Update Preview UI with professional layout
                 diaryPreview.innerHTML = `
