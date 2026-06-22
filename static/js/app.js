@@ -99,49 +99,98 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
 
-    // --- Tasks Logic ---
-    async function addTask(title, dueDate, dueTime) {
-        try {
-            const response = await fetch('/tasks/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken
-                },
-                body: new URLSearchParams({
-                    'title': title,
-                    'due_date': dueDate || '',
-                    'due_time': dueTime || ''
-                })
-            });
-            const data = await response.json();
-            console.log('Task saved response:', data);
-            if (data.status === 'success') {
-                renderTask(data.task);
-                updateStats();
-                quickTaskForm.reset();
-                showNotification('Success', 'Task added!');
-            } else {
-                showNotification('Error', 'Failed to save task.');
-            }
-        } catch (error) {
-            console.error('Error adding task:', error);
+    updateHeader();
+    fetchEvents();
+});
+
+window.showConfirmModal = function (title, message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmTitle');
+        const msgEl = document.getElementById('confirmMessage');
+        const okBtn = document.getElementById('okConfirmBtn');
+        const cancelBtn = document.getElementById('cancelConfirmBtn');
+
+        if (!modal || !titleEl || !msgEl || !okBtn || !cancelBtn) {
+            console.error('Confirm modal elements missing');
+            resolve(confirm(message));
+            return;
         }
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        modal.classList.remove('hidden');
+
+        const handleOk = () => {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(false);
+        };
+
+        const cleanup = () => {
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', handleCancel);
+        };
+
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', handleCancel);
+
+        // Close on overlay click
+        modal.onclick = (e) => {
+            if (e.target === modal) handleCancel();
+        };
+    });
+}
+
+// --- Tasks Logic ---
+async function addTask(title, dueDate, dueTime) {
+    try {
+        const response = await fetch('/tasks/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: new URLSearchParams({
+                'title': title,
+                'due_date': dueDate || '',
+                'due_time': dueTime || ''
+            })
+        });
+        const data = await response.json();
+        console.log('Task saved response:', data);
+        if (data.status === 'success') {
+            renderTask(data.task);
+            updateStats();
+            quickTaskForm.reset();
+            showNotification('Success', 'Task added!');
+        } else {
+            showNotification('Error', 'Failed to save task.');
+        }
+    } catch (error) {
+        console.error('Error adding task:', error);
+    }
+}
+
+function renderTask(task) {
+    const item = document.createElement('div');
+    item.className = `task-item ${task.completed ? 'completed' : ''}`;
+    item.dataset.id = task.id;
+
+    let dueHtml = '';
+    if (task.due_date) {
+        const d = new Date(task.due_date);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        dueHtml = `<span class="task-due-date">📅 ${dateStr} ${task.due_time || ''}</span>`;
     }
 
-    function renderTask(task) {
-        const item = document.createElement('div');
-        item.className = `task-item ${task.completed ? 'completed' : ''}`;
-        item.dataset.id = task.id;
-
-        let dueHtml = '';
-        if (task.due_date) {
-            const d = new Date(task.due_date);
-            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            dueHtml = `<span class="task-due-date">📅 ${dateStr} ${task.due_time || ''}</span>`;
-        }
-
-        item.innerHTML = `
+    item.innerHTML = `
             <input type="checkbox" ${task.completed ? 'checked' : ''} class="task-checkbox">
             <div class="task-info">
                 <span class="task-title">${task.title}</span>
@@ -150,228 +199,232 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="delete-task-btn">&times;</button>
         `;
 
-        const targetList = task.completed ? completedTaskList : pendingTaskList;
-        targetList.appendChild(item);
-    }
+    const targetList = task.completed ? completedTaskList : pendingTaskList;
+    targetList.appendChild(item);
+}
 
-    // Delegate clicks for both lists
-    [pendingTaskList, completedTaskList].forEach(list => {
-        list.addEventListener('click', async (e) => {
-            const taskItem = e.target.closest('.task-item');
-            if (!taskItem) return;
-            const taskId = taskItem.dataset.id;
+// Delegate clicks for both lists
+[pendingTaskList, completedTaskList].forEach(list => {
+    list.addEventListener('click', async (e) => {
+        const taskItem = e.target.closest('.task-item');
+        if (!taskItem) return;
+        const taskId = taskItem.dataset.id;
 
-            if (e.target.classList.contains('task-checkbox')) {
-                const isCompleted = e.target.checked;
-                const originalList = taskItem.parentElement;
+        if (e.target.classList.contains('task-checkbox')) {
+            const isCompleted = e.target.checked;
+            const originalList = taskItem.parentElement;
 
-                // Optimistic UI Update
-                taskItem.classList.toggle('completed', isCompleted);
-                const targetList = isCompleted ? completedTaskList : pendingTaskList;
-                targetList.appendChild(taskItem);
-                updateStats();
+            // Optimistic UI Update
+            taskItem.classList.toggle('completed', isCompleted);
+            const targetList = isCompleted ? completedTaskList : pendingTaskList;
+            targetList.appendChild(taskItem);
+            updateStats();
 
-                try {
-                    const response = await fetch(`/tasks/toggle/${taskId}/`, {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrfToken }
-                    });
-                    const data = await response.json();
-                    if (data.status !== 'success') {
-                        throw new Error('Server update failed');
-                    }
-                } catch (error) {
-                    console.error('Error toggling task:', error);
-                    // Revert Optimistic Update
-                    taskItem.classList.toggle('completed', !isCompleted);
-                    e.target.checked = !isCompleted;
-                    originalList.appendChild(taskItem);
-                    updateStats();
-                    showNotification('Error', 'Failed to update task');
-                }
-            } else if (e.target.classList.contains('delete-task-btn')) {
-                try {
-                    const response = await fetch(`/tasks/delete/${taskId}/`, {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrfToken }
-                    });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        taskItem.remove();
-                        updateStats();
-                    }
-                } catch (error) {
-                    console.error('Error deleting task:', error);
-                }
-            }
-        });
-    });
-
-    quickTaskForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const title = document.getElementById('newTaskTitle').value;
-        const dueDate = document.getElementById('newTaskDate').value;
-        const dueTime = document.getElementById('newTaskTime').value;
-        if (title) addTask(title, dueDate, dueTime);
-    });
-
-    const clearTasksBtn = document.getElementById('clearTasksBtn');
-    if (clearTasksBtn) {
-        clearTasksBtn.addEventListener('click', async () => {
-            if (!confirm('Clear all pending tasks?')) return;
             try {
-                const response = await fetch('/tasks/clear-pending/', {
+                const response = await fetch(`/tasks/toggle/${taskId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.status !== 'success') {
+                    throw new Error('Server update failed');
+                }
+            } catch (error) {
+                console.error('Error toggling task:', error);
+                // Revert Optimistic Update
+                taskItem.classList.toggle('completed', !isCompleted);
+                e.target.checked = !isCompleted;
+                originalList.appendChild(taskItem);
+                updateStats();
+                showNotification('Error', 'Failed to update task');
+            }
+        } else if (e.target.classList.contains('delete-task-btn')) {
+            const confirmed = await window.showConfirmModal('Delete Task', 'Are you sure you want to delete this task?');
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/tasks/delete/${taskId}/`, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': csrfToken }
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
-                    pendingTaskList.innerHTML = '';
+                    taskItem.remove();
                     updateStats();
-                    showNotification('Success', 'Cleared all pending tasks');
                 }
             } catch (error) {
-                console.error('Error clearing tasks:', error);
+                console.error('Error deleting task:', error);
             }
-        });
-    }
+        }
+    });
+});
 
-    // --- Events Logic ---
-    let allUpcomingEvents = [];
-    let selectedDate = new Date().toISOString().split('T')[0];
-    let currentViewDate = new Date(); // Tracks which month is currently visible in the grid
+quickTaskForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('newTaskTitle').value;
+    const dueDate = document.getElementById('newTaskDate').value;
+    const dueTime = document.getElementById('newTaskTime').value;
+    if (title) addTask(title, dueDate, dueTime);
+});
 
-    async function fetchEvents() {
+const clearTasksBtn = document.getElementById('clearTasksBtn');
+if (clearTasksBtn) {
+    clearTasksBtn.addEventListener('click', async () => {
+        const confirmed = await window.showConfirmModal('Clear All Tasks', 'Are you sure you want to clear all pending tasks?');
+        if (!confirmed) return;
         try {
-            const response = await fetch('/events/');
+            const response = await fetch('/tasks/clear-pending/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
             const data = await response.json();
             if (data.status === 'success') {
-                allUpcomingEvents = data.events;
-                renderCalendarGrid();
-                filterEvents(selectedDate);
+                pendingTaskList.innerHTML = '';
+                updateStats();
+                showNotification('Success', 'Cleared all pending tasks');
             }
         } catch (error) {
-            console.error('Error fetching events:', error);
+            console.error('Error clearing tasks:', error);
         }
-    }
+    });
+}
 
-    function renderCalendarGrid() {
-        const grid = document.getElementById('calendarGrid');
-        const monthYearLabel = document.getElementById('calendarMonthYear');
-        if (!grid || !monthYearLabel) return;
+// --- Events Logic ---
+let allUpcomingEvents = [];
+let selectedDate = new Date().toISOString().split('T')[0];
+let currentViewDate = new Date(); // Tracks which month is currently visible in the grid
 
-        grid.innerHTML = '';
-        const year = currentViewDate.getFullYear();
-        const month = currentViewDate.getMonth();
-
-        // Update Label
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        monthYearLabel.textContent = `${monthNames[month]} ${year}`;
-
-        // Get days logic
-        const firstDayOfMonth = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const daysInPrevMonth = new Date(year, month, 0).getDate();
-
-        // Today's date for highlighting
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-
-        // 1. Previous Month Padding Days
-        for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-            const dayNum = daysInPrevMonth - i;
-            const card = createDayCard(year, month - 1, dayNum, true);
-            grid.appendChild(card);
-        }
-
-        // 2. Current Month Days
-        for (let i = 1; i <= daysInMonth; i++) {
-            const card = createDayCard(year, month, i, false);
-            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
-
-            if (dateStr === todayStr) card.classList.add('day-today');
-            if (dateStr === selectedDate) card.classList.add('day-selected');
-
-            grid.appendChild(card);
-        }
-
-        // 3. Next Month Padding Days
-        const totalSlots = 42; // 6 rows of 7 days
-        const remainingSlots = totalSlots - grid.children.length;
-        for (let i = 1; i <= remainingSlots; i++) {
-            const card = createDayCard(year, month + 1, i, true);
-            grid.appendChild(card);
-        }
-    }
-
-    function createDayCard(year, month, day, isOutside) {
-        // Correct date handling for cross-month navigation
-        const d = new Date(year, month, day);
-        const y = d.getFullYear();
-        const m = d.getMonth() + 1;
-        const dayFormatted = d.getDate();
-        const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(dayFormatted).padStart(2, "0")}`;
-
-        const card = document.createElement('div');
-        card.className = `calendar-day ${isOutside ? 'day-outside' : ''}`;
-        card.innerHTML = `<span class="day-number">${day}</span>`;
-
-        // Check for events
-        const hasEvents = allUpcomingEvents.some(e => e.date === dateStr);
-        if (hasEvents) {
-            const dot = document.createElement('div');
-            dot.className = 'event-dot';
-            card.appendChild(dot);
-        }
-
-        card.addEventListener('click', () => {
-            selectedDate = dateStr;
-            if (isOutside) {
-                currentViewDate = new Date(year, month, 1);
-                renderCalendarGrid();
-            } else {
-                document.querySelectorAll('.calendar-day').forEach(cd => cd.classList.remove('day-selected'));
-                card.classList.add('day-selected');
-            }
+async function fetchEvents() {
+    try {
+        const response = await fetch('/events/');
+        const data = await response.json();
+        if (data.status === 'success') {
+            allUpcomingEvents = data.events;
+            renderCalendarGrid();
             filterEvents(selectedDate);
-        });
+        }
+    } catch (error) {
+        console.error('Error fetching events:', error);
+    }
+}
 
-        return card;
+function renderCalendarGrid() {
+    const grid = document.getElementById('calendarGrid');
+    const monthYearLabel = document.getElementById('calendarMonthYear');
+    if (!grid || !monthYearLabel) return;
+
+    grid.innerHTML = '';
+    const year = currentViewDate.getFullYear();
+    const month = currentViewDate.getMonth();
+
+    // Update Label
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    monthYearLabel.textContent = `${monthNames[month]} ${year}`;
+
+    // Get days logic
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    // Today's date for highlighting
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // 1. Previous Month Padding Days
+    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+        const dayNum = daysInPrevMonth - i;
+        const card = createDayCard(year, month - 1, dayNum, true);
+        grid.appendChild(card);
     }
 
-    // Navigation Listeners
-    document.getElementById('prevMonthBtn')?.addEventListener('click', () => {
-        currentViewDate.setMonth(currentViewDate.getMonth() - 1);
-        renderCalendarGrid();
+    // 2. Current Month Days
+    for (let i = 1; i <= daysInMonth; i++) {
+        const card = createDayCard(year, month, i, false);
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+
+        if (dateStr === todayStr) card.classList.add('day-today');
+        if (dateStr === selectedDate) card.classList.add('day-selected');
+
+        grid.appendChild(card);
+    }
+
+    // 3. Next Month Padding Days
+    const totalSlots = 42; // 6 rows of 7 days
+    const remainingSlots = totalSlots - grid.children.length;
+    for (let i = 1; i <= remainingSlots; i++) {
+        const card = createDayCard(year, month + 1, i, true);
+        grid.appendChild(card);
+    }
+}
+
+function createDayCard(year, month, day, isOutside) {
+    // Correct date handling for cross-month navigation
+    const d = new Date(year, month, day);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const dayFormatted = d.getDate();
+    const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(dayFormatted).padStart(2, "0")}`;
+
+    const card = document.createElement('div');
+    card.className = `calendar-day ${isOutside ? 'day-outside' : ''}`;
+    card.innerHTML = `<span class="day-number">${day}</span>`;
+
+    // Check for events
+    const hasEvents = allUpcomingEvents.some(e => e.date === dateStr);
+    if (hasEvents) {
+        const dot = document.createElement('div');
+        dot.className = 'event-dot';
+        card.appendChild(dot);
+    }
+
+    card.addEventListener('click', () => {
+        selectedDate = dateStr;
+        if (isOutside) {
+            currentViewDate = new Date(year, month, 1);
+            renderCalendarGrid();
+        } else {
+            document.querySelectorAll('.calendar-day').forEach(cd => cd.classList.remove('day-selected'));
+            card.classList.add('day-selected');
+        }
+        filterEvents(selectedDate);
     });
 
-    document.getElementById('nextMonthBtn')?.addEventListener('click', () => {
-        currentViewDate.setMonth(currentViewDate.getMonth() + 1);
-        renderCalendarGrid();
-    });
+    return card;
+}
 
-    function filterEvents(dateStr) {
-        const eventList = document.getElementById('eventList');
-        if (!eventList) return;
+// Navigation Listeners
+document.getElementById('prevMonthBtn')?.addEventListener('click', () => {
+    currentViewDate.setMonth(currentViewDate.getMonth() - 1);
+    renderCalendarGrid();
+});
 
-        eventList.innerHTML = '';
-        const filtered = allUpcomingEvents.filter(e => e.date === dateStr);
+document.getElementById('nextMonthBtn')?.addEventListener('click', () => {
+    currentViewDate.setMonth(currentViewDate.getMonth() + 1);
+    renderCalendarGrid();
+});
 
-        if (filtered.length === 0) {
-            eventList.innerHTML = `
+function filterEvents(dateStr) {
+    const eventList = document.getElementById('eventList');
+    if (!eventList) return;
+
+    eventList.innerHTML = '';
+    const filtered = allUpcomingEvents.filter(e => e.date === dateStr);
+
+    if (filtered.length === 0) {
+        eventList.innerHTML = `
                 <div class="empty-state">
                     <p class="empty-msg">No events scheduled for this day.</p>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        filtered.forEach(event => {
-            const card = document.createElement('div');
-            card.className = 'event-card';
-            card.dataset.id = event.id;
+    filtered.forEach(event => {
+        const card = document.createElement('div');
+        card.className = 'event-card';
+        card.dataset.id = event.id;
 
-            card.innerHTML = `
+        card.innerHTML = `
                 <div class="event-time">${event.time}</div>
                 <div class="event-details">
                     <h3>${event.title}</h3>
@@ -386,192 +439,193 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 </div>
             `;
-            eventList.appendChild(card);
+        eventList.appendChild(card);
+    });
+    updateStats();
+}
+
+// --- Events Logic Helpers ---
+function openEditModal(eventId) {
+    const event = allUpcomingEvents.find(e => e.id == eventId);
+    if (!event) return;
+
+    // Populate form
+    document.getElementById('eventId').value = event.id;
+    document.getElementById('eventTitle').value = event.title;
+    document.getElementById('eventTime').value = event.time;
+    document.getElementById('eventDate').value = event.date;
+    document.getElementById('eventLocation').value = event.location || '';
+
+    // Change modal UI
+    const modalHeader = eventModal.querySelector('.modal-header h2');
+    const submitBtn = eventForm.querySelector('button[type="submit"]');
+    if (modalHeader) modalHeader.textContent = 'Edit Event';
+    if (submitBtn) submitBtn.textContent = 'Update Event';
+
+    eventModal.classList.remove('hidden');
+}
+
+async function deleteEvent(eventId) {
+    const confirmed = await window.showConfirmModal('Delete Event', 'Are you sure you want to delete this event?');
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/events/delete/${eventId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
         });
-        updateStats();
+        const data = await response.json();
+        if (data.status === 'success') {
+            allUpcomingEvents = allUpcomingEvents.filter(e => e.id != eventId);
+            showNotification('Success', 'Event deleted');
+            renderCalendarGrid();
+            filterEvents(selectedDate);
+        }
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        showNotification('Error', 'Failed to delete event');
+    }
+}
+
+eventList.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-event-btn');
+    const deleteBtn = e.target.closest('.delete-event-btn');
+    const card = e.target.closest('.event-card');
+
+    if (card) {
+        const eventId = card.dataset.id;
+        if (editBtn) openEditModal(eventId);
+        if (deleteBtn) deleteEvent(eventId);
+    }
+});
+
+let isSubmitting = false;
+
+eventForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (isSubmitting) return;
+    const saveBtn = eventForm.querySelector('button[type="submit"]');
+
+    isSubmitting = true;
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.classList.add('btn-loading');
     }
 
-    // --- Events Logic Helpers ---
-    function openEditModal(eventId) {
-        const event = allUpcomingEvents.find(e => e.id == eventId);
-        if (!event) return;
+    const eventId = document.getElementById('eventId').value;
+    const title = document.getElementById('eventTitle').value;
+    const time = document.getElementById('eventTime').value;
+    const date = document.getElementById('eventDate').value;
+    const location = document.getElementById('eventLocation').value;
 
-        // Populate form
-        document.getElementById('eventId').value = event.id;
-        document.getElementById('eventTitle').value = event.title;
-        document.getElementById('eventTime').value = event.time;
-        document.getElementById('eventDate').value = event.date;
-        document.getElementById('eventLocation').value = event.location || '';
+    const url = eventId ? `/events/update/${eventId}/` : '/events/';
 
-        // Change modal UI
-        const modalHeader = eventModal.querySelector('.modal-header h2');
-        const submitBtn = eventForm.querySelector('button[type="submit"]');
-        if (modalHeader) modalHeader.textContent = 'Edit Event';
-        if (submitBtn) submitBtn.textContent = 'Update Event';
+    try {
+        const formData = new URLSearchParams({
+            'title': title,
+            'event_time': time,
+            'date': date,
+            'location': location
+        });
 
-        eventModal.classList.remove('hidden');
-    }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        });
 
-    async function deleteEvent(eventId) {
-        if (!confirm('Are you sure you want to delete this event?')) return;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-        try {
-            const response = await fetch(`/events/delete/${eventId}/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken }
-            });
-            const data = await response.json();
-            if (data.status === 'success') {
-                allUpcomingEvents = allUpcomingEvents.filter(e => e.id != eventId);
-                showNotification('Success', 'Event deleted');
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            eventModal.classList.add('hidden');
+            eventForm.reset();
+            showNotification('Success', eventId ? 'Event updated!' : 'Event added!');
+
+            // Update local data
+            if (data.event) {
+                if (eventId) {
+                    const index = allUpcomingEvents.findIndex(e => e.id == eventId);
+                    if (index !== -1) allUpcomingEvents[index] = data.event;
+                } else {
+                    allUpcomingEvents.push(data.event);
+                }
+                allUpcomingEvents.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+            }
+
+            selectedDate = date;
+            setTimeout(() => {
                 renderCalendarGrid();
                 filterEvents(selectedDate);
-            }
-        } catch (error) {
-            console.error('Error deleting event:', error);
-            showNotification('Error', 'Failed to delete event');
+            }, 50);
+        } else {
+            showNotification('Error', 'Failed to save event.');
+        }
+    } catch (error) {
+        console.error('Error saving event:', error);
+        showNotification('Error', 'Something went wrong. Please try again.');
+    } finally {
+        isSubmitting = false;
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.classList.remove('btn-loading');
         }
     }
+});
 
-    eventList.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-event-btn');
-        const deleteBtn = e.target.closest('.delete-event-btn');
-        const card = e.target.closest('.event-card');
+// --- Diary Logic ---
+const diaryModal = document.getElementById('diaryModal');
+const diaryForm = document.getElementById('diaryForm');
+const openDiaryModalBtn = document.getElementById('openDiaryModal');
+const closeDiaryModalBtn = document.getElementById('closeDiaryModal');
+const diaryPreview = document.getElementById('diaryPreview');
 
-        if (card) {
-            const eventId = card.dataset.id;
-            if (editBtn) openEditModal(eventId);
-            if (deleteBtn) deleteEvent(eventId);
-        }
-    });
+diaryForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('saveDiaryBtn');
+    const content = document.getElementById('diaryContent').value;
+    const mood = document.querySelector('input[name="mood"]:checked').value;
+    const entryId = document.getElementById('diaryEntryId').value;
+    const url = entryId ? `/diary/update/${entryId}/` : '/diary/save/';
 
-    let isSubmitting = false;
+    saveBtn.classList.add('btn-loading');
 
-    eventForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: new URLSearchParams({
+                'content': content,
+                'mood': mood
+            })
+        });
 
-        if (isSubmitting) return;
-        const saveBtn = eventForm.querySelector('button[type="submit"]');
+        const data = await response.json();
 
-        isSubmitting = true;
-        if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.classList.add('btn-loading');
-        }
+        if (data.status === 'success') {
+            showNotification('Success', entryId ? 'Diary entry updated!' : 'Diary entry saved!');
 
-        const eventId = document.getElementById('eventId').value;
-        const title = document.getElementById('eventTitle').value;
-        const time = document.getElementById('eventTime').value;
-        const date = document.getElementById('eventDate').value;
-        const location = document.getElementById('eventLocation').value;
+            // Mood icon mapping
+            const moodIcons = {
+                'happy': '😊',
+                'neutral': '😐',
+                'sad': '😔',
+                'excited': '🤩',
+                'stressed': '😫'
+            };
 
-        const url = eventId ? `/events/update/${eventId}/` : '/events/';
+            // Update Preview UI with professional layout
 
-        try {
-            const formData = new URLSearchParams({
-                'title': title,
-                'event_time': time,
-                'date': date,
-                'location': location
-            });
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken
-                },
-                body: formData
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-            const data = await response.json();
-
-            if (data.status === 'success') {
-                eventModal.classList.add('hidden');
-                eventForm.reset();
-                showNotification('Success', eventId ? 'Event updated!' : 'Event added!');
-
-                // Update local data
-                if (data.event) {
-                    if (eventId) {
-                        const index = allUpcomingEvents.findIndex(e => e.id == eventId);
-                        if (index !== -1) allUpcomingEvents[index] = data.event;
-                    } else {
-                        allUpcomingEvents.push(data.event);
-                    }
-                    allUpcomingEvents.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-                }
-
-                selectedDate = date;
-                setTimeout(() => {
-                    renderCalendarGrid();
-                    filterEvents(selectedDate);
-                }, 50);
-            } else {
-                showNotification('Error', 'Failed to save event.');
-            }
-        } catch (error) {
-            console.error('Error saving event:', error);
-            showNotification('Error', 'Something went wrong. Please try again.');
-        } finally {
-            isSubmitting = false;
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.classList.remove('btn-loading');
-            }
-        }
-    });
-
-    // --- Diary Logic ---
-    const diaryModal = document.getElementById('diaryModal');
-    const diaryForm = document.getElementById('diaryForm');
-    const openDiaryModalBtn = document.getElementById('openDiaryModal');
-    const closeDiaryModalBtn = document.getElementById('closeDiaryModal');
-    const diaryPreview = document.getElementById('diaryPreview');
-
-    diaryForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = document.getElementById('saveDiaryBtn');
-        const content = document.getElementById('diaryContent').value;
-        const mood = document.querySelector('input[name="mood"]:checked').value;
-        const entryId = document.getElementById('diaryEntryId').value;
-        const url = entryId ? `/diary/update/${entryId}/` : '/diary/save/';
-
-        saveBtn.classList.add('btn-loading');
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken
-                },
-                body: new URLSearchParams({
-                    'content': content,
-                    'mood': mood
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.status === 'success') {
-                showNotification('Success', entryId ? 'Diary entry updated!' : 'Diary entry saved!');
-
-                // Mood icon mapping
-                const moodIcons = {
-                    'happy': '😊',
-                    'neutral': '😐',
-                    'sad': '😔',
-                    'excited': '🤩',
-                    'stressed': '😫'
-                };
-
-                // Update Preview UI with professional layout
-
-                // Update Preview UI with professional layout
-                diaryPreview.innerHTML = `
+            // Update Preview UI with professional layout
+            diaryPreview.innerHTML = `
                     <div class="diary-mood-badge mood-${data.entry.mood}">
                         <span class="mood-icon">${moodIcons[data.entry.mood]}</span>
                         <span class="mood-text">${data.entry.mood.charAt(0).toUpperCase() + data.entry.mood.slice(1)}</span>
@@ -597,57 +651,58 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="fullDiaryDate" style="display:none;">${data.entry.created_at}</div>
                 `;
 
-                diaryForm.reset();
-                document.getElementById('diaryEntryId').value = '';
-                saveBtn.textContent = 'Save Entry';
-                diaryModal.classList.add('hidden');
-            }
-        } catch (error) {
-            console.error('Error saving diary:', error);
-            showNotification('Error', 'Failed to save entry');
-        } finally {
-            saveBtn.classList.remove('btn-loading');
+            diaryForm.reset();
+            document.getElementById('diaryEntryId').value = '';
+            saveBtn.textContent = 'Save Entry';
+            diaryModal.classList.add('hidden');
         }
-    });
+    } catch (error) {
+        console.error('Error saving diary:', error);
+        showNotification('Error', 'Failed to save entry');
+    } finally {
+        saveBtn.classList.remove('btn-loading');
+    }
+});
 
-    // Edit and Delete Listeners
-    document.addEventListener('click', async (e) => {
-        // Edit Entry
-        const editBtn = e.target.closest('.edit-diary-btn');
-        if (editBtn) {
-            const id = editBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
-            const content = document.getElementById('fullDiaryContent')?.textContent.trim();
-            const mood = document.getElementById('fullDiaryMood')?.textContent.trim();
-            if (id) {
-                document.getElementById('diaryEntryId').value = id;
-                document.getElementById('diaryContent').value = content;
-                const moodRadio = document.querySelector(`input[name="mood"][value="${mood}"]`);
-                if (moodRadio) moodRadio.checked = true;
+// Edit and Delete Listeners
+document.addEventListener('click', async (e) => {
+    // Edit Entry
+    const editBtn = e.target.closest('.edit-diary-btn');
+    if (editBtn) {
+        const id = editBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
+        const content = document.getElementById('fullDiaryContent')?.textContent.trim();
+        const mood = document.getElementById('fullDiaryMood')?.textContent.trim();
+        if (id) {
+            document.getElementById('diaryEntryId').value = id;
+            document.getElementById('diaryContent').value = content;
+            const moodRadio = document.querySelector(`input[name="mood"][value="${mood}"]`);
+            if (moodRadio) moodRadio.checked = true;
 
-                document.getElementById('saveDiaryBtn').textContent = 'Update Entry';
-                diaryModal.classList.remove('hidden');
-            }
+            document.getElementById('saveDiaryBtn').textContent = 'Update Entry';
+            diaryModal.classList.remove('hidden');
         }
+    }
 
-        // Delete Entry
-        const deleteBtn = e.target.closest('.delete-diary-btn');
-        if (deleteBtn) {
-            const id = deleteBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
-            if (id && confirm('Are you sure you want to completely delete this diary entry?')) {
-                try {
-                    const response = await fetch(`/diary/delete/${id}/`, {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrfToken }
-                    });
-                    const data = await response.json();
+    // Delete Entry
+    const deleteBtn = e.target.closest('.delete-diary-btn');
+    if (deleteBtn) {
+        const id = deleteBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
+        const confirmed = await window.showConfirmModal('Delete Entry', 'Are you sure you want to completely delete this diary entry?');
+        if (id && confirmed) {
+            try {
+                const response = await fetch(`/diary/delete/${id}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
 
-                    if (data.status === 'success') {
-                        showNotification('Success', 'Diary entry deleted.');
+                if (data.status === 'success') {
+                    showNotification('Success', 'Diary entry deleted.');
 
-                        if (data.latest_entry) {
-                            const entry = data.latest_entry;
-                            const moodIcons = { 'happy': '😊', 'neutral': '😐', 'sad': '😔', 'excited': '🤩', 'stressed': '😫' };
-                            diaryPreview.innerHTML = `
+                    if (data.latest_entry) {
+                        const entry = data.latest_entry;
+                        const moodIcons = { 'happy': '😊', 'neutral': '😐', 'sad': '😔', 'excited': '🤩', 'stressed': '😫' };
+                        diaryPreview.innerHTML = `
                                 <div class="diary-mood-badge mood-${entry.mood}">
                                     <span class="mood-icon">${moodIcons[entry.mood]}</span>
                                     <span class="mood-text">${entry.mood.charAt(0).toUpperCase() + entry.mood.slice(1)}</span>
@@ -671,105 +726,105 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div id="fullDiaryMood" style="display:none;">${entry.mood}</div>
                                 <div id="fullDiaryDate" style="display:none;">${entry.created_at}</div>
                             `;
-                        } else {
-                            diaryPreview.innerHTML = `
+                    } else {
+                        diaryPreview.innerHTML = `
                                 <div class="empty-diary">
                                     <p class="preview-text">"No entries yet. Start writing your journey today..."</p>
                                     <span class="date">New Beginning</span>
                                 </div>
                             `;
-                        }
                     }
-                } catch (error) {
-                    console.error('Error deleting entry:', error);
-                    showNotification('Error', 'Failed to delete entry');
                 }
+            } catch (error) {
+                console.error('Error deleting entry:', error);
+                showNotification('Error', 'Failed to delete entry');
             }
         }
-    });
-
-    // --- Helpers ---
-    function updateStats() {
-        const pendingTasksCount = pendingTaskList.querySelectorAll('.task-item').length;
-        const completedTasksCount = completedTaskList.querySelectorAll('.task-item').length;
-        const upcomingEventsCount = eventList.querySelectorAll('.event-card').length;
-
-        const taskStat = document.getElementById('taskCountStat');
-        const taskCompletedStat = document.getElementById('taskCountCompletedStat');
-        const eventStat = document.getElementById('eventCountStat');
-
-        if (taskStat) taskStat.textContent = pendingTasksCount;
-        if (taskCompletedStat) taskCompletedStat.textContent = completedTasksCount;
-        if (eventStat) eventStat.textContent = upcomingEventsCount;
-
-        handleEmptyTasks(pendingTasksCount, completedTasksCount);
     }
+});
 
-    function handleEmptyTasks(pendingCount, completedCount) {
-        // Handle Pending
-        const existingPendingEmpty = pendingTaskList.querySelector('.empty-state');
-        if (pendingCount === 0) {
-            if (!existingPendingEmpty) {
-                pendingTaskList.innerHTML = `
+// --- Helpers ---
+function updateStats() {
+    const pendingTasksCount = pendingTaskList.querySelectorAll('.task-item').length;
+    const completedTasksCount = completedTaskList.querySelectorAll('.task-item').length;
+    const upcomingEventsCount = eventList.querySelectorAll('.event-card').length;
+
+    const taskStat = document.getElementById('taskCountStat');
+    const taskCompletedStat = document.getElementById('taskCountCompletedStat');
+    const eventStat = document.getElementById('eventCountStat');
+
+    if (taskStat) taskStat.textContent = pendingTasksCount;
+    if (taskCompletedStat) taskCompletedStat.textContent = completedTasksCount;
+    if (eventStat) eventStat.textContent = upcomingEventsCount;
+
+    handleEmptyTasks(pendingTasksCount, completedTasksCount);
+}
+
+function handleEmptyTasks(pendingCount, completedCount) {
+    // Handle Pending
+    const existingPendingEmpty = pendingTaskList.querySelector('.empty-state');
+    if (pendingCount === 0) {
+        if (!existingPendingEmpty) {
+            pendingTaskList.innerHTML = `
                     <div class="empty-state">
                         <p>No pending tasks. Relax or add a new one above!</p>
                     </div>
                 `;
-            }
-        } else if (existingPendingEmpty) {
-            existingPendingEmpty.remove();
         }
+    } else if (existingPendingEmpty) {
+        existingPendingEmpty.remove();
+    }
 
-        // Handle Completed
-        const existingCompletedEmpty = completedTaskList.querySelector('.empty-state');
-        if (completedCount === 0) {
-            if (!existingCompletedEmpty) {
-                completedTaskList.innerHTML = `
+    // Handle Completed
+    const existingCompletedEmpty = completedTaskList.querySelector('.empty-state');
+    if (completedCount === 0) {
+        if (!existingCompletedEmpty) {
+            completedTaskList.innerHTML = `
                     <div class="empty-state">
                         <p>No completed tasks yet.</p>
                     </div>
                 `;
-            }
-        } else if (existingCompletedEmpty) {
-            existingCompletedEmpty.remove();
         }
+    } else if (existingCompletedEmpty) {
+        existingCompletedEmpty.remove();
     }
+}
 
-    // Modal Helpers
-    openModalBtn.addEventListener('click', () => {
-        document.getElementById('eventId').value = '';
-        eventForm.reset();
-        const modalHeader = eventModal.querySelector('.modal-header h2');
-        const submitBtn = eventForm.querySelector('button[type="submit"]');
-        if (modalHeader) modalHeader.textContent = 'Add New Event';
-        if (submitBtn) submitBtn.textContent = 'Save Event';
-        eventModal.classList.remove('hidden');
-    });
-    closeModalBtn.addEventListener('click', () => eventModal.classList.add('hidden'));
-    eventModal.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.add('hidden'); });
+// Modal Helpers
+openModalBtn.addEventListener('click', () => {
+    document.getElementById('eventId').value = '';
+    eventForm.reset();
+    const modalHeader = eventModal.querySelector('.modal-header h2');
+    const submitBtn = eventForm.querySelector('button[type="submit"]');
+    if (modalHeader) modalHeader.textContent = 'Add New Event';
+    if (submitBtn) submitBtn.textContent = 'Save Event';
+    eventModal.classList.remove('hidden');
+});
+closeModalBtn.addEventListener('click', () => eventModal.classList.add('hidden'));
+eventModal.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.add('hidden'); });
 
-    openDiaryModalBtn.addEventListener('click', () => {
-        document.getElementById('diaryEntryId').value = '';
-        document.getElementById('saveDiaryBtn').textContent = 'Save Entry';
-        diaryForm.reset();
-        diaryModal.classList.remove('hidden');
-    });
+openDiaryModalBtn.addEventListener('click', () => {
+    document.getElementById('diaryEntryId').value = '';
+    document.getElementById('saveDiaryBtn').textContent = 'Save Entry';
+    diaryForm.reset();
+    diaryModal.classList.remove('hidden');
+});
 
-    closeDiaryModalBtn.addEventListener('click', () => diaryModal.classList.add('hidden'));
-    diaryModal.addEventListener('click', (e) => { if (e.target === diaryModal) diaryModal.classList.add('hidden'); });
+closeDiaryModalBtn.addEventListener('click', () => diaryModal.classList.add('hidden'));
+diaryModal.addEventListener('click', (e) => { if (e.target === diaryModal) diaryModal.classList.add('hidden'); });
 
-    profileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        profileDropdown.classList.toggle('hidden');
-    });
+profileBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    profileDropdown.classList.toggle('hidden');
+});
 
-    document.addEventListener('click', (e) => {
-        if (!profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
-            profileDropdown.classList.add('hidden');
-        }
-    });
+document.addEventListener('click', (e) => {
+    if (!profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
+        profileDropdown.classList.add('hidden');
+    }
+});
 
-    // Init
-    updateHeader();
-    fetchEvents();
+// Init
+updateHeader();
+fetchEvents();
 });
