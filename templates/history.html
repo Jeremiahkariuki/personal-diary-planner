@@ -238,15 +238,14 @@
                     const confirmed = await showConfirmModal('Delete Entry', 'Are you sure you want to delete this diary entry?');
                     if (confirmed) {
                         try {
-                            const response = await fetch(`/diary/delete/${entryId}/`, {
-                                method: 'POST',
+                            const response = await fetch(`/api/diary/${entryId}/`, {
+                                method: 'DELETE',
                                 headers: {
                                     'X-CSRFToken': csrfToken
                                 }
                             });
 
-                            const data = await response.json();
-                            if (data.status === 'success') {
+                            if (response.status === 204) {
                                 // Fade out and remove
                                 card.style.opacity = '0';
                                 card.style.transform = 'scale(0.8)';
@@ -257,7 +256,7 @@
                                     }
                                 }, 300);
                             } else {
-                                alert('Error: ' + (data.message || 'Failed to delete entry'));
+                                alert('Error: Failed to delete entry');
                             }
                         } catch (error) {
                             console.error('Error:', error);

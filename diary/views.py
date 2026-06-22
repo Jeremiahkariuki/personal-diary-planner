@@ -2,11 +2,21 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
-from .models import DiaryEntry, Task, Event
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from .models import DiaryEntry, Task, Event, Profile, Quote
+from .serializers import (
+    DiaryEntrySerializer, TaskSerializer, EventSerializer, 
+    UserSerializer, QuoteSerializer
+)
 from datetime import date
 import datetime
+import random
 
 @login_required
 def index(request):
@@ -52,74 +62,74 @@ def index(request):
     }
     return render(request, 'index.html', context)
 
-@login_required
-def save_diary_entry(request):
-    if request.method == 'POST':
-        content = request.POST.get('content')
-        mood = request.POST.get('mood', 'neutral')
-        if content:
-            entry = DiaryEntry.objects.create(user=request.user, content=content, mood=mood)
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Entry saved successfully',
-                'entry': {
-                    'id': entry.id,
-                    'content': entry.content,
-                    'mood': entry.mood,
-                    'created_at': entry.created_at.strftime('%B %d, %Y %H:%M')
-                }
-            })
-        return JsonResponse({'status': 'error', 'message': 'Content is required'}, status=400)
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+# --- API ViewSets ---
 
-@login_required
-def update_diary_entry(request, entry_id):
-    if request.method == 'POST':
-        try:
-            entry = DiaryEntry.objects.get(id=entry_id, user=request.user)
-            content = request.POST.get('content')
-            mood = request.POST.get('mood')
-            
-            if content:
-                entry.content = content
-                if mood:
-                    entry.mood = mood
-                entry.save()
-                return JsonResponse({
-                    'status': 'success',
-                    'entry': {
-                        'id': entry.id,
-                        'content': entry.content,
-                        'mood': entry.mood,
-                        'created_at': entry.created_at.strftime('%B %d, %Y %H:%M')
-                    }
-                })
-            return JsonResponse({'status': 'error', 'message': 'Content is required'}, status=400)
-        except DiaryEntry.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Entry not found'}, status=404)
-    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+class DiaryEntryViewSet(viewsets.ModelViewSet):
+    serializer_class = DiaryEntrySerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-@login_required
-def delete_diary_entry(request, entry_id):
-    if request.method == 'POST':
-        try:
-            entry = DiaryEntry.objects.get(id=entry_id, user=request.user)
-            entry.delete()
-            
-            # Fetch the next latest entry to effortlessly update the dashboard preview seamlessly
-            latest = DiaryEntry.objects.filter(user=request.user).order_by('-created_at').first()
-            return JsonResponse({
-                'status': 'success',
-                'latest_entry': {
-                    'id': latest.id,
-                    'content': latest.content,
-                    'mood': latest.mood,
-                    'created_at': latest.created_at.strftime('%B %d, %Y %H:%M')
-                } if latest else None
-            })
-        except DiaryEntry.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Entry not found'}, status=404)
-    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+    def get_queryset(self):
+        return DiaryEntry.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def latest(self, request):
+        latest = self.get_queryset().first()
+        if latest:
+            serializer = self.get_serializer(latest)
+            return Response(serializer.data)
+        return Response({'detail': 'No entries found'}, status=status.HTTP_404_NOT_FOUND)
+
+class TaskViewSet(viewsets.ModelViewSet):
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Task.objects.filter(user=self.request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def toggle(self, request, pk=None):
+        task = self.get_object()
+        task.completed = not task.completed
+        task.save()
+        return Response({'status': 'success', 'completed': task.completed})
+
+    @action(detail=False, methods=['post'], url_path='clear-pending')
+    def clear_pending(self, request):
+        self.get_queryset().filter(completed=False).delete()
+        return Response({'status': 'success'})
+
+class EventViewSet(viewsets.ModelViewSet):
+    serializer_class = EventSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Event.objects.filter(user=self.request.user).order_by('date', 'event_time')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class QuoteViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Quote.objects.all()
+    serializer_class = QuoteSerializer
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['get'])
+    def random(self, request):
+        count = self.queryset.count()
+        if count == 0:
+            return Response({'detail': 'No quotes found'}, status=404)
+        random_index = random.randint(0, count - 1)
+        quote = self.queryset[random_index]
+        serializer = self.get_serializer(quote)
+        return Response(serializer.data)
+
+# --- Standard Template Views ---
 
 def login_view(request):
     if request.method == 'POST':
@@ -150,134 +160,7 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
-@login_required
-def manage_tasks(request):
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        due_date = request.POST.get('due_date')
-        due_time = request.POST.get('due_time')
-        if title:
-            task = Task.objects.create(
-                user=request.user, 
-                title=title,
-                due_date=due_date if due_date else None,
-                due_time=due_time if due_time else None
-            )
-            return JsonResponse({'status': 'success', 'task': {
-                'id': task.id, 
-                'title': task.title, 
-                'completed': task.completed,
-                'due_date': due_date if due_date else None,
-                'due_time': due_time if due_time else None
-            }})
-    
-    tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
-    return JsonResponse({'status': 'success', 'tasks': [{
-        'id': t.id,
-        'title': t.title,
-        'completed': t.completed,
-        'due_date': t.due_date.strftime('%Y-%m-%d') if t.due_date else None,
-        'due_time': t.due_time.strftime('%H:%M') if t.due_time else None
-    } for t in tasks]})
-
-@login_required
-def toggle_task(request, task_id):
-    try:
-        task = Task.objects.get(id=task_id, user=request.user)
-        task.completed = not task.completed
-        task.save()
-        return JsonResponse({'status': 'success', 'completed': task.completed})
-    except Task.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Task not found'}, status=404)
-
-@login_required
-def delete_task(request, task_id):
-    try:
-        task = Task.objects.get(id=task_id, user=request.user)
-        task.delete()
-        return JsonResponse({'status': 'success'})
-    except Task.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Task not found'}, status=404)
-
-@login_required
-def clear_pending_tasks(request):
-    if request.method == 'POST':
-        Task.objects.filter(user=request.user, completed=False).delete()
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
-
-@login_required
-def manage_events(request):
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        location = request.POST.get('location')
-        event_time = request.POST.get('event_time')
-        event_date = request.POST.get('date')
-        if title and event_time and event_date:
-            event = Event.objects.create(
-                user=request.user, 
-                title=title, 
-                location=location, 
-                event_time=event_time,
-                date=event_date
-            )
-            messages.success(request, 'Event added successfully!')
-            return JsonResponse({'status': 'success', 'event': {
-                'id': event.id,
-                'title': event.title,
-                'location': event.location,
-                'time': event_time,
-                'date': event_date
-            }})
-    
-    events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')
-    return JsonResponse({'status': 'success', 'events': [{
-        'id': e.id,
-        'title': e.title,
-        'location': e.location,
-        'time': e.event_time.strftime('%H:%M'),
-        'date': e.date.strftime('%Y-%m-%d')
-    } for e in events]})
-
-@login_required
-def delete_event(request, event_id):
-    if request.method == 'POST':
-        try:
-            event = Event.objects.get(id=event_id, user=request.user)
-            event.delete()
-            return JsonResponse({'status': 'success'})
-        except Event.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Event not found'}, status=404)
-    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
-
-@login_required
-def update_event(request, event_id):
-    if request.method == 'POST':
-        try:
-            event = Event.objects.get(id=event_id, user=request.user)
-            title = request.POST.get('title')
-            location = request.POST.get('location')
-            event_time = request.POST.get('event_time')
-            event_date = request.POST.get('date')
-            
-            if title and event_time and event_date:
-                event.title = title
-                event.location = location
-                event.event_time = event_time
-                event.date = event_date
-                event.save()
-                
-                return JsonResponse({'status': 'success', 'event': {
-                    'id': event.id,
-                    'title': event.title,
-                    'location': event.location,
-                    'time': event_time,
-                    'date': event_date
-                }})
-            return JsonResponse({'status': 'error', 'message': 'Missing fields'}, status=400)
-        except Event.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Event not found'}, status=404)
-    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+# --- Profile & History Views ---
 
 @login_required
 def profile_view(request):
@@ -369,22 +252,3 @@ def export_pdf(request):
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
-@login_required
-def get_random_quote(request):
-    from .models import Quote
-    import random
-    
-    count = Quote.objects.count()
-    if count == 0:
-        return JsonResponse({'status': 'error', 'message': 'No quotes found'}, status=404)
-        
-    random_index = random.randint(0, count - 1)
-    quote = Quote.objects.all()[random_index]
-    
-    return JsonResponse({
-        'status': 'success',
-        'quote': {
-            'text': quote.text,
-            'author': quote.author or 'Unknown'
-        }
-    })
