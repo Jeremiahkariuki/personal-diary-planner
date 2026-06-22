@@ -337,35 +337,36 @@ def diary_history(request):
     return render(request, 'history.html', {'entries': entries})
 
 @login_required
-def export_data(request):
-    import json
+@login_required
+def export_pdf(request):
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
     from django.http import HttpResponse
     
-    entries = DiaryEntry.objects.filter(user=request.user)
-    tasks = Task.objects.filter(user=request.user)
-    events = Event.objects.filter(user=request.user)
+    entries = DiaryEntry.objects.filter(user=request.user).order_by('-created_at')
+    tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date')
+    events = Event.objects.filter(user=request.user).order_by('date', 'event_time')
     
-    data = {
-        'diary_entries': [{
-            'content': e.content,
-            'mood': e.mood,
-            'created_at': e.created_at.isoformat()
-        } for e in entries],
-        'tasks': [{
-            'title': t.title,
-            'completed': t.completed,
-            'due_date': t.due_date.isoformat() if t.due_date else None
-        } for t in tasks],
-        'events': [{
-            'title': e.title,
-            'location': e.location,
-            'time': e.event_time.isoformat(),
-            'date': e.date.isoformat()
-        } for e in events]
+    template_path = 'pdf_export.html'
+    context = {
+        'user': request.user,
+        'entries': entries,
+        'tasks': tasks,
+        'events': events,
+        'today': date.today(),
     }
     
-    response = HttpResponse(json.dumps(data, indent=4), content_type='application/json')
-    response['Content-Disposition'] = f'attachment; filename="jdiary_export_{request.user.username}.json"'
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="jdiary_archive_{request.user.username}.pdf"'
+    
+    template = get_template(template_path)
+    html = template.render(context)
+    
+    # create a pdf
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+       return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
 @login_required
