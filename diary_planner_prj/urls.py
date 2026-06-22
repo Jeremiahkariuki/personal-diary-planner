@@ -38,6 +38,8 @@ urlpatterns = [
     path('events/delete/<int:event_id>/', views.delete_event, name='delete_event'),
     path('profile/', views.profile_view, name='profile'),
     path('quote/random/', views.get_random_quote, name='get_random_quote'),
+    path('diary/history/', views.diary_history, name='diary_history'),
+    path('export/', views.export_data, name='export_data'),
 ]
 
 if settings.DEBUG:

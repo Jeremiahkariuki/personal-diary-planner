@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.contrib import messages
 from .models import DiaryEntry, Task, Event
 from datetime import date
+import datetime
 
 @login_required
 def index(request):
@@ -13,13 +14,31 @@ def index(request):
     tasks = Task.objects.filter(user=request.user)
     upcoming_events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')
     
-    # Calculate mood streak (very simple version: consecutive days with entries)
+    # Calculate mood streak (consecutive days with entries)
     today = date.today()
     streak = 0
-    entries = DiaryEntry.objects.filter(user=request.user).order_by('-created_at')
-    # This is a placeholder for a more complex streak calculation
-    if entries.exists():
-        streak = 5 # Placeholder for now, can implement logic later
+    
+    # Get all distinct entry dates for the user
+    entry_dates = DiaryEntry.objects.filter(user=request.user).values_list('created_at__date', flat=True).distinct().order_by('-created_at__date')
+    
+    if entry_dates.exists():
+        current_date = today
+        # Check if they have an entry today, if not check yesterday (to allow for end-of-day entries)
+        if entry_dates[0] == today:
+            streak = 1
+        elif entry_dates[0] == today - datetime.timedelta(days=1):
+            streak = 1
+            current_date = today - datetime.timedelta(days=1)
+        else:
+            streak = 0
+            
+        if streak > 0:
+            for i in range(1, len(entry_dates)):
+                if entry_dates[i] == current_date - datetime.timedelta(days=1):
+                    streak += 1
+                    current_date = entry_dates[i]
+                else:
+                    break
         
     context = {
         'latest_entry': latest_entry,
@@ -312,6 +331,44 @@ def profile_view(request):
         'mood_stats': mood_stats,
     }
     return render(request, 'profile.html', context)
+@login_required
+def diary_history(request):
+    entries = DiaryEntry.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'history.html', {'entries': entries})
+
+@login_required
+def export_data(request):
+    import json
+    from django.http import HttpResponse
+    
+    entries = DiaryEntry.objects.filter(user=request.user)
+    tasks = Task.objects.filter(user=request.user)
+    events = Event.objects.filter(user=request.user)
+    
+    data = {
+        'diary_entries': [{
+            'content': e.content,
+            'mood': e.mood,
+            'created_at': e.created_at.isoformat()
+        } for e in entries],
+        'tasks': [{
+            'title': t.title,
+            'completed': t.completed,
+            'due_date': t.due_date.isoformat() if t.due_date else None
+        } for t in tasks],
+        'events': [{
+            'title': e.title,
+            'location': e.location,
+            'time': e.event_time.isoformat(),
+            'date': e.date.isoformat()
+        } for e in events]
+    }
+    
+    response = HttpResponse(json.dumps(data, indent=4), content_type='application/json')
+    response['Content-Disposition'] = f'attachment; filename="jdiary_export_{request.user.username}.json"'
+    return response
+
+@login_required
 def get_random_quote(request):
     from .models import Quote
     import random

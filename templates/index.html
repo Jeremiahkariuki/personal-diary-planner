@@ -254,7 +254,8 @@
                 <section id="diarySection" class="diary-section glass-card">
                     <div class="section-header">
                         <h2>Recent Diary</h2>
-                        <button id="viewHistoryBtn" class="text-btn">View History</button>
+                        <a href="{% url 'diary_history' %}" id="viewHistoryBtn" class="text-btn"
+                            style="text-decoration:none;">View History</a>
                     </div>
 
                     <div class="diary-card" id="diaryPreview">

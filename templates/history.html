@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diary History | Jdiary</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .history-container {
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .history-card {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .history-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .history-date {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .history-content {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            flex-grow: 1;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: gap 0.3s ease;
+        }
+
+        .back-link:hover {
+            gap: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="history-container">
+        <header class="history-header">
+            <a href="{% url 'index' %}" class="back-link">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Back to Dashboard
+            </a>
+            <h1>Diary History</h1>
+        </header>
+
+        {% if entries %}
+        <div class="history-grid">
+            {% for entry in entries %}
+            <div class="glass-card history-card">
+                <div class="diary-mood-badge mood-{{ entry.mood }}">
+                    <span class="mood-icon">
+                        {% if entry.mood == 'happy' %}😊
+                        {% elif entry.mood == 'neutral' %}😐
+                        {% elif entry.mood == 'sad' %}😔
+                        {% elif entry.mood == 'excited' %}🤩
+                        {% elif entry.mood == 'stressed' %}😫
+                        {% endif %}
+                    </span>
+                    <span class="mood-text">{{ entry.mood|title }}</span>
+                </div>
+                <div class="history-date">{{ entry.created_at|date:"F d, Y" }}</div>
+                <div class="history-content">
+                    <p>{{ entry.content }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass-card" style="padding: 3rem; text-align: center;">
+            <p>No entries found. Start writing your journey today!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+</body>
+
+</html>
