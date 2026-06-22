@@ -13,7 +13,7 @@ class DiaryEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='diary_entries')
     content = models.TextField()
     mood = models.CharField(max_length=20, choices=MOOD_CHOICES, default='neutral')
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -25,10 +25,10 @@ class Task(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
-    completed = models.BooleanField(default=False)
-    due_date = models.DateField(blank=True, null=True)
+    completed = models.BooleanField(default=False, db_index=True)
+    due_date = models.DateField(blank=True, null=True, db_index=True)
     due_time = models.TimeField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ['completed', 'due_date', 'due_time', '-created_at']
@@ -41,8 +41,8 @@ class Event(models.Model):
     title = models.CharField(max_length=200)
     location = models.CharField(max_length=200, blank=True, null=True)
     event_time = models.TimeField()
-    date = models.DateField(default=date.today)
-    completed = models.BooleanField(default=False)
+    date = models.DateField(default=date.today, db_index=True)
+    completed = models.BooleanField(default=False, db_index=True)
     notified = models.BooleanField(default=False)
 
     class Meta:
