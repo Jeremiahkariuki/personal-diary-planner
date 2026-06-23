@@ -1,0 +1,42 @@
+[
+  {
+    "model": "diary.quote",
+    "pk": 1,
+    "fields": {
+      "text": "The only way to do great work is to love what you do.",
+      "author": "Steve Jobs"
+    }
+  },
+  {
+    "model": "diary.quote",
+    "pk": 2,
+    "fields": {
+      "text": "Believe you can and you're halfway there.",
+      "author": "Theodore Roosevelt"
+    }
+  },
+  {
+    "model": "diary.quote",
+    "pk": 3,
+    "fields": {
+      "text": "It does not matter how slowly you go as long as you do not stop.",
+      "author": "Confucius"
+    }
+  },
+  {
+    "model": "diary.quote",
+    "pk": 4,
+    "fields": {
+      "text": "The future belongs to those who believe in the beauty of their dreams.",
+      "author": "Eleanor Roosevelt"
+    }
+  },
+  {
+    "model": "diary.quote",
+    "pk": 5,
+    "fields": {
+      "text": "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+      "author": "Winston Churchill"
+    }
+  }
+]
