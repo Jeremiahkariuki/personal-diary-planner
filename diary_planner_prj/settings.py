@@ -211,15 +211,27 @@ LOGOUT_REDIRECT_URL = 'login'
 # Django-Allauth Configuration
 ACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# Modern Signup Fields (fixes deprecation warnings)
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_ADAPTER = 'diary.adapters.MySocialAccountAdapter'
+
+# Faster Session Engine for Development
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
