@@ -176,6 +176,62 @@
             }
         });
 
+        // Password Validation Logic
+        const passwordInput = document.querySelector('input[name="password1"]');
+        const usernameInput = document.querySelector('input[name="username"]');
+        
+        if (passwordInput) {
+            const helpText = passwordInput.closest('.input-group').querySelector('.helptext');
+            if (helpText) {
+                const rules = helpText.querySelectorAll('li');
+                
+                // Hide all rules initially
+                rules.forEach(rule => {
+                    rule.style.display = 'none';
+                    rule.style.listStyle = 'none'; // Optional: remove bullets if they look weird
+                    rule.style.color = '#ff4d4d'; // Violation color
+                    rule.style.fontSize = '0.75rem';
+                    rule.style.marginTop = '4px';
+                });
+
+                const validate = () => {
+                    const val = passwordInput.value;
+                    const username = usernameInput ? usernameInput.value : '';
+                    
+                    if (val === '') {
+                        rules.forEach(rule => rule.style.display = 'none');
+                        return;
+                    }
+
+                    rules.forEach(rule => {
+                        const text = rule.textContent.toLowerCase();
+                        let isViolated = false;
+
+                        if (text.includes('8 characters')) {
+                            isViolated = val.length < 8;
+                        } else if (text.includes('entirely numeric')) {
+                            isViolated = /^\d+$/.test(val);
+                        } else if (text.includes('too similar')) {
+                            isViolated = username && val.toLowerCase().includes(username.toLowerCase());
+                        } else if (text.includes('commonly used')) {
+                            // Difficult to check 'commonly used' in JS without a massive list.
+                            // We'll show it only if it's very short or predictable, 
+                            // but generic check is usually left for backend.
+                            // For UX consistency, we'll hide it for now unless we find it's easier to always show or use a small common list.
+                            isViolated = false; 
+                        }
+
+                        rule.style.display = isViolated ? 'list-item' : 'none';
+                    });
+                };
+
+                passwordInput.addEventListener('input', validate);
+                if (usernameInput) {
+                    usernameInput.addEventListener('input', validate);
+                }
+            }
+        }
+
         // Add loading state on form submit
         document.querySelector('.auth-form').addEventListener('submit', function () {
             const btn = document.getElementById('submitBtn');
