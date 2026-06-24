@@ -26,6 +26,9 @@ urlpatterns = [
 
     # REST API Endpoints
     path('api/', include(router.urls)),
+
+    # Social Auth (django-allauth)
+    path('accounts/', include('allauth.urls')),
 ]
 
 if settings.DEBUG:
