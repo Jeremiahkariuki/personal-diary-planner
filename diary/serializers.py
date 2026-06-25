@@ -8,15 +8,19 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email']
 
 class DiaryEntrySerializer(serializers.ModelSerializer):
+    tags = serializers.StringRelatedField(many=True, read_only=True)
+    
     class Meta:
         model = DiaryEntry
-        fields = ['id', 'content', 'mood', 'created_at']
+        fields = ['id', 'content', 'mood', 'image', 'tags', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 class TaskSerializer(serializers.ModelSerializer):
+    tags = serializers.StringRelatedField(many=True, read_only=True)
+    
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'completed', 'due_date', 'due_time', 'created_at']
+        fields = ['id', 'title', 'description', 'completed', 'due_date', 'due_time', 'tags', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 class EventSerializer(serializers.ModelSerializer):

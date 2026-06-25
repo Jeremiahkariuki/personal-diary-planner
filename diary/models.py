@@ -2,6 +2,16 @@ from django.db import models
 from django.contrib.auth.models import User
 from datetime import date
 
+class Tag(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tags')
+    name = models.CharField(max_length=50)
+
+    class Meta:
+        unique_together = ('user', 'name')
+
+    def __str__(self):
+        return self.name
+
 class DiaryEntry(models.Model):
     MOOD_CHOICES = [
         ('happy', '😊 Happy'),
@@ -13,7 +23,10 @@ class DiaryEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='diary_entries')
     content = models.TextField()
     mood = models.CharField(max_length=20, choices=MOOD_CHOICES, default='neutral')
+    image = models.ImageField(upload_to='diary_entries/', null=True, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True, related_name='diary_entries')
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
 
     class Meta:
         ordering = ['-created_at']
@@ -28,6 +41,7 @@ class Task(models.Model):
     completed = models.BooleanField(default=False, db_index=True)
     due_date = models.DateField(blank=True, null=True, db_index=True)
     due_time = models.TimeField(blank=True, null=True)
+    tags = models.ManyToManyField(Tag, blank=True, related_name='tasks')
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

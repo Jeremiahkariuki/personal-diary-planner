@@ -1,0 +1,250 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jdiary | {% if is_edit %}Edit{% else %}Write{% endif %} Entry</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .writing-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .mood-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mood-selector input {
+            display: none;
+        }
+
+        .mood-selector label {
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 10px;
+            border-radius: 15px;
+        }
+
+        .mood-selector input:checked + label {
+            transform: scale(1.3);
+            background: rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .editor-card {
+            padding: 40px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .diary-textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            line-height: 1.6;
+            resize: none;
+            min-height: 400px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--accent-primary);
+        }
+
+        .image-upload-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            width: fit-content;
+        }
+
+        .upload-trigger:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-primary);
+        }
+
+        #imagePreview {
+            margin-top: 15px;
+            max-width: 100%;
+            border-radius: 15px;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .tag-input-container {
+            margin-top: 20px;
+        }
+
+        .tag-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 15px;
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            margin-top: 8px;
+        }
+
+        .save-footer {
+            margin-top: 40px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="writing-container">
+        <header class="editor-header">
+            <a href="{% url 'index' %}" class="back-link">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to Dashboard
+            </a>
+            <h1>{% if is_edit %}Edit Entry{% else %}New Journey{% endif %}</h1>
+        </header>
+
+        <form method="POST" enctype="multipart/form-data" id="diaryEntryForm">
+            {% csrf_token %}
+            <div class="mood-selector">
+                <input type="radio" name="mood" value="happy" id="moodHappy" {% if not entry or entry.mood == 'happy' %}checked{% endif %}>
+                <label for="moodHappy" title="Happy">😊</label>
+
+                <input type="radio" name="mood" value="neutral" id="moodNeutral" {% if entry.mood == 'neutral' %}checked{% endif %}>
+                <label for="moodNeutral" title="Neutral">😐</label>
+
+                <input type="radio" name="mood" value="sad" id="moodSad" {% if entry.mood == 'sad' %}checked{% endif %}>
+                <label for="moodSad" title="Sad">😔</label>
+
+                <input type="radio" name="mood" value="excited" id="moodExcited" {% if entry.mood == 'excited' %}checked{% endif %}>
+                <label for="moodExcited" title="Excited">🤩</label>
+
+                <input type="radio" name="mood" value="stressed" id="moodStressed" {% if entry.mood == 'stressed' %}checked{% endif %}>
+                <label for="moodStressed" title="Stressed">😫</label>
+            </div>
+
+            <div class="glass-card editor-card">
+                <textarea name="content" class="diary-textarea" placeholder="How was your day? Start typing..." required>{{ entry.content }}</textarea>
+                
+                <div class="tag-input-container">
+                    <label style="font-size: 0.9rem; opacity: 0.7;">Tags (comma separated)</label>
+                    <input type="text" name="tags" class="tag-input" placeholder="e.g. travel, thoughts, productivity" value="{{ existing_tags }}">
+                </div>
+
+                <div class="image-upload-section">
+                    <input type="file" name="image" id="diaryImage" accept="image/*" style="display: none;">
+                    <label for="diaryImage" class="upload-trigger">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        {% if entry.image %}Change Photo{% else %}Add a Photo{% endif %}
+                    </label>
+                    <img id="imagePreview" src="{% if entry.image %}{{ entry.image.url }}{% endif %}" style="{% if entry.image %}display: block;{% endif %}">
+                </div>
+
+                <div class="save-footer">
+                    <button type="submit" class="add-btn primary-btn" style="padding: 15px 40px; font-size: 1.1rem;">
+                        {% if is_edit %}Update Entry{% else %}Save Journey{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('diaryImage');
+        const imagePreview = document.getElementById('imagePreview');
+
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Simple unsaved changes warning
+        let formChanged = false;
+        const form = document.getElementById('diaryEntryForm');
+        form.addEventListener('change', () => formChanged = true);
+        window.addEventListener('beforeunload', (e) => {
+            if (formChanged) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        form.addEventListener('submit', () => formChanged = false);
+    </script>
+</body>
+
+</html>

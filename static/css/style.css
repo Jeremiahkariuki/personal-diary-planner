@@ -444,7 +444,30 @@ h2 {
     font-size: 0.85rem;
     font-weight: 600;
     opacity: 0.8;
-    transition: opacity 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.text-btn:hover {
+    opacity: 1;
+    color: var(--accent-secondary);
+    transform: translateX(3px);
+}
+
+.history-pill {
+    padding: 0.5rem 1rem;
+    background: rgba(129, 140, 248, 0.1);
+    border-radius: 100px;
+    border: 1px solid rgba(129, 140, 248, 0.2);
+    text-decoration: none !important;
+}
+
+.history-pill:hover {
+    background: rgba(129, 140, 248, 0.15);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px) translateX(0);
 }
 
 /* Events Section Enhancements */
@@ -1570,6 +1593,7 @@ h2 {
         opacity: 1;
     }
 }
+
 /* --- Confirm Modal --- */
 .confirm-modal-overlay {
     position: fixed;

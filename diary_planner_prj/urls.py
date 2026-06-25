@@ -22,6 +22,8 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile_view, name='profile'),
     path('diary/history/', views.diary_history, name='diary_history'),
+    path('diary/write/', views.write_entry, name='write_entry'),
+    path('diary/edit/<int:entry_id>/', views.write_entry, name='edit_entry'),
     path('export/', views.export_pdf, name='export_pdf'),
 
     # REST API Endpoints

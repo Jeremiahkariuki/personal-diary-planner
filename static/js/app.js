@@ -450,80 +450,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Diary Logic ---
-    const diaryModal = document.getElementById('diaryModal');
-    const diaryForm = document.getElementById('diaryForm');
-    const openDiaryModalBtn = document.getElementById('openDiaryModal');
-    const closeDiaryModalBtn = document.getElementById('closeDiaryModal');
-    const diaryPreview = document.getElementById('diaryPreview');
-
-    if (diaryForm) {
-        diaryForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const saveBtn = document.getElementById('saveDiaryBtn');
-            const entryId = document.getElementById('diaryEntryId').value;
-            const url = entryId ? `/api/diary/${entryId}/` : '/api/diary/';
-            const method = entryId ? 'PUT' : 'POST';
-            saveBtn.classList.add('btn-loading');
-
-            try {
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                    body: JSON.stringify({
-                        'content': document.getElementById('diaryContent').value,
-                        'mood': document.querySelector('input[name="mood"]:checked')?.value || 'neutral'
-                    })
-                });
-                if (response.ok) {
-                    showNotification('Success', entryId ? 'Diary entry updated!' : 'Diary entry saved!');
-                    location.reload();
-                }
-            } catch (error) {
-                console.error('Error saving diary:', error);
-            } finally {
-                saveBtn.classList.remove('btn-loading');
-            }
-        });
-    }
-
-    document.addEventListener('click', async (e) => {
-        const editBtn = e.target.closest('.edit-diary-btn');
-        if (editBtn) {
-            const id = editBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
-            const content = document.getElementById('fullDiaryContent')?.textContent.trim();
-            const mood = document.getElementById('fullDiaryMood')?.textContent.trim();
-            if (id) {
-                document.getElementById('diaryEntryId').value = id;
-                document.getElementById('diaryContent').value = content;
-                const moodRadio = document.querySelector(`input[name="mood"][value="${mood}"]`);
-                if (moodRadio) moodRadio.checked = true;
-                document.getElementById('saveDiaryBtn').textContent = 'Update Entry';
-                diaryModal.classList.remove('hidden');
-            }
-        }
-
-        const deleteBtn = e.target.closest('.delete-diary-btn');
-        if (deleteBtn) {
-            const id = deleteBtn.dataset.id || document.getElementById('fullDiaryId')?.textContent.trim();
-            const confirmed = await window.showConfirmModal('Delete Entry', 'Are you sure you want to completely delete this diary entry?');
-            if (id && confirmed) {
-                try {
-                    const response = await fetch(`/api/diary/${id}/`, {
-                        method: 'DELETE',
-                        headers: { 'X-CSRFToken': csrfToken }
-                    });
-                    if (response.status === 204) {
-                        showNotification('Success', 'Diary entry deleted.');
-                        location.reload();
-                    }
-                } catch (error) {
-                    console.error('Error deleting entry:', error);
-                }
-            }
-        }
-    });
-
     function updateStats() {
         const pendingTasksCount = pendingTaskList?.querySelectorAll('.task-item').length || 0;
         const completedTasksCount = completedTaskList?.querySelectorAll('.task-item').length || 0;
@@ -568,15 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     closeModalBtn?.addEventListener('click', () => eventModal.classList.add('hidden'));
     eventModal?.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.add('hidden'); });
-
-    openDiaryModalBtn?.addEventListener('click', () => {
-        document.getElementById('diaryEntryId').value = '';
-        document.getElementById('saveDiaryBtn').textContent = 'Save Entry';
-        diaryForm.reset();
-        diaryModal.classList.remove('hidden');
-    });
-    closeDiaryModalBtn?.addEventListener('click', () => diaryModal.classList.add('hidden'));
-    diaryModal?.addEventListener('click', (e) => { if (e.target === diaryModal) diaryModal.classList.add('hidden'); });
 
     profileBtn?.addEventListener('click', (e) => {
         e.stopPropagation();

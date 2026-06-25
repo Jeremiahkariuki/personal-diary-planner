@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect
+from django.db import models
+from django.db.models import Q
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
@@ -20,7 +22,7 @@ import random
 
 @login_required
 def index(request):
-    latest_entry = DiaryEntry.objects.filter(user=request.user).first()
+    latest_entry = DiaryEntry.objects.filter(user=request.user).order_by('-created_at').first()
     tasks = Task.objects.filter(user=request.user)
     upcoming_events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')
     
@@ -216,8 +218,63 @@ def profile_view(request):
     return render(request, 'profile.html', context)
 @login_required
 def diary_history(request):
-    entries = DiaryEntry.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'history.html', {'entries': entries})
+    query = request.GET.get('q')
+    entries = DiaryEntry.objects.filter(user=request.user)
+    if query:
+        entries = entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
+    entries = entries.order_by('-created_at')
+    return render(request, 'history.html', {'entries': entries, 'query': query})
+
+@login_required
+def write_entry(request, entry_id=None):
+    from .models import Tag
+    entry = None
+    if entry_id:
+        entry = DiaryEntry.objects.filter(user=request.user, id=entry_id).first()
+        if not entry:
+            return redirect('index')
+
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        mood = request.POST.get('mood', 'neutral')
+        image = request.FILES.get('image')
+        tags_str = request.POST.get('tags', '')
+
+        if entry:
+            entry.content = content
+            entry.mood = mood
+            if image:
+                entry.image = image
+            entry.save()
+            messages.success(request, 'Diary entry updated!')
+        else:
+            entry = DiaryEntry.objects.create(
+                user=request.user,
+                content=content,
+                mood=mood,
+                image=image
+            )
+            messages.success(request, 'Diary entry saved!')
+
+        # Handle tags
+        if tags_str:
+            tag_names = [t.strip() for t in tags_str.split(',') if t.strip()]
+            tag_objs = []
+            for name in tag_names:
+                tag, _ = Tag.objects.get_or_create(user=request.user, name=name)
+                tag_objs.append(tag)
+            entry.tags.set(tag_objs)
+        else:
+            entry.tags.clear()
+
+        return redirect('index')
+
+    context = {
+        'entry': entry,
+        'is_edit': bool(entry_id),
+        'existing_tags': ",".join([t.name for t in entry.tags.all()]) if entry else ""
+    }
+    return render(request, 'write_entry.html', context)
 
 @login_required
 @login_required
