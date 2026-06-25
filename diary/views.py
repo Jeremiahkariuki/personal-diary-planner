@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
@@ -246,10 +246,36 @@ def profile_view(request):
 def diary_history(request):
     query = request.GET.get('q')
     entries = DiaryEntry.objects.filter(user=request.user)
+    
     if query:
         entries = entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
+    
     entries = entries.order_by('-created_at')
-    return render(request, 'history.html', {'entries': entries, 'query': query})
+
+    # Mood Trends Analytics
+    mood_map = {'excited': 5, 'happy': 4, 'neutral': 3, 'sad': 2, 'stressed': 1}
+    last_30_days = entries.order_by('created_at')[:30]
+    
+    mood_trend = [mood_map.get(e.mood, 3) for e in last_30_days]
+    chart_labels = [e.created_at.strftime('%b %d') for e in last_30_days]
+    
+    # Calculate some stats for the professional hub
+    total_entries = entries.count()
+    favorite_mood = "Not enough data"
+    if total_entries > 0:
+        mood_counts = entries.values('mood').annotate(count=Count('mood')).order_by('-count')
+        if mood_counts:
+            favorite_mood = mood_counts[0]['mood']
+
+    context = {
+        'entries': entries,
+        'query': query,
+        'mood_trend': mood_trend,
+        'chart_labels': chart_labels,
+        'total_entries': total_entries,
+        'favorite_mood': favorite_mood,
+    }
+    return render(request, 'history.html', context)
 
 @login_required
 def events_page(request):
