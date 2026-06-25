@@ -418,22 +418,6 @@
             {% endif %}
         </div>
 
-        <!-- Confirm Modal -->
-        <div id="confirmModal" class="confirm-modal-overlay hidden">
-            <div class="glass-card modal-content confirm-modal">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
-                <h2 id="confirmTitle" style="margin-bottom: 1rem;">Confirm Delete</h2>
-                <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-secondary);">Are you sure you want
-                    to
-                    permanently delete this item? This action cannot be undone.</p>
-                <div style="display: flex; gap: 1rem; justify-content: center;">
-                    <button id="cancelConfirmBtn"
-                        style="padding: 10px 20px; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); cursor: pointer;">Cancel</button>
-                    <button id="okConfirmBtn"
-                        style="padding: 10px 20px; border-radius: 10px; border: none; background: #ef4444; color: white; cursor: pointer;">Delete</button>
-                </div>
-            </div>
-        </div>
 
         <!-- JSON Data for Charts -->
         {{ mood_trend|json_script:"mood-data" }}
