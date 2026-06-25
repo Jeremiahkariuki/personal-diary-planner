@@ -8,8 +8,8 @@
     <title>Jdiary | Personal Planner</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Immediate theme application to prevent flicker
         (function () {
             const theme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', theme);
@@ -28,15 +28,15 @@
         <nav class="glass-nav">
             <div class="logo">Jdiary</div>
             <div class="nav-links">
-                <a href="#" class="active">Dashboard</a>
+                <a href="{% url 'index' %}" class="active">Dashboard</a>
+                <a href="{% url 'task_list' %}">Tasks</a>
+                <a href="{% url 'events_page' %}">Events</a>
                 <a href="{% url 'diary_history' %}">Diary</a>
-                <a href="#eventsSection">Events</a>
             </div>
             <div class="nav-actions">
                 <div class="theme-toggle">
                     <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="5"></circle>
                             <line x1="12" y1="1" x2="12" y2="3"></line>
                             <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -49,8 +49,7 @@
                         </svg>
                     </button>
                     <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
                     </button>
@@ -58,50 +57,24 @@
                 <div class="sound-toggle">
                     <button class="theme-btn" id="soundToggleBtn" title="Toggle Sound">
                         <svg class="sound-on-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            stroke-width="2">
                             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                        </svg>
-                        <svg class="sound-off-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                            <line x1="23" y1="9" x2="17" y2="15"></line>
-                            <line x1="17" y1="9" x2="23" y2="15"></line>
                         </svg>
                     </button>
                 </div>
                 <div class="user-menu-container">
                     <button id="profileBtn" class="profile-btn" title="Account">
                         <div class="avatar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </div>
                     </button>
                     <div id="profileDropdown" class="glass-card dropdown-menu hidden">
-                        <div class="dropdown-header">
-                            <span class="user-name">{{ user.username }}</span>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <a href="{% url 'profile' %}" class="dropdown-item">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            Profile
-                        </a>
-                        <a href="{% url 'logout' %}" class="dropdown-item logout-link">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16 17 21 12 16 7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
-                            Logout
-                        </a>
+                        <a href="{% url 'profile' %}" class="dropdown-item">Profile</a>
+                        <a href="{% url 'logout' %}" class="dropdown-item logout-link">Logout</a>
                     </div>
                 </div>
             </div>
@@ -109,8 +82,8 @@
 
         <main class="dashboard">
             <header class="dashboard-header">
-                <h1>Good Afternoon, {{ user.username }}</h1>
-                <p id="currentDateDisplay">Tuesday, June 16, 2026</p>
+                <h1>Hello, {{ user.username }}</h1>
+                <p id="currentDateDisplay">{{ today|date:"l, F d, Y" }}</p>
                 <div class="quote-container">
                     <p id="dailyQuote" class="quote-text">"Believe you can and you're halfway there."</p>
                 </div>
@@ -118,151 +91,94 @@
 
             <div class="stats-grid">
                 <div class="glass-card stat-item">
-                    <span class="label">Upcoming Events</span>
-                    <span class="value" id="eventCountStat">{{ event_count }}</span>
-                </div>
-                <div class="glass-card stat-item">
-                    <span class="label">Tasks Pending</span>
-                    <span class="value" id="taskCountStat">{{ task_count }}</span>
-                </div>
-                <div class="glass-card stat-item">
-                    <span class="label">Tasks Completed</span>
-                    <span class="value" id="taskCountCompletedStat">{{ completed_task_count }}</span>
+                    <span class="label">Priority Tasks</span>
+                    <span class="value">{{ task_count }}</span>
                 </div>
                 <div class="glass-card stat-item">
                     <span class="label">Mood Streak</span>
                     <span class="value">{{ mood_streak }} Days</span>
                 </div>
+                <div class="glass-card stat-item">
+                    <span class="label">Next Event</span>
+                    <span class="value">
+                        {% if upcoming_events %}
+                        {{ upcoming_events.0.event_time|time:"H:i" }}
+                        {% else %}
+                        No events
+                        {% endif %}
+                    </span>
+                </div>
             </div>
 
             <div class="content-grid">
-                <section id="eventsSection" class="events-section glass-card">
-                    <div class="calendar-header">
-                        <h2 id="calendarMonthYear">Month Year</h2>
-                        <div class="calendar-nav">
-                            <button id="prevMonthBtn" class="nav-icon-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="15 18 9 12 15 6"></polyline>
-                                </svg>
-                            </button>
-                            <button id="nextMonthBtn" class="nav-icon-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="calendar-weekdays">
-                        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-                    </div>
-
-                    <div id="calendarGrid" class="calendar-grid">
-                        <!-- Dates will be generated by JS -->
-                    </div>
-
-                    <div class="agenda-header">
-                        <h3>Agenda</h3>
-                    </div>
-
-                    <div class="event-list" id="eventList">
-                        <!-- Events will be filtered by selected date and rendered by JS -->
-                        <div class="loader-container">
-                            <div class="loader"></div>
-                        </div>
-                    </div>
-                    <button class="add-btn">+ Add Event</button>
-                </section>
-
-                <section class="tasks-section glass-card">
-                    <div class="tasks-header">
-                        <h2>Task Planner</h2>
-                    </div>
-
-                    <form id="quickTaskForm" class="quick-task-form">
-                        {% csrf_token %}
-                        <div class="quick-task-inputs">
-                            <input type="text" id="newTaskTitle" placeholder="What needs to be done?" required>
-                            <div class="task-time-inputs">
-                                <input type="date" id="newTaskDate" title="Due Date">
-                                <input type="time" id="newTaskTime" title="Due Time">
-                            </div>
-                        </div>
-                        <button type="submit" class="add-task-btn">+</button>
-                    </form>
-
-                    <div class="task-sections">
-                        <div class="task-column pending-column">
-                            <div class="agenda-header">
-                                <div class="header-flex">
-                                    <h3>Pending</h3>
-                                    <button id="clearTasksBtn" class="text-btn">Clear All</button>
-                                </div>
-                            </div>
-                            <div class="task-list pending-tasks">
-                                {% for task in tasks %}
-                                {% if not task.completed %}
-                                <div class="task-item" data-id="{{ task.id }}">
-                                    <input type="checkbox" class="task-checkbox">
-                                    <div class="task-info">
-                                        <span class="task-title">{{ task.title }}</span>
-                                        {% if task.due_date %}
-                                        <span class="task-due-date">
-                                            📅 {{ task.due_date|date:"M d" }}
-                                            {% if task.due_time %}
-                                            {{ task.due_time|time:"H:i" }}
-                                            {% endif %}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                    <button class="delete-task-btn">&times;</button>
-                                </div>
-                                {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="task-column completed-column">
-                            <div class="agenda-header">
-                                <h3>Completed</h3>
-                            </div>
-                            <div class="task-list completed-tasks">
-                                {% for task in tasks %}
-                                {% if task.completed %}
-                                <div class="task-item completed" data-id="{{ task.id }}">
-                                    <input type="checkbox" checked class="task-checkbox">
-                                    <div class="task-info">
-                                        <span class="task-title">{{ task.title }}</span>
-                                        {% if task.due_date %}
-                                        <span class="task-due-date">
-                                            📅 {{ task.due_date|date:"M d" }}
-                                            {% if task.due_time %}
-                                            {{ task.due_time|time:"H:i" }}
-                                            {% endif %}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                    <button class="delete-task-btn">&times;</button>
-                                </div>
-                                {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="diarySection" class="diary-section glass-card">
+                <section class="insights-section glass-card">
                     <div class="section-header">
-                        <h2>Recent Diary</h2>
-                        <a href="{% url 'diary_history' %}" id="viewHistoryBtn" class="text-btn history-pill">
-                            <span>View History</span>
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </a>
+                        <h2>Personal Insights</h2>
                     </div>
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <span class="chart-label">Mood Trend</span>
+                            <canvas id="moodChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <span class="chart-label">Task Productivity</span>
+                            <canvas id="taskChart"></canvas>
+                        </div>
+                    </div>
+                </section>
 
-                    <div class="diary-card" id="diaryPreview">
+                <div class="dashboard-side-column">
+                    <section class="reminders-section glass-card">
+                        <div class="section-header">
+                            <h2>Quick Reminders</h2>
+                            <a href="{% url 'task_list' %}" class="text-btn">View All</a>
+                        </div>
+                        <div class="task-list">
+                            {% for task in pending_tasks %}
+                            <div class="task-item" data-id="{{ task.id }}">
+                                <input type="checkbox" class="task-checkbox">
+                                <div class="task-info">
+                                    <span class="task-title">{{ task.title }}</span>
+                                    {% if task.due_date %}
+                                    <span class="task-due-date">📅 {{ task.due_date|date:"M d" }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="empty-state">All caught up!</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    <section class="agenda-section glass-card">
+                        <div class="section-header">
+                            <h2>Mini Agenda</h2>
+                        </div>
+                        <div class="event-list">
+                            {% for event in upcoming_events %}
+                            <div class="event-card">
+                                <div class="event-time">
+                                    <span>{{ event.event_time|time:"H:i" }}</span>
+                                    <span class="event-date-sub">{{ event.date|date:"M d" }}</span>
+                                </div>
+                                <div class="event-details">
+                                    <h3>{{ event.title }}</h3>
+                                    {% if event.location %}<p>{{ event.location }}</p>{% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="empty-state">No upcoming events</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </div>
+
+                <section class="recent-diary-section glass-card">
+                    <div class="section-header">
+                        <h2>Recent History</h2>
+                        <a href="{% url 'diary_history' %}" class="text-btn history-pill">Explore</a>
+                    </div>
+                    <div class="diary-card">
                         {% if latest_entry %}
                         <div class="diary-mood-badge mood-{{ latest_entry.mood }}">
                             <span class="mood-icon">
@@ -275,106 +191,75 @@
                             </span>
                             <span class="mood-text">{{ latest_entry.mood|title }}</span>
                         </div>
-                        <div class="diary-content-preview">
-                            <p class="preview-text">"{{ latest_entry.content|truncatechars:180 }}"</p>
-                        </div>
+                        <p class="preview-text">"{{ latest_entry.content|truncatechars:150 }}"</p>
                         <div class="diary-footer">
                             <span class="date">{{ latest_entry.created_at|date:"F d, Y" }}</span>
-                            <div class="diary-card-actions">
-                                <a href="{% url 'edit_entry' latest_entry.id %}" class="icon-btn" title="Edit Entry">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
-                                        stroke-width="2" fill="none">
-                                        <path d="M12 20h9"></path>
-                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                                    </svg>
-                                </a>
-                                <button class="icon-btn delete-diary-btn" title="Delete Entry"
-                                    data-id="{{ latest_entry.id }}">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
-                                        stroke-width="2" fill="none">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path
-                                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                        </path>
-                                    </svg>
-                                </button>
-                            </div>
+                            <a href="{% url 'edit_entry' latest_entry.id %}" class="icon-btn">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
+                                    fill="none">
+                                    <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                                </svg>
+                            </a>
                         </div>
                         {% else %}
-                        <div class="empty-diary">
-                            <p class="preview-text">"No entries yet. Start writing your journey today..."</p>
-                            <span class="date">New Beginning</span>
-                        </div>
+                        <p class="empty-state">No entries yet.</p>
                         {% endif %}
                     </div>
-
-                    <div class="diary-actions">
-                        <a href="{% url 'write_entry' %}" class="add-btn primary-btn" style="text-decoration:none;">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 20h9"></path>
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                            </svg>
-                            Write Today's Entry
-                        </a>
+                    <div class="diary-actions" style="margin-top: 1rem;">
+                        <a href="{% url 'write_entry' %}" class="add-btn primary-btn">+ Write Now</a>
                     </div>
                 </section>
             </div>
         </main>
     </div>
 
-    <!-- Diary Modal removed in favor of dedicated page -->
+    <!-- JSON Data for Charts -->
+    {{ mood_trend|json_script:"mood-data" }}
+    {{ chart_labels|json_script:"chart-labels" }}
+    {{ task_stats|json_script:"task-data" }}
 
     <!-- Event Modal -->
     <div id="eventModal" class="modal-overlay hidden">
         <div class="glass-card modal-content">
-            <header class="modal-header">
+            <div class="modal-header">
                 <h2>Add New Event</h2>
-                <button id="closeModal" class="close-btn">&times;</button>
-            </header>
-            <form id="eventForm">
-                {% csrf_token %}
+                <button id="closeModal" class="icon-btn">&times;</button>
+            </div>
+            <form id="eventForm" class="modal-form">
                 <input type="hidden" id="eventId">
-                <div class="input-group">
-                    <label for="eventTitle">Event Title</label>
-                    <input type="text" id="eventTitle" placeholder="e.g. Yoga Session" required>
+                <div class="form-group">
+                    <label for="eventTitle">Title</label>
+                    <input type="text" id="eventTitle" placeholder="What's happening?" required>
                 </div>
-                <div class="input-group">
-                    <label for="eventTime">Time</label>
-                    <input type="time" id="eventTime" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventDate">Date</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Time</label>
+                        <input type="time" id="eventTime" required>
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label for="eventDate">Date</label>
-                    <input type="date" id="eventDate" required>
-                </div>
-                <div class="input-group">
+                <div class="form-group">
                     <label for="eventLocation">Location</label>
-                    <input type="text" id="eventLocation" placeholder="e.g. Main Hall">
+                    <input type="text" id="eventLocation" placeholder="Where is it?">
                 </div>
-                <button type="submit" class="add-btn primary-btn">Save Event</button>
+                <div class="modal-actions">
+                    <button type="submit" class="primary-btn">Save Event</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <div id="django-messages" style="display: none;">
-        {% if messages %}
-        {% for message in messages %}
-        <div class="django-message" data-tags="{{ message.tags|title|escapejs }}" data-content="{{ message|escapejs }}">
-        </div>
-        {% endfor %}
-        {% endif %}
-    </div>
-
-    <!-- Confirm Modal -->
-    <div id="confirmModal" class="confirm-modal-overlay hidden">
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay hidden">
         <div class="glass-card modal-content confirm-modal">
-            <div class="confirm-icon">⚠️</div>
-            <h2 id="confirmTitle">Confirm Delete</h2>
-            <p id="confirmMessage">Are you sure you want to permanently delete this item? This action cannot be undone.
-            </p>
+            <h2 id="confirmTitle">Confirm Action</h2>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
             <div class="confirm-actions">
-                <button id="cancelConfirmBtn" class="add-btn">Cancel</button>
-                <button id="okConfirmBtn" class="add-btn danger-btn">Delete</button>
+                <button id="cancelConfirmBtn" class="text-btn">Cancel</button>
+                <button id="okConfirmBtn" class="primary-btn danger-btn">Delete</button>
             </div>
         </div>
     </div>
@@ -382,15 +267,91 @@
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=3"></script>
     <script>
-        window.addEventListener('load', () => {
-            const messages = document.querySelectorAll('.django-message');
-            messages.forEach(msg => {
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification(msg.dataset.tags, msg.dataset.content);
-                } else {
-                    console.log('Django Message:', msg.dataset.content);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof Chart === 'undefined') return;
+
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#94a3b8' : '#475569';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+
+            try {
+                // Get data from json_script tags
+                const moodData = JSON.parse(document.getElementById('mood-data').textContent);
+                const moodLabels = JSON.parse(document.getElementById('chart-labels').textContent);
+                const taskStats = JSON.parse(document.getElementById('task-data').textContent);
+
+                const moodCtx = document.getElementById('moodChart');
+                if (moodCtx) {
+                    new Chart(moodCtx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: moodLabels,
+                            datasets: [{
+                                label: 'Mood Level',
+                                data: moodData,
+                                borderColor: '#818cf8',
+                                backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                fill: true,
+                                pointBackgroundColor: '#c084fc',
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    min: 1, max: 5,
+                                    ticks: {
+                                        stepSize: 1,
+                                        color: textColor,
+                                        callback: function (value) {
+                                            const emojiMap = { 5: '😊', 4: '🤩', 3: '😐', 2: '😔', 1: '😫' };
+                                            return emojiMap[value] || value;
+                                        }
+                                    },
+                                    grid: { color: gridColor }
+                                },
+                                x: {
+                                    ticks: { color: textColor },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
                 }
-            });
+
+                const taskCtx = document.getElementById('taskChart');
+                if (taskCtx) {
+                    new Chart(taskCtx.getContext('2d'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['Completed', 'Pending'],
+                            datasets: [{
+                                data: taskStats,
+                                backgroundColor: ['#818cf8', 'rgba(255, 255, 255, 0.05)'],
+                                borderColor: 'transparent',
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { color: textColor, padding: 20, font: { family: 'Outfit', size: 10 } }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error initializing charts:', err);
+            }
         });
     </script>
 </body>

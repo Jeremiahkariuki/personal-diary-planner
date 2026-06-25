@@ -19,23 +19,21 @@ from .serializers import (
 from datetime import date
 import datetime
 import random
+import json
 
 @login_required
 def index(request):
     latest_entry = DiaryEntry.objects.filter(user=request.user).order_by('-created_at').first()
     tasks = Task.objects.filter(user=request.user)
-    upcoming_events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')
+    upcoming_events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')[:5] # Limit for dashboard
     
-    # Calculate mood streak (consecutive days with entries)
+    # Calculate mood streak
     today = date.today()
     streak = 0
-    
-    # Get all distinct entry dates for the user
     entry_dates = DiaryEntry.objects.filter(user=request.user).values_list('created_at__date', flat=True).distinct().order_by('-created_at__date')
     
     if entry_dates.exists():
         current_date = today
-        # Check if they have an entry today, if not check yesterday (to allow for end-of-day entries)
         if entry_dates[0] == today:
             streak = 1
         elif entry_dates[0] == today - datetime.timedelta(days=1):
@@ -51,18 +49,46 @@ def index(request):
                     current_date = entry_dates[i]
                 else:
                     break
-        
+    
+    # Analytics for Charts
+    # 1. Task Chart (Pending vs Completed)
+    pending_tasks_count = tasks.filter(completed=False).count()
+    completed_tasks_count = tasks.filter(completed=True).count()
+    
+    # 2. Mood Trend Chart (Last 7 days)
+    mood_trend_data = []
+    labels = []
+    for i in range(6, -1, -1):
+        day = today - datetime.timedelta(days=i)
+        labels.append(day.strftime('%a'))
+        # Assign numeric values to moods for the chart
+        # happy: 5, excited: 4, neutral: 3, sad: 2, stressed: 1
+        mood_map = {'happy': 5, 'excited': 4, 'neutral': 3, 'sad': 2, 'stressed': 1}
+        day_entry = DiaryEntry.objects.filter(user=request.user, created_at__date=day).first()
+        if day_entry:
+            mood_trend_data.append(mood_map.get(day_entry.mood, 3))
+        else:
+            mood_trend_data.append(None) # Or 0/3 depending on how we want it to look
+            
     context = {
         'latest_entry': latest_entry,
-        'tasks': tasks,
         'upcoming_events': upcoming_events,
-        'task_count': tasks.filter(completed=False).count(),
-        'completed_task_count': tasks.filter(completed=True).count(),
+        'pending_tasks': tasks.filter(completed=False)[:3], # Top 3 for dashboard
+        'task_count': pending_tasks_count,
+        'completed_task_count': completed_tasks_count,
         'event_count': upcoming_events.count(),
         'mood_streak': streak,
         'today': today,
+        'chart_labels': labels,
+        'mood_trend': mood_trend_data,
+        'task_stats': [completed_tasks_count, pending_tasks_count]
     }
     return render(request, 'index.html', context)
+
+@login_required
+def task_list(request):
+    tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
+    return render(request, 'tasks.html', {'tasks': tasks})
 
 # --- API ViewSets ---
 
@@ -224,6 +250,12 @@ def diary_history(request):
         entries = entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
     entries = entries.order_by('-created_at')
     return render(request, 'history.html', {'entries': entries, 'query': query})
+
+@login_required
+def events_page(request):
+    # Fetch all events for the user to pass to the template
+    # although the calendar logic in JS will likely fetch them via API
+    return render(request, 'events.html')
 
 @login_required
 def write_entry(request, entry_id=None):

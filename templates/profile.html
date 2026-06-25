@@ -172,8 +172,13 @@
     </div>
 
     <div class="app-container">
-        <nav class="glass-nav" style="margin-bottom: 2rem;">
+        <nav class="glass-nav">
             <div class="logo">Jdiary</div>
+            <div class="nav-links">
+                <a href="{% url 'index' %}">Dashboard</a>
+                <a href="{% url 'task_list' %}">Tasks</a>
+                <a href="{% url 'diary_history' %}">Diary</a>
+            </div>
             <div class="nav-actions">
                 <div class="theme-toggle">
                     <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
@@ -182,6 +187,12 @@
                             <circle cx="12" cy="12" r="5"></circle>
                             <line x1="12" y1="1" x2="12" y2="3"></line>
                             <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                         </svg>
                     </button>
                     <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
@@ -193,13 +204,6 @@
                 </div>
             </div>
         </nav>
-
-        <a href="{% url 'index' %}" class="back-link">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Back to Dashboard
-        </a>
 
         <div class="profile-container">
             <header class="profile-header">

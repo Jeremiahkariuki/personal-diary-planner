@@ -11,8 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const eventModal = document.getElementById('eventModal');
     const eventForm = document.getElementById('eventForm');
     const quickTaskForm = document.getElementById('quickTaskForm');
-    const openModalBtn = document.querySelector('.events-section .add-btn');
+    const openModalBtn = document.querySelector('.events-section .add-btn') || document.getElementById('mainCreateEventBtn');
     const closeModalBtn = document.getElementById('closeModal');
+    const sidebarEventList = document.getElementById('sidebarEventList');
     const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
     const csrfToken = csrfTokenEl ? csrfTokenEl.value : '';
 
@@ -250,9 +251,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCalendarGrid() {
-        const grid = document.getElementById('calendarGrid');
+        const grid = document.getElementById('calendarGrid') || document.getElementById('fullCalendarBody');
         const monthYearLabel = document.getElementById('calendarMonthYear');
         if (!grid || !monthYearLabel) return;
+
+        const isFullPage = grid.id === 'fullCalendarBody';
 
         grid.innerHTML = '';
         const year = currentViewDate.getFullYear();
@@ -269,11 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const todayStr = today.toISOString().split('T')[0];
 
         for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-            grid.appendChild(createDayCard(year, month - 1, daysInPrevMonth - i, true));
+            grid.appendChild(createDayCard(year, month - 1, daysInPrevMonth - i, true, isFullPage));
         }
 
         for (let i = 1; i <= daysInMonth; i++) {
-            const card = createDayCard(year, month, i, false);
+            const card = createDayCard(year, month, i, false, isFullPage);
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
             if (dateStr === todayStr) card.classList.add('day-today');
             if (dateStr === selectedDate) card.classList.add('day-selected');
@@ -282,11 +285,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const remainingSlots = 42 - grid.children.length;
         for (let i = 1; i <= remainingSlots; i++) {
-            grid.appendChild(createDayCard(year, month + 1, i, true));
+            grid.appendChild(createDayCard(year, month + 1, i, true, isFullPage));
         }
     }
 
-    function createDayCard(year, month, day, isOutside) {
+    function createDayCard(year, month, day, isOutside, isFullPage = false) {
         const d = new Date(year, month, day);
         const y = d.getFullYear();
         const m = d.getMonth() + 1;
@@ -294,13 +297,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(dayFormatted).padStart(2, "0")}`;
 
         const card = document.createElement('div');
-        card.className = `calendar-day ${isOutside ? 'day-outside' : ''}`;
-        card.innerHTML = `<span class="day-number">${day}</span>`;
+        card.className = isFullPage ? `calendar-day-cell ${isOutside ? 'day-outside' : ''}` : `calendar-day ${isOutside ? 'day-outside' : ''}`;
+        card.innerHTML = `<span class="${isFullPage ? 'day-num' : 'day-number'}">${day}</span>`;
 
-        if (allUpcomingEvents.some(e => e.date === dateStr)) {
-            const dot = document.createElement('div');
-            dot.className = 'event-dot';
-            card.appendChild(dot);
+        const daysEvents = allUpcomingEvents.filter(e => e.date === dateStr);
+        if (daysEvents.length > 0) {
+            if (isFullPage) {
+                const eventContainer = document.createElement('div');
+                eventContainer.className = 'cell-events';
+                daysEvents.slice(0, 3).forEach(e => {
+                    const pill = document.createElement('div');
+                    pill.className = 'day-event-pill';
+                    pill.textContent = e.title;
+                    eventContainer.appendChild(pill);
+                });
+                if (daysEvents.length > 3) {
+                    const more = document.createElement('div');
+                    more.className = 'day-event-pill';
+                    more.style.background = 'rgba(255,255,255,0.1)';
+                    more.textContent = `+${daysEvents.length - 3} more`;
+                    eventContainer.appendChild(more);
+                }
+                card.appendChild(eventContainer);
+            } else {
+                const dot = document.createElement('div');
+                dot.className = 'event-dot';
+                card.appendChild(dot);
+            }
         }
 
         card.addEventListener('click', () => {
@@ -326,13 +349,21 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCalendarGrid();
     });
 
+    document.getElementById('todayBtn')?.addEventListener('click', () => {
+        currentViewDate = new Date();
+        selectedDate = currentViewDate.toISOString().split('T')[0];
+        renderCalendarGrid();
+        filterEvents(selectedDate);
+    });
+
     function filterEvents(dateStr) {
-        if (!eventList) return;
-        eventList.innerHTML = '';
+        const targetList = eventList || sidebarEventList;
+        if (!targetList) return;
+        targetList.innerHTML = '';
         const filtered = allUpcomingEvents.filter(e => e.date === dateStr);
 
         if (filtered.length === 0) {
-            eventList.innerHTML = `<div class="empty-state"><p class="empty-msg">No events scheduled for this day.</p></div>`;
+            targetList.innerHTML = `<div class="empty-state"><p class="empty-msg">No events scheduled.</p></div>`;
             return;
         }
 
@@ -483,7 +514,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Modal Helpers
-    openModalBtn?.addEventListener('click', () => {
+    const headerCreateBtn = document.getElementById('headerCreateBtn');
+
+    function openEventCreationModal() {
         document.getElementById('eventId').value = '';
         eventForm.reset();
         const modalHeader = eventModal.querySelector('.modal-header h2');
@@ -491,7 +524,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalHeader) modalHeader.textContent = 'Add New Event';
         if (submitBtn) submitBtn.textContent = 'Save Event';
         eventModal.classList.remove('hidden');
-    });
+    }
+
+    headerCreateBtn?.addEventListener('click', openEventCreationModal);
+    openModalBtn?.addEventListener('click', openEventCreationModal);
     closeModalBtn?.addEventListener('click', () => eventModal.classList.add('hidden'));
     eventModal?.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.add('hidden'); });
 

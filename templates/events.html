@@ -1,0 +1,310 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jdiary | Events & Calendar</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .calendar-page-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+            min-height: 80vh;
+        }
+
+        .calendar-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .calendar-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--glass-bg);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .calendar-controls h2 {
+            font-size: 1.4rem;
+            margin: 0;
+        }
+
+        .control-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .full-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--glass-border);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        .calendar-header-cell {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .calendar-day-cell {
+            background: var(--glass-bg);
+            min-height: 120px;
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: background 0.3s ease;
+            cursor: pointer;
+        }
+
+        .calendar-day-cell:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .calendar-day-cell.day-outside {
+            background: rgba(0, 0, 0, 0.1);
+            opacity: 0.5;
+        }
+
+        .calendar-day-cell.day-today {
+            background: rgba(129, 140, 248, 0.05);
+        }
+
+        .day-num {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .day-today .day-num {
+            color: var(--accent-primary);
+            background: rgba(129, 140, 248, 0.1);
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .cell-events {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .day-event-pill {
+            background: var(--accent-primary);
+            color: white;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 900px) {
+            .calendar-page-container {
+                grid-template-columns: 1fr;
+            }
+
+            .calendar-sidebar {
+                order: 2;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <nav class="glass-nav">
+            <div class="logo">Jdiary</div>
+            <div class="nav-links">
+                <a href="{% url 'index' %}">Dashboard</a>
+                <a href="{% url 'task_list' %}">Tasks</a>
+                <a href="{% url 'events_page' %}" class="active">Events</a>
+                <a href="{% url 'diary_history' %}">Diary</a>
+            </div>
+            <div class="nav-actions">
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                        </svg>
+                    </button>
+                    <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="user-menu-container">
+                    <button id="profileBtn" class="profile-btn" title="Account">
+                        <div class="avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="events-dashboard">
+            <header class="dashboard-header">
+                <h1>My Events</h1>
+                <p>Plan your schedule and keep track of important milestones.</p>
+            </header>
+
+            <div class="calendar-page-container">
+                <aside class="calendar-sidebar">
+                    <div class="glass-card sidebar-card">
+                        <button id="mainCreateEventBtn" class="add-btn primary-btn w-full" style="width: 100%;">+ Create
+                            Event</button>
+                    </div>
+
+                    <div class="glass-card sidebar-card">
+                        <h3 class="section-title">Schedule List</h3>
+                        <div id="sidebarEventList" class="event-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="calendar-main">
+                    <div class="calendar-controls">
+                        <h2 id="calendarMonthYear">June 2026</h2>
+                        <div class="control-btns">
+                            <button id="prevMonthBtn" class="theme-btn" title="Previous Month">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+                                    fill="none">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <button id="todayBtn" class="text-btn">Today</button>
+                            <button id="nextMonthBtn" class="theme-btn" title="Next Month">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+                                    fill="none">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="full-calendar-grid">
+                        <div class="calendar-header-cell">SUN</div>
+                        <div class="calendar-header-cell">MON</div>
+                        <div class="calendar-header-cell">TUE</div>
+                        <div class="calendar-header-cell">WED</div>
+                        <div class="calendar-header-cell">THU</div>
+                        <div class="calendar-header-cell">FRI</div>
+                        <div class="calendar-header-cell">SAT</div>
+                        <div id="fullCalendarBody" style="display: contents;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="eventModal" class="modal-overlay hidden">
+        <div class="glass-card modal-content">
+            <div class="modal-header">
+                <h2>Add New Event</h2>
+                <button id="closeModal" class="icon-btn">&times;</button>
+            </div>
+            <form id="eventForm" class="modal-form">
+                <input type="hidden" id="eventId">
+                <div class="form-group">
+                    <label for="eventTitle">Title</label>
+                    <input type="text" id="eventTitle" placeholder="What's happening?" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventDate">Date</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Time</label>
+                        <input type="time" id="eventTime" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="eventLocation">Location</label>
+                    <input type="text" id="eventLocation" placeholder="Where is it?">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="primary-btn">Save Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay hidden">
+        <div class="glass-card modal-content confirm-modal">
+            <h2 id="confirmTitle">Confirm Action</h2>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button id="cancelConfirmBtn" class="text-btn">Cancel</button>
+                <button id="okConfirmBtn" class="primary-btn danger-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script src="{% static 'js/app.js' %}?v=4"></script>
+    <script>
+        // Custom logic for the full calendar page if needed
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ensure the app.js logic kicks in and we can override specific selectors
+            // Since app.js uses document.getElementById('calendarGrid'), I'll make sure it works.
+            // Actually, I named it fullCalendarBody here. I'll reconcile.
+        });
+    </script>
+</body>
+
+</html>

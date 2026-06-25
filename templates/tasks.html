@@ -1,0 +1,160 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Planner | Jdiary</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <nav class="glass-nav">
+            <div class="logo">Jdiary</div>
+            <div class="nav-links">
+                <a href="{% url 'index' %}">Dashboard</a>
+                <a href="{% url 'task_list' %}" class="active">Tasks</a>
+                <a href="{% url 'events_page' %}">Events</a>
+                <a href="{% url 'diary_history' %}">Diary</a>
+            </div>
+            <div class="nav-actions">
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </button>
+                    <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <!-- Profile dropdown omitted for brevity, assuming standard header components -->
+            </div>
+        </nav>
+
+        <main class="tasks-page">
+            <header class="dashboard-header">
+                <h1>Task Planner</h1>
+                <p>Stay productive and organized</p>
+            </header>
+
+            <section class="tasks-section glass-card">
+                <form id="quickTaskForm" class="quick-task-form">
+                    {% csrf_token %}
+                    <div class="quick-task-inputs">
+                        <input type="text" id="newTaskTitle" placeholder="What needs to be done?" required>
+                        <div class="task-time-inputs">
+                            <input type="date" id="newTaskDate" title="Due Date">
+                            <input type="time" id="newTaskTime" title="Due Time">
+                        </div>
+                    </div>
+                    <button type="submit" class="add-task-btn">+</button>
+                </form>
+
+                <div class="task-sections">
+                    <div class="task-column pending-column">
+                        <div class="agenda-header">
+                            <div class="header-flex">
+                                <h3>Pending</h3>
+                                <button id="clearTasksBtn" class="text-btn">Clear All</button>
+                            </div>
+                        </div>
+                        <div class="task-list pending-tasks">
+                            {% for task in tasks %}
+                            {% if not task.completed %}
+                            <div class="task-item" data-id="{{ task.id }}">
+                                <input type="checkbox" class="task-checkbox">
+                                <div class="task-info">
+                                    <span class="task-title">{{ task.title }}</span>
+                                    {% if task.due_date %}
+                                    <span class="task-due-date">
+                                        📅 {{ task.due_date|date:"M d" }}
+                                        {% if task.due_time %}
+                                        {{ task.due_time|time:"H:i" }}
+                                        {% endif %}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <button class="delete-task-btn">&times;</button>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="task-column completed-column">
+                        <div class="agenda-header">
+                            <h3>Completed</h3>
+                        </div>
+                        <div class="task-list completed-tasks">
+                            {% for task in tasks %}
+                            {% if task.completed %}
+                            <div class="task-item completed" data-id="{{ task.id }}">
+                                <input type="checkbox" checked class="task-checkbox">
+                                <div class="task-info">
+                                    <span class="task-title">{{ task.title }}</span>
+                                    {% if task.due_date %}
+                                    <span class="task-due-date">
+                                        📅 {{ task.due_date|date:"M d" }}
+                                        {% if task.due_time %}
+                                        {{ task.due_time|time:"H:i" }}
+                                        {% endif %}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <button class="delete-task-btn">&times;</button>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="confirm-modal-overlay hidden">
+        <div class="glass-card modal-content confirm-modal">
+            <div class="confirm-icon">⚠️</div>
+            <h2 id="confirmTitle">Confirm Delete</h2>
+            <p id="confirmMessage">Are you sure you want to permanently delete this item?</p>
+            <div class="confirm-actions">
+                <button id="cancelConfirmBtn" class="add-btn">Cancel</button>
+                <button id="okConfirmBtn" class="add-btn danger-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script src="{% static 'js/app.js' %}"></script>
+</body>
+
+</html>

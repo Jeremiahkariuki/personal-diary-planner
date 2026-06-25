@@ -23,7 +23,7 @@ class DiaryEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='diary_entries')
     content = models.TextField()
     mood = models.CharField(max_length=20, choices=MOOD_CHOICES, default='neutral')
-    image = models.ImageField(upload_to='diary_entries/', null=True, blank=True)
+    image = models.ImageField(upload_to='diary/%Y/%m/', null=True, blank=True)
     tags = models.ManyToManyField(Tag, blank=True, related_name='diary_entries')
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 

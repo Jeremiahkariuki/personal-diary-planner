@@ -186,8 +186,9 @@ AWS_S3_CUSTOM_DOMAIN = os.getenv('R2_CUSTOM_DOMAIN') # e.g. pub-123.r2.dev or yo
 
 if AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID:
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_FILE_OVERWRITE = True
     AWS_S3_SIGNATURE_VERSION = 's3v4' # Required for R2
+    AWS_QUERYSTRING_AUTH = False  # Cleaner, non-signed URLs for public buckets
     
     if AWS_S3_CUSTOM_DOMAIN:
         MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'

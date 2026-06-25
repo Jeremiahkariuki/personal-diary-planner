@@ -44,7 +44,7 @@
             border-radius: 15px;
         }
 
-        .mood-selector input:checked + label {
+        .mood-selector input:checked+label {
             transform: scale(1.3);
             background: rgba(99, 102, 241, 0.2);
             box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
@@ -118,7 +118,7 @@
             max-width: 100%;
             border-radius: 15px;
             display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .tag-input-container {
@@ -143,8 +143,15 @@
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -156,95 +163,132 @@
         <div class="blob blob-3"></div>
     </div>
 
-    <div class="writing-container">
-        <header class="editor-header">
-            <a href="{% url 'index' %}" class="back-link">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Back to Dashboard
-            </a>
-            <h1>{% if is_edit %}Edit Entry{% else %}New Journey{% endif %}</h1>
-        </header>
-
-        <form method="POST" enctype="multipart/form-data" id="diaryEntryForm">
-            {% csrf_token %}
-            <div class="mood-selector">
-                <input type="radio" name="mood" value="happy" id="moodHappy" {% if not entry or entry.mood == 'happy' %}checked{% endif %}>
-                <label for="moodHappy" title="Happy">😊</label>
-
-                <input type="radio" name="mood" value="neutral" id="moodNeutral" {% if entry.mood == 'neutral' %}checked{% endif %}>
-                <label for="moodNeutral" title="Neutral">😐</label>
-
-                <input type="radio" name="mood" value="sad" id="moodSad" {% if entry.mood == 'sad' %}checked{% endif %}>
-                <label for="moodSad" title="Sad">😔</label>
-
-                <input type="radio" name="mood" value="excited" id="moodExcited" {% if entry.mood == 'excited' %}checked{% endif %}>
-                <label for="moodExcited" title="Excited">🤩</label>
-
-                <input type="radio" name="mood" value="stressed" id="moodStressed" {% if entry.mood == 'stressed' %}checked{% endif %}>
-                <label for="moodStressed" title="Stressed">😫</label>
+    <div class="app-container">
+        <nav class="glass-nav">
+            <div class="logo">Jdiary</div>
+            <div class="nav-links">
+                <a href="{% url 'index' %}">Dashboard</a>
+                <a href="{% url 'task_list' %}">Tasks</a>
+                <a href="{% url 'diary_history' %}">Diary</a>
             </div>
-
-            <div class="glass-card editor-card">
-                <textarea name="content" class="diary-textarea" placeholder="How was your day? Start typing..." required>{{ entry.content }}</textarea>
-                
-                <div class="tag-input-container">
-                    <label style="font-size: 0.9rem; opacity: 0.7;">Tags (comma separated)</label>
-                    <input type="text" name="tags" class="tag-input" placeholder="e.g. travel, thoughts, productivity" value="{{ existing_tags }}">
-                </div>
-
-                <div class="image-upload-section">
-                    <input type="file" name="image" id="diaryImage" accept="image/*" style="display: none;">
-                    <label for="diaryImage" class="upload-trigger">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
+            <div class="nav-actions">
+                <!-- Theme toggle only for writing mode -->
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                         </svg>
-                        {% if entry.image %}Change Photo{% else %}Add a Photo{% endif %}
-                    </label>
-                    <img id="imagePreview" src="{% if entry.image %}{{ entry.image.url }}{% endif %}" style="{% if entry.image %}display: block;{% endif %}">
-                </div>
-
-                <div class="save-footer">
-                    <button type="submit" class="add-btn primary-btn" style="padding: 15px 40px; font-size: 1.1rem;">
-                        {% if is_edit %}Update Entry{% else %}Save Journey{% endif %}
+                    </button>
+                    <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
                     </button>
                 </div>
             </div>
-        </form>
-    </div>
+        </nav>
 
-    <script>
-        const imageInput = document.getElementById('diaryImage');
-        const imagePreview = document.getElementById('imagePreview');
+        <div class="writing-container">
+            <header class="dashboard-header">
+                <h1>{% if is_edit %}Edit Entry{% else %}New Journey{% endif %}</h1>
+                <p>Capture your thoughts and moments</p>
+            </header>
 
-        imageInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
+            <form method="POST" enctype="multipart/form-data" id="diaryEntryForm">
+                {% csrf_token %}
+                <div class="mood-selector">
+                    <input type="radio" name="mood" value="happy" id="moodHappy" {% if not entry or entry.mood=='happy'
+                        %}checked{% endif %}>
+                    <label for="moodHappy" title="Happy">😊</label>
+
+                    <input type="radio" name="mood" value="neutral" id="moodNeutral" {% if entry.mood=='neutral'
+                        %}checked{% endif %}>
+                    <label for="moodNeutral" title="Neutral">😐</label>
+
+                    <input type="radio" name="mood" value="sad" id="moodSad" {% if entry.mood=='sad' %}checked{% endif
+                        %}>
+                    <label for="moodSad" title="Sad">😔</label>
+
+                    <input type="radio" name="mood" value="excited" id="moodExcited" {% if entry.mood=='excited'
+                        %}checked{% endif %}>
+                    <label for="moodExcited" title="Excited">🤩</label>
+
+                    <input type="radio" name="mood" value="stressed" id="moodStressed" {% if entry.mood=='stressed'
+                        %}checked{% endif %}>
+                    <label for="moodStressed" title="Stressed">😫</label>
+                </div>
+
+                <div class="glass-card editor-card">
+                    <textarea name="content" class="diary-textarea" placeholder="How was your day? Start typing..."
+                        required>{{ entry.content }}</textarea>
+
+                    <div class="tag-input-container">
+                        <label style="font-size: 0.9rem; opacity: 0.7;">Tags (comma separated)</label>
+                        <input type="text" name="tags" class="tag-input"
+                            placeholder="e.g. travel, thoughts, productivity" value="{{ existing_tags }}">
+                    </div>
+
+                    <div class="image-upload-section">
+                        <input type="file" name="image" id="diaryImage" accept="image/*" style="display: none;">
+                        <label for="diaryImage" class="upload-trigger">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            {% if entry.image %}Change Photo{% else %}Add a Photo{% endif %}
+                        </label>
+                        <img id="imagePreview" src="{% if entry.image %}{{ entry.image.url }}{% endif %}"
+                            style="{% if entry.image %}display: block;{% endif %}">
+                    </div>
+
+                    <div class="save-footer">
+                        <button type="submit" class="add-btn primary-btn"
+                            style="padding: 15px 40px; font-size: 1.1rem;">
+                            {% if is_edit %}Update Entry{% else %}Save Journey{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            const imageInput = document.getElementById('diaryImage');
+            const imagePreview = document.getElementById('imagePreview');
+
+            imageInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
                 }
-                reader.readAsDataURL(file);
-            }
-        });
+            });
 
-        // Simple unsaved changes warning
-        let formChanged = false;
-        const form = document.getElementById('diaryEntryForm');
-        form.addEventListener('change', () => formChanged = true);
-        window.addEventListener('beforeunload', (e) => {
-            if (formChanged) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
-        form.addEventListener('submit', () => formChanged = false);
-    </script>
+            // Simple unsaved changes warning
+            let formChanged = false;
+            const form = document.getElementById('diaryEntryForm');
+            form.addEventListener('change', () => formChanged = true);
+            window.addEventListener('beforeunload', (e) => {
+                if (formChanged) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+            form.addEventListener('submit', () => formChanged = false);
+        </script>
 </body>
 
 </html>
