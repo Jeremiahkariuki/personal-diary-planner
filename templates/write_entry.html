@@ -220,24 +220,19 @@
             <form method="POST" enctype="multipart/form-data" id="diaryEntryForm">
                 {% csrf_token %}
                 <div class="mood-selector">
-                    <input type="radio" name="mood" value="happy" id="moodHappy" {% if not entry or entry.mood=='happy'
-                        %}checked{% endif %}>
+                    <input type="radio" name="mood" value="happy" id="moodHappy" {% if not entry or entry.mood == 'happy' %}checked{% endif %}>
                     <label for="moodHappy" title="Happy">😊</label>
 
-                    <input type="radio" name="mood" value="neutral" id="moodNeutral" {% if entry.mood=='neutral'
-                        %}checked{% endif %}>
+                    <input type="radio" name="mood" value="neutral" id="moodNeutral" {% if entry.mood == 'neutral' %}checked{% endif %}>
                     <label for="moodNeutral" title="Neutral">😐</label>
 
-                    <input type="radio" name="mood" value="sad" id="moodSad" {% if entry.mood=='sad' %}checked{% endif
-                        %}>
+                    <input type="radio" name="mood" value="sad" id="moodSad" {% if entry.mood == 'sad' %}checked{% endif %}>
                     <label for="moodSad" title="Sad">😔</label>
 
-                    <input type="radio" name="mood" value="excited" id="moodExcited" {% if entry.mood=='excited'
-                        %}checked{% endif %}>
+                    <input type="radio" name="mood" value="excited" id="moodExcited" {% if entry.mood == 'excited' %}checked{% endif %}>
                     <label for="moodExcited" title="Excited">🤩</label>
 
-                    <input type="radio" name="mood" value="stressed" id="moodStressed" {% if entry.mood=='stressed'
-                        %}checked{% endif %}>
+                    <input type="radio" name="mood" value="stressed" id="moodStressed" {% if entry.mood == 'stressed' %}checked{% endif %}>
                     <label for="moodStressed" title="Stressed">😫</label>
                 </div>
 
@@ -305,7 +300,7 @@
             form.addEventListener('submit', () => formChanged = false);
         </script>
         <script src="{% static 'js/theme.js' %}"></script>
-        <script src="{% static 'js/app.js' %}?v=4"></script>
+        <script src="{% static 'js/app.js' %}?v=5"></script>
 </body>
 
 </html>
