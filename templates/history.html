@@ -544,8 +544,21 @@
                 }
             });
         </script>
+
+        <!-- Confirmation Modal -->
+        <div id="confirmModal" class="modal-overlay hidden">
+            <div class="glass-card modal-content confirm-modal">
+                <h2 id="confirmTitle">Confirm Action</h2>
+                <p id="confirmMessage">Are you sure you want to proceed?</p>
+                <div class="confirm-actions">
+                    <button id="cancelConfirmBtn" class="text-btn">Cancel</button>
+                    <button id="okConfirmBtn" class="primary-btn danger-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+
         <script src="{% static 'js/theme.js' %}"></script>
-        <script src="{% static 'js/app.js' %}?v=4"></script>
+        <script src="{% static 'js/app.js' %}?v=5"></script>
 </body>
 
 </html>
