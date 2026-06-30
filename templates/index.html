@@ -99,7 +99,7 @@
                             </svg>
                             Profile
                         </a>
-                        <a href="{% url 'profile' %}" class="dropdown-item">
+                        <a href="{% url 'settings_view' %}" class="dropdown-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="3"></circle>
                                 <path
@@ -129,9 +129,9 @@
                 <div class="quote-container" id="quoteContainer">
                     <p id="dailyQuote" class="quote-text">"{{ quote_text }}"</p>
                     {% if quote_author %}
-                        <span id="quoteAuthor" class="quote-author">— {{ quote_author }}</span>
+                    <span id="quoteAuthor" class="quote-author">— {{ quote_author }}</span>
                     {% else %}
-                        <span id="quoteAuthor" class="quote-author"></span>
+                    <span id="quoteAuthor" class="quote-author"></span>
                     {% endif %}
                 </div>
             </header>

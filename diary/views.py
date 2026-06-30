@@ -216,22 +216,6 @@ def profile_view(request):
             'count': count
         })
     
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        avatar = request.FILES.get('avatar')
-        
-        if email:
-            user.email = email
-            user.save()
-            
-        if avatar:
-            profile.avatar = avatar
-            profile.save()
-            
-        if email or avatar:
-            messages.success(request, 'Profile updated successfully!')
-            return redirect('profile')
-
     context = {
         'user': user,
         'profile': profile,
@@ -242,6 +226,59 @@ def profile_view(request):
         'mood_stats': mood_stats,
     }
     return render(request, 'profile.html', context)
+
+@login_required
+def settings_view(request):
+    user = request.user
+    
+    # Ensure profile exists
+    from .models import Profile
+    profile, created = Profile.objects.get_or_create(user=user)
+    
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        avatar = request.FILES.get('avatar')
+        is_ajax = request.POST.get('ajax') == '1'
+        
+        print(f"[SETTINGS POST] is_ajax={is_ajax}, email={email}, avatar={avatar}")
+        print(f"[SETTINGS POST] FILES keys: {list(request.FILES.keys())}")
+        print(f"[SETTINGS POST] POST keys: {list(request.POST.keys())}")
+        
+        if email:
+            user.email = email
+            user.save()
+            
+        if avatar:
+            print(f"[SETTINGS POST] Saving avatar: {avatar.name}, size={avatar.size}")
+            try:
+                profile.avatar = avatar
+                profile.save()
+                print(f"[SETTINGS POST] Avatar saved OK. URL={profile.avatar.url}")
+            except Exception as e:
+                import traceback
+                error_msg = f"Storage error: {str(e)}"
+                print(error_msg)
+                print(traceback.format_exc())
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'message': error_msg}, status=400)
+                messages.error(request, error_msg)
+                return redirect('settings_view')
+                
+        if email or avatar:
+            if is_ajax:
+                avatar_url = profile.avatar.url if profile.avatar else None
+                print(f"[SETTINGS POST] Returning JSON ok, avatar_url={avatar_url}")
+                return JsonResponse({'status': 'ok', 'avatar_url': avatar_url})
+            messages.success(request, 'Settings updated successfully!')
+            return redirect('settings_view')
+        else:
+            print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
+            
+    context = {
+        'user': user,
+        'profile': profile,
+    }
+    return render(request, 'settings.html', context)
 @login_required
 def diary_history(request):
     query = request.GET.get('q')

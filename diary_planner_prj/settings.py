@@ -32,6 +32,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-t5%jreu3xu((#dtf&y-*n=!lm#
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
+if DEBUG:
+    ALLOWED_HOSTS += ['localhost', '127.0.0.1', '[::1]', 'testserver']
 
 
 # Application definition
@@ -189,14 +191,21 @@ if AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID:
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     AWS_S3_FILE_OVERWRITE = True
     AWS_S3_SIGNATURE_VERSION = 's3v4' # Required for R2
-    AWS_QUERYSTRING_AUTH = False  # Cleaner, non-signed URLs for public buckets
     
-    if AWS_S3_CUSTOM_DOMAIN:
-        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
-    else:
-        # Default R2 public URL format if no custom domain
-        # AWS_S3_ENDPOINT_URL typically looks like https://<account_id>.r2.cloudflarestorage.com
+    # Allow enabling query string authentication (signed URLs) via environment
+    AWS_QUERYSTRING_AUTH = os.getenv('R2_QUERYSTRING_AUTH', 'False').strip() == 'True'
+    
+    if AWS_QUERYSTRING_AUTH:
+        # In signed mode, do not use AWS_S3_CUSTOM_DOMAIN so django-storages signs URL properly
+        AWS_S3_CUSTOM_DOMAIN = None
         MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
+    else:
+        if AWS_S3_CUSTOM_DOMAIN:
+            MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+        else:
+            # Default R2 public URL format if no custom domain
+            # AWS_S3_ENDPOINT_URL typically looks like https://<account_id>.r2.cloudflarestorage.com
+            MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
 else:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_URL = '/media/'

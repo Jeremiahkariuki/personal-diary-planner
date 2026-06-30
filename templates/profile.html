@@ -55,38 +55,6 @@
             object-fit: cover;
         }
 
-        .edit-avatar-btn {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 36px;
-            height: 36px;
-            background: var(--accent-primary);
-            border: 3px solid var(--bg-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .edit-avatar-btn:hover {
-            transform: scale(1.1);
-            background: var(--accent-secondary);
-        }
-
-        .edit-avatar-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        #avatarInput {
-            display: none;
-        }
-
         .profile-info h1 {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
@@ -95,6 +63,7 @@
         .profile-info p {
             color: var(--text-secondary);
             font-size: 1.1rem;
+            margin-bottom: 1rem;
         }
 
         .stats-summary {
@@ -146,20 +115,6 @@
 
         .settings-section {
             margin-top: 3rem;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin-bottom: 2rem;
-            transition: color 0.2s;
-        }
-
-        .back-link:hover {
-            color: var(--text-primary);
         }
     </style>
 </head>
@@ -225,26 +180,28 @@
             <header class="profile-header">
                 <div class="profile-avatar-container">
                     <div class="profile-avatar-large">
-                        {% if profile.avatar %}
-                        <img src="{{ profile.avatar.url }}" alt="Profile" id="avatarPreview">
-                        {% else %}
-                        {{ user.username|first|upper }}
-                        {% endif %}
+                        <img src="{% if profile.avatar %}{{ profile.avatar.url }}{% endif %}" alt="Profile"
+                            id="avatarPreview"
+                            onerror="this.style.display='none'; document.getElementById('avatarInitials').style.display='block';"
+                            style="{% if not profile.avatar %}display:none;{% endif %} width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                        <span id="avatarInitials" style="{% if profile.avatar %}display:none;{% endif %}">{{
+                            user.username|first|upper }}</span>
                     </div>
-                    <button type="button" class="edit-avatar-btn" id="editAvatarBtn" title="Change Photo">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <form id="avatarForm" method="POST" enctype="multipart/form-data" style="display: none;">
-                        {% csrf_token %}
-                        <input type="file" name="avatar" id="avatarInput" accept="image/*">
-                    </form>
                 </div>
                 <div class="profile-info">
                     <h1>{{ user.username }}</h1>
                     <p>Member since {{ user.date_joined|date:"F Y" }}</p>
+                    <a href="{% url 'settings_view' %}" class="add-btn primary-btn"
+                        style="text-decoration: none; display: inline-flex; width: auto; padding: 0.6rem 1.5rem; gap: 0.5rem; align-items: center;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                            </path>
+                        </svg>
+                        Edit Profile Settings
+                    </a>
                 </div>
             </header>
 
@@ -276,207 +233,19 @@
                 </div>
             </section>
 
-            <section class="settings-section glass-card" id="customQuoteSection">
-                <h2>Custom Quote Settings</h2>
-                <p style="margin-bottom:1.5rem;color:var(--text-secondary)">Set your own personalized quote that will be
-                    displayed permanently on all pages.</p>
-
-                <!-- Display Mode -->
-                <div id="quoteDisplay" style="margin-bottom:1.5rem">
-                    <div class="quote-display-card">
-                        <!-- prettier-ignore -->
-                        <p id="dailyQuote">"{{ quote_text }}"</p>
-                        <!-- prettier-ignore -->
-                        {% if quote_author %}<span id="quoteAuthor">— {{ quote_author }}</span>{% else %}<span
-                            id="quoteAuthor"></span>{% endif %}
-
-                        <div class="quote-actions" style="margin-top:15px;display:flex;gap:10px">
-                            <button id="editQuoteBtn" class="add-btn quote-settings-btn">✏️ Edit Quote</button>
-                            {% if quote_is_custom %}
-                            <button id="deleteQuoteBtn" class="add-btn quote-delete-btn">🗑️ Delete Quote</button>
-                            {% else %}
-                            <button id="deleteQuoteBtn" class="add-btn quote-delete-btn" style="display:none">🗑️ Delete
-                                Quote</button>
-                            {% endif %}
-                        </div>
-                    </div>
+            <section class="settings-section glass-card" style="margin-top: 2rem;">
+                <h2>Current Pinned Quote</h2>
+                <div class="quote-display-card" style="margin-top: 1rem;">
+                    <!-- prettier-ignore -->
+                    <p id="dailyQuote">"{{ quote_text }}"</p>
+                    <!-- prettier-ignore -->
+                    {% if quote_author %}<span id="quoteAuthor">— {{ quote_author }}</span>{% else %}<span
+                        id="quoteAuthor"></span>{% endif %}
                 </div>
-
-                <!-- Edit Mode (hidden by default) -->
-                <div id="quoteEditor" style="display:none" class="quote-display-card">
-                    <div class="input-group">
-                        <label for="quoteInput">Quote Text</label>
-                        <textarea id="quoteInput" class="quote-edit-input" placeholder="Type your quote here..."
-                            rows="3">{{ quote_text }}</textarea>
-                    </div>
-                    <div class="input-group">
-                        <label for="authorInput">Author (optional)</label>
-                        <!-- prettier-ignore -->
-                        <input id="authorInput" class="quote-author-input" type="text" placeholder="Author"
-                            value="{{ quote_author }}">
-                    </div>
-                    <div style="display:flex;gap:10px">
-                        <button id="saveQuoteBtn" class="add-btn primary-btn"
-                            style="width:auto;padding:0.6rem 1.5rem">Save</button>
-                        <button id="cancelQuoteBtn" class="add-btn"
-                            style="width:auto;padding:0.6rem 1.5rem;border:1px solid var(--glass-border)">Cancel</button>
-                    </div>
-                </div>
-            </section>
-
-            <section class="settings-section glass-card">
-                <h2>Profile Settings</h2>
-                {% if messages %}
-                {% for message in messages %}
-                <div class="notification-toast"
-                    style="position: relative; right: auto; bottom: auto; margin-bottom: 1rem; transform: none; animation: none;">
-                    <div class="notif-content">{{ message }}</div>
-                </div>
-                {% endfor %}
-                {% endif %}
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="input-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" value="{{ user.username }}" disabled
-                            style="opacity: 0.6; cursor: not-allowed;">
-                    </div>
-                    <div class="input-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" value="{{ user.email|default:'' }}"
-                            placeholder="e.g. jdiary@example.com">
-                    </div>
-                    <button type="submit" class="add-btn primary-btn">Update Profile</button>
-                </form>
-            </section>
-
-            <section class="settings-section glass-card">
-                <h2>Data Management</h2>
-                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Download a copy of your diary entries,
-                    tasks, and events in a readable PDF format for your personal archives.</p>
-                <a href="{% url 'export_pdf' %}" class="add-btn"
-                    style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05);">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                    </svg>
-                    Export Data (PDF)
-                </a>
             </section>
         </div>
     </div>
 
-    <script src="{% static 'js/theme.js' %}"></script>
-    <script>
-        const editAvatarBtn = document.getElementById('editAvatarBtn');
-        const avatarInput = document.getElementById('avatarInput');
-        const avatarForm = document.getElementById('avatarForm');
-
-        if (editAvatarBtn && avatarInput) {
-            editAvatarBtn.addEventListener('click', () => {
-                avatarInput.click();
-            });
-
-            avatarInput.addEventListener('change', () => {
-                if (avatarInput.files.length > 0) {
-                    avatarForm.submit();
-                }
-            });
-        }
-    </script>
-    <script>
-        // Custom Quote AJAX Handling
-        (function () {
-            const csrfToken = '{{ csrf_token }}';
-            const editBtn = document.getElementById('editQuoteBtn');
-            const deleteBtn = document.getElementById('deleteQuoteBtn');
-            const display = document.getElementById('quoteDisplay');
-            const editor = document.getElementById('quoteEditor');
-            const saveBtn = document.getElementById('saveQuoteBtn');
-            const cancelBtn = document.getElementById('cancelQuoteBtn');
-            const quoteEl = document.getElementById('dailyQuote');
-            const authorEl = document.getElementById('quoteAuthor');
-            const quoteInput = document.getElementById('quoteInput');
-            const authorInput = document.getElementById('authorInput');
-
-            if (!editBtn) return;
-
-            editBtn.addEventListener('click', () => {
-                quoteInput.value = quoteEl.textContent.replace(/^"|"$/g, '');
-                authorInput.value = authorEl.textContent.replace(/^— /, '');
-                display.style.display = 'none';
-                editor.style.display = 'block';
-                quoteInput.focus();
-            });
-
-            cancelBtn.addEventListener('click', () => {
-                editor.style.display = 'none';
-                display.style.display = 'block';
-            });
-
-            saveBtn.addEventListener('click', async () => {
-                const text = quoteInput.value.trim();
-                if (!text) { quoteInput.focus(); return; }
-                saveBtn.disabled = true;
-                saveBtn.textContent = 'Saving...';
-                try {
-                    const res = await fetch('{% url "save_custom_quote" %}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                        body: JSON.stringify({ text, author: authorInput.value.trim() })
-                    });
-                    const data = await res.json();
-                    if (data.status === 'ok') {
-                        quoteEl.textContent = '"' + data.text + '"';
-                        authorEl.textContent = data.author ? '— ' + data.author : '';
-                        editor.style.display = 'none';
-                        display.style.display = 'block';
-                        deleteBtn.style.display = 'inline-flex';
-
-                        // Update current page header if it exists
-                        const pageHeadingQuoteText = document.querySelector('.dashboard-header .quote-text');
-                        const pageHeadingQuoteAuthor = document.querySelector('.dashboard-header .quote-author');
-                        if (pageHeadingQuoteText) {
-                            pageHeadingQuoteText.textContent = '"' + data.text + '"';
-                        }
-                        if (pageHeadingQuoteAuthor) {
-                            pageHeadingQuoteAuthor.textContent = '— ' + data.author;
-                        }
-                    }
-                } catch (e) {
-                    console.error(e);
-                } finally {
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = 'Save';
-                }
-            });
-
-            deleteBtn.addEventListener('click', async () => {
-                if (!confirm('Remove your custom quote and go back to random quotes?')) return;
-                try {
-                    const res = await fetch('{% url "delete_custom_quote" %}', {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrfToken }
-                    });
-                    const data = await res.json();
-                    if (data.status === 'ok') {
-                        quoteEl.textContent = '"' + data.text + '"';
-                        authorEl.textContent = data.author ? '— ' + data.author : '';
-                        deleteBtn.style.display = 'none';
-
-                        // Update current page header if it exists
-                        const pageHeadingQuoteText = document.querySelector('.dashboard-header .quote-text');
-                        const pageHeadingQuoteAuthor = document.querySelector('.dashboard-header .quote-author');
-                        if (pageHeadingQuoteText) {
-                            pageHeadingQuoteText.textContent = '"' + data.text + '"';
-                        }
-                        if (pageHeadingQuoteAuthor) {
-                            pageHeadingQuoteAuthor.textContent = data.author ? '— ' + data.author : '';
-                        }
-                    }
-                } catch (e) { console.error(e); }
-            });
-        })();
-    </script>
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=4"></script>
 </body>
