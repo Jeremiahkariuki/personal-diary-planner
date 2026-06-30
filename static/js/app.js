@@ -29,24 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const dateDisplay = document.getElementById('currentDateDisplay');
         if (dateDisplay) dateDisplay.textContent = now.toLocaleDateString('en-US', options);
-
-        displayDailyQuote();
-    }
-
-    async function displayDailyQuote() {
-        const quoteEl = document.getElementById('dailyQuote');
-        if (!quoteEl) return;
-
-        try {
-            const response = await fetch('/api/quotes/random/');
-            if (response.ok) {
-                const data = await response.json();
-                quoteEl.innerHTML = `"${data.text}" <br> <span style="font-size: 0.8rem; font-style: normal; opacity: 0.7;">— ${data.author || 'Unknown'}</span>`;
-            }
-        } catch (error) {
-            console.error('Error fetching quote:', error);
-            quoteEl.textContent = '"Believe you can and you\'re halfway there."';
-        }
     }
 
     // Sound Toggle Logic
