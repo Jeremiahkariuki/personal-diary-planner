@@ -70,10 +70,28 @@ def index(request):
         else:
             mood_trend_data.append(None) # Or 0/3 depending on how we want it to look
             
+    # --- Quote logic ---
+    from .models import Profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if profile.custom_quote:
+        quote_text = profile.custom_quote
+        quote_author = profile.custom_quote_author or ''
+        quote_is_custom = True
+    else:
+        all_quotes = list(Quote.objects.all())
+        if all_quotes:
+            q = random.choice(all_quotes)
+            quote_text = q.text
+            quote_author = q.author or ''
+        else:
+            quote_text = "Every day is a new beginning."
+            quote_author = ''
+        quote_is_custom = False
+
     context = {
         'latest_entry': latest_entry,
         'upcoming_events': upcoming_events,
-        'pending_tasks': tasks.filter(completed=False)[:3], # Top 3 for dashboard
+        'pending_tasks': tasks.filter(completed=False)[:3],
         'task_count': pending_tasks_count,
         'completed_task_count': completed_tasks_count,
         'event_count': upcoming_events.count(),
@@ -81,7 +99,10 @@ def index(request):
         'today': today,
         'chart_labels': labels,
         'mood_trend': mood_trend_data,
-        'task_stats': [completed_tasks_count, pending_tasks_count]
+        'task_stats': [completed_tasks_count, pending_tasks_count],
+        'quote_text': quote_text,
+        'quote_author': quote_author,
+        'quote_is_custom': quote_is_custom,
     }
     return render(request, 'index.html', context)
 
@@ -333,6 +354,40 @@ def write_entry(request, entry_id=None):
         'existing_tags': ",".join([t.name for t in entry.tags.all()]) if entry else ""
     }
     return render(request, 'write_entry.html', context)
+
+@login_required
+def save_custom_quote(request):
+    """AJAX POST: save user's custom pinned quote."""
+    if request.method == 'POST':
+        from .models import Profile
+        data = json.loads(request.body)
+        text = data.get('text', '').strip()
+        author = data.get('author', '').strip()
+        if not text:
+            return JsonResponse({'error': 'Quote text is required.'}, status=400)
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile.custom_quote = text
+        profile.custom_quote_author = author
+        profile.save()
+        return JsonResponse({'status': 'ok', 'text': text, 'author': author})
+    return JsonResponse({'error': 'Method not allowed.'}, status=405)
+
+@login_required
+def delete_custom_quote(request):
+    """AJAX POST: clear the user's custom quote — reverts to random."""
+    if request.method == 'POST':
+        from .models import Profile
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile.custom_quote = None
+        profile.custom_quote_author = None
+        profile.save()
+        # Return a fresh random quote
+        all_quotes = list(Quote.objects.all())
+        if all_quotes:
+            q = random.choice(all_quotes)
+            return JsonResponse({'status': 'ok', 'text': q.text, 'author': q.author or ''})
+        return JsonResponse({'status': 'ok', 'text': 'Every day is a new beginning.', 'author': ''})
+    return JsonResponse({'error': 'Method not allowed.'}, status=405)
 
 @login_required
 @login_required
