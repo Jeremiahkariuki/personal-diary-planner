@@ -215,14 +215,9 @@
             <header class="dashboard-header">
                 <h1>{% if is_edit %}Edit Entry{% else %}New Journey{% endif %}</h1>
                 <p>Capture your thoughts and moments</p>
-                <div class="quote-container" id="quoteContainer" style="margin-top: 10px;">
-                    <p class="quote-text" style="font-size: 0.95rem; font-style: italic; opacity: 0.85;">"{{ quote_text
-                        }}"</p>
-                    {% if quote_author %}
-                    <span class="quote-author"
-                        style="font-size: 0.8rem; opacity: 0.6; display: block; margin-top: 4px;">— {{ quote_author
-                        }}</span>
-                    {% endif %}
+                <div class="quote-container" style="margin-top:10px">
+                    <p class="header-quote-text">"{{ quote_text }}"</p>
+                    {% if quote_author %}<span class="header-quote-author">— {{ quote_author }}</span>{% endif %}
                 </div>
             </header>
 

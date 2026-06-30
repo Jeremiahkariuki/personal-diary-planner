@@ -278,47 +278,32 @@
 
             <section class="settings-section glass-card" id="customQuoteSection">
                 <h2>Custom Quote Settings</h2>
-                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Set your own personalized quote that
-                    will be displayed permanently on all pages. Reverts to random quotes when deleted.</p>
+                <p style="margin-bottom:1.5rem;color:var(--text-secondary)">Set your own personalized quote that will be
+                    displayed permanently on all pages.</p>
 
                 <!-- Display Mode -->
-                <div id="quoteDisplay" style="margin-bottom: 1.5rem;">
-                    <div
-                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); padding: 1.5rem; border-radius: 16px; position: relative;">
-                        <p id="dailyQuote" class="quote-text"
-                            style="font-size: 1.1rem; font-style: italic; margin-bottom: 0.5rem; line-height: 1.5;">"{{
-                            quote_text }}"</p>
-                        {% if quote_author %}
-                        <span id="quoteAuthor" class="quote-author"
-                            style="font-size: 0.9rem; opacity: 0.6; display: block;">— {{ quote_author }}</span>
-                        {% else %}
-                        <span id="quoteAuthor" class="quote-author"
-                            style="font-size: 0.9rem; opacity: 0.6; display: block;"></span>
-                        {% endif %}
+                <div id="quoteDisplay" style="margin-bottom:1.5rem">
+                    <div class="quote-display-card">
+                        <!-- prettier-ignore -->
+                        <p id="dailyQuote">"{{ quote_text }}"</p>
+                        <!-- prettier-ignore -->
+                        {% if quote_author %}<span id="quoteAuthor">— {{ quote_author }}</span>{% else %}<span
+                            id="quoteAuthor"></span>{% endif %}
 
-                        <div class="quote-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                            <button id="editQuoteBtn" class="add-btn"
-                                style="width: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem;">
-                                ✏️ Edit Quote
-                            </button>
+                        <div class="quote-actions" style="margin-top:15px;display:flex;gap:10px">
+                            <button id="editQuoteBtn" class="add-btn quote-settings-btn">✏️ Edit Quote</button>
                             {% if quote_is_custom %}
-                            <button id="deleteQuoteBtn" class="add-btn"
-                                style="width: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">
-                                🗑️ Delete Quote
-                            </button>
+                            <button id="deleteQuoteBtn" class="add-btn quote-delete-btn">🗑️ Delete Quote</button>
                             {% else %}
-                            <button id="deleteQuoteBtn" class="add-btn"
-                                style="width: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); font-size: 0.9rem; display: none; align-items: center; gap: 0.5rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">
-                                🗑️ Delete Quote
-                            </button>
+                            <button id="deleteQuoteBtn" class="add-btn quote-delete-btn" style="display:none">🗑️ Delete
+                                Quote</button>
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
                 <!-- Edit Mode (hidden by default) -->
-                <div id="quoteEditor"
-                    style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem;">
+                <div id="quoteEditor" style="display:none" class="quote-display-card">
                     <div class="input-group">
                         <label for="quoteInput">Quote Text</label>
                         <textarea id="quoteInput" class="quote-edit-input" placeholder="Type your quote here..."
@@ -326,14 +311,15 @@
                     </div>
                     <div class="input-group">
                         <label for="authorInput">Author (optional)</label>
+                        <!-- prettier-ignore -->
                         <input id="authorInput" class="quote-author-input" type="text" placeholder="Author"
                             value="{{ quote_author }}">
                     </div>
-                    <div class="quote-editor-actions" style="display: flex; gap: 10px;">
+                    <div style="display:flex;gap:10px">
                         <button id="saveQuoteBtn" class="add-btn primary-btn"
-                            style="width: auto; padding: 0.6rem 1.5rem; font-size: 0.95rem;">Save</button>
-                        <button id="cancelQuoteBtn" class="add-btn secondary-btn"
-                            style="width: auto; padding: 0.6rem 1.5rem; font-size: 0.95rem; border: 1px solid var(--glass-border);">Cancel</button>
+                            style="width:auto;padding:0.6rem 1.5rem">Save</button>
+                        <button id="cancelQuoteBtn" class="add-btn"
+                            style="width:auto;padding:0.6rem 1.5rem;border:1px solid var(--glass-border)">Cancel</button>
                     </div>
                 </div>
             </section>

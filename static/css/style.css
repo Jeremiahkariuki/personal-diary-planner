@@ -1870,3 +1870,58 @@ h2 {
 .quote-author-input:focus {
     border-color: var(--accent-primary);
 }
+
+.header-quote-text {
+    font-size: 0.95rem;
+    font-style: italic;
+    opacity: 0.85;
+}
+
+.header-quote-author {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    display: block;
+    margin-top: 4px;
+}
+
+.quote-display-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    padding: 1.5rem;
+    border-radius: 16px;
+    position: relative;
+}
+
+.quote-display-card #dailyQuote {
+    font-size: 1.1rem;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.quote-display-card #quoteAuthor {
+    font-size: 0.9rem;
+    opacity: 0.6;
+    display: block;
+}
+
+.quote-settings-btn {
+    width: auto;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--glass-border);
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quote-delete-btn {
+    width: auto;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ef4444;
+}
