@@ -1832,3 +1832,41 @@ h2 {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
 }
+
+/* Custom Quote Settings styling */
+.quote-edit-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    padding: 12px 14px;
+    resize: none;
+    outline: none;
+    margin-bottom: 8px;
+    transition: border-color 0.3s;
+}
+
+.quote-edit-input:focus {
+    border-color: var(--accent-primary);
+}
+
+.quote-author-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    padding: 10px 12px;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.3s;
+}
+
+.quote-author-input:focus {
+    border-color: var(--accent-primary);
+}

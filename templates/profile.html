@@ -276,6 +276,68 @@
                 </div>
             </section>
 
+            <section class="settings-section glass-card" id="customQuoteSection">
+                <h2>Custom Quote Settings</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Set your own personalized quote that
+                    will be displayed permanently on all pages. Reverts to random quotes when deleted.</p>
+
+                <!-- Display Mode -->
+                <div id="quoteDisplay" style="margin-bottom: 1.5rem;">
+                    <div
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); padding: 1.5rem; border-radius: 16px; position: relative;">
+                        <p id="dailyQuote" class="quote-text"
+                            style="font-size: 1.1rem; font-style: italic; margin-bottom: 0.5rem; line-height: 1.5;">"{{
+                            quote_text }}"</p>
+                        {% if quote_author %}
+                        <span id="quoteAuthor" class="quote-author"
+                            style="font-size: 0.9rem; opacity: 0.6; display: block;">— {{ quote_author }}</span>
+                        {% else %}
+                        <span id="quoteAuthor" class="quote-author"
+                            style="font-size: 0.9rem; opacity: 0.6; display: block;"></span>
+                        {% endif %}
+
+                        <div class="quote-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button id="editQuoteBtn" class="add-btn"
+                                style="width: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                ✏️ Edit Quote
+                            </button>
+                            {% if quote_is_custom %}
+                            <button id="deleteQuoteBtn" class="add-btn"
+                                style="width: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">
+                                🗑️ Delete Quote
+                            </button>
+                            {% else %}
+                            <button id="deleteQuoteBtn" class="add-btn"
+                                style="width: auto; padding: 0.5rem 1rem; border: 1px solid var(--glass-border); font-size: 0.9rem; display: none; align-items: center; gap: 0.5rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">
+                                🗑️ Delete Quote
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Mode (hidden by default) -->
+                <div id="quoteEditor"
+                    style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem;">
+                    <div class="input-group">
+                        <label for="quoteInput">Quote Text</label>
+                        <textarea id="quoteInput" class="quote-edit-input" placeholder="Type your quote here..."
+                            rows="3">{{ quote_text }}</textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="authorInput">Author (optional)</label>
+                        <input id="authorInput" class="quote-author-input" type="text" placeholder="Author"
+                            value="{{ quote_author }}">
+                    </div>
+                    <div class="quote-editor-actions" style="display: flex; gap: 10px;">
+                        <button id="saveQuoteBtn" class="add-btn primary-btn"
+                            style="width: auto; padding: 0.6rem 1.5rem; font-size: 0.95rem;">Save</button>
+                        <button id="cancelQuoteBtn" class="add-btn secondary-btn"
+                            style="width: auto; padding: 0.6rem 1.5rem; font-size: 0.95rem; border: 1px solid var(--glass-border);">Cancel</button>
+                    </div>
+                </div>
+            </section>
+
             <section class="settings-section glass-card">
                 <h2>Profile Settings</h2>
                 {% if messages %}
@@ -334,6 +396,100 @@
                 }
             });
         }
+    </script>
+    <script>
+        // Custom Quote AJAX Handling
+        (function () {
+            const csrfToken = '{{ csrf_token }}';
+            const editBtn = document.getElementById('editQuoteBtn');
+            const deleteBtn = document.getElementById('deleteQuoteBtn');
+            const display = document.getElementById('quoteDisplay');
+            const editor = document.getElementById('quoteEditor');
+            const saveBtn = document.getElementById('saveQuoteBtn');
+            const cancelBtn = document.getElementById('cancelQuoteBtn');
+            const quoteEl = document.getElementById('dailyQuote');
+            const authorEl = document.getElementById('quoteAuthor');
+            const quoteInput = document.getElementById('quoteInput');
+            const authorInput = document.getElementById('authorInput');
+
+            if (!editBtn) return;
+
+            editBtn.addEventListener('click', () => {
+                quoteInput.value = quoteEl.textContent.replace(/^"|"$/g, '');
+                authorInput.value = authorEl.textContent.replace(/^— /, '');
+                display.style.display = 'none';
+                editor.style.display = 'block';
+                quoteInput.focus();
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                editor.style.display = 'none';
+                display.style.display = 'block';
+            });
+
+            saveBtn.addEventListener('click', async () => {
+                const text = quoteInput.value.trim();
+                if (!text) { quoteInput.focus(); return; }
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+                try {
+                    const res = await fetch('{% url "save_custom_quote" %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                        body: JSON.stringify({ text, author: authorInput.value.trim() })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        quoteEl.textContent = '"' + data.text + '"';
+                        authorEl.textContent = data.author ? '— ' + data.author : '';
+                        editor.style.display = 'none';
+                        display.style.display = 'block';
+                        deleteBtn.style.display = 'inline-flex';
+
+                        // Update current page header if it exists
+                        const pageHeadingQuoteText = document.querySelector('.dashboard-header .quote-text');
+                        const pageHeadingQuoteAuthor = document.querySelector('.dashboard-header .quote-author');
+                        if (pageHeadingQuoteText) {
+                            pageHeadingQuoteText.textContent = '"' + data.text + '"';
+                        }
+                        if (pageHeadingQuoteAuthor) {
+                            pageHeadingQuoteAuthor.textContent = '— ' + data.author;
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save';
+                }
+            });
+
+            deleteBtn.addEventListener('click', async () => {
+                if (!confirm('Remove your custom quote and go back to random quotes?')) return;
+                try {
+                    const res = await fetch('{% url "delete_custom_quote" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken }
+                    });
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        quoteEl.textContent = '"' + data.text + '"';
+                        authorEl.textContent = data.author ? '— ' + data.author : '';
+                        deleteBtn.style.display = 'none';
+
+                        // Update current page header if it exists
+                        const pageHeadingQuoteText = document.querySelector('.dashboard-header .quote-text');
+                        const pageHeadingQuoteAuthor = document.querySelector('.dashboard-header .quote-author');
+                        if (pageHeadingQuoteText) {
+                            pageHeadingQuoteText.textContent = '"' + data.text + '"';
+                        }
+                        if (pageHeadingQuoteAuthor) {
+                            pageHeadingQuoteAuthor.textContent = data.author ? '— ' + data.author : '';
+                        }
+                    }
+                } catch (e) { console.error(e); }
+            });
+        })();
     </script>
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=4"></script>
