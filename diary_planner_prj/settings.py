@@ -242,15 +242,9 @@ SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_ADAPTER = 'diary.adapters.MySocialAccountAdapter'
 
-# Faster Session Engine for Development
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-    }
-}
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+# Session Engine - use DB-backed sessions so OAuth state persists across redirects
+# (In-memory cache sessions don't survive the Google OAuth callback redirect)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {

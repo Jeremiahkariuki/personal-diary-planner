@@ -186,7 +186,7 @@
                 <p>Please enter your details to continue</p>
             </header>
 
-            <form method="post" class="auth-form">
+            <form method="post" class="auth-form" id="loginForm" autocomplete="off">
                 {% csrf_token %}
                 {% if form.non_field_errors %}
                 <ul class="errorlist">
@@ -306,10 +306,12 @@
         const loginForm = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
 
-        loginForm.addEventListener('submit', () => {
-            submitBtn.classList.add('loading');
-            submitBtn.innerText = 'Signing In...';
-        });
+        if (loginForm && submitBtn) {
+            loginForm.addEventListener('submit', () => {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Signing In...';
+            });
+        }
 
         // Social Button Loading States
         document.querySelectorAll('.social-btn').forEach(btn => {
