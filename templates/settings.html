@@ -404,6 +404,15 @@
                     </svg>
                     Reset to Defaults
                 </button>
+                <button id="resetAllBtn" class="add-btn"
+                    style="width:auto; padding:0.6rem 1.4rem; display:inline-flex; align-items:center; gap:0.5rem; border-style:solid; font-size:0.9rem; margin-left:0.5rem;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Reset All
+                </button>
             </section>
 
             <section class="settings-section glass-card">
@@ -686,20 +695,51 @@
             var b = localStorage.getItem('color_background') || DEFAULTS.background;
             applyColors(p, s, b);
 
-            // Reset button
+            // Reset button – clears custom colors and theme, then reloads page
             var resetBtn = document.getElementById('resetColorsBtn');
             if (resetBtn) {
                 resetBtn.addEventListener('click', function () {
+                    // Clear custom colors
                     localStorage.removeItem('color_accentPrimary');
                     localStorage.removeItem('color_accentSecondary');
                     localStorage.removeItem('color_background');
+                    // Clear theme preference
+                    localStorage.removeItem('theme');
+                    // Reset inputs to defaults for UI consistency
                     document.getElementById('colorAccentPrimary').value = DEFAULTS.accentPrimary;
                     document.getElementById('colorAccentSecondary').value = DEFAULTS.accentSecondary;
                     document.getElementById('colorBackground').value = DEFAULTS.background;
                     document.getElementById('labelAccentPrimary').textContent = DEFAULTS.accentPrimary;
                     document.getElementById('labelAccentSecondary').textContent = DEFAULTS.accentSecondary;
                     document.getElementById('labelBackground').textContent = DEFAULTS.background;
+                    // Apply defaults immediately
                     applyColors(DEFAULTS.accentPrimary, DEFAULTS.accentSecondary, DEFAULTS.background);
+                    // Reload page to apply default theme and colors
+                    location.reload();
+                });
+            }
+
+            // Reset All button handler – clears colors AND theme preference
+            var resetAllBtn = document.getElementById('resetAllBtn');
+            if (resetAllBtn) {
+                resetAllBtn.addEventListener('click', function () {
+                    // Remove custom color entries
+                    localStorage.removeItem('color_accentPrimary');
+                    localStorage.removeItem('color_accentSecondary');
+                    localStorage.removeItem('color_background');
+                    // Remove theme entry
+                    localStorage.removeItem('theme');
+                    // Reset inputs to defaults
+                    document.getElementById('colorAccentPrimary').value = DEFAULTS.accentPrimary;
+                    document.getElementById('colorAccentSecondary').value = DEFAULTS.accentSecondary;
+                    document.getElementById('colorBackground').value = DEFAULTS.background;
+                    document.getElementById('labelAccentPrimary').textContent = DEFAULTS.accentPrimary;
+                    document.getElementById('labelAccentSecondary').textContent = DEFAULTS.accentSecondary;
+                    document.getElementById('labelBackground').textContent = DEFAULTS.background;
+                    // Apply defaults
+                    applyColors(DEFAULTS.accentPrimary, DEFAULTS.accentSecondary, DEFAULTS.background);
+                    // Re-apply theme (default dark) – reload page to pick up default theme
+                    location.reload();
                 });
             }
         })();
