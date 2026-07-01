@@ -289,39 +289,45 @@
             <section class="settings-section glass-card">
                 <h2>Change Password</h2>
                 {% if password_form.errors %}
-                <div class="error-summary" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.2); border-radius: 8px; color: #ffebeb; font-size: 0.95rem;">
+                <div class="error-summary"
+                    style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.2); border-radius: 8px; color: #ffebeb; font-size: 0.95rem;">
                     {% for field in password_form %}
-                        {% for error in field.errors %}
-                            <p style="margin: 0.25rem 0;"><strong>{{ field.label }}:</strong> {{ error }}</p>
-                        {% endfor %}
+                    {% for error in field.errors %}
+                    <p style="margin: 0.25rem 0;"><strong>{{ field.label }}:</strong> {{ error }}</p>
+                    {% endfor %}
                     {% endfor %}
                     {% for error in password_form.non_field_errors %}
-                        <p style="margin: 0.25rem 0;">{{ error }}</p>
+                    <p style="margin: 0.25rem 0;">{{ error }}</p>
                     {% endfor %}
                 </div>
                 {% endif %}
                 <form method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="change_password">
-                    
+
                     <div class="input-group">
                         <label for="id_old_password">Current Password</label>
-                        <input type="password" id="id_old_password" name="old_password" required placeholder="Enter current password">
+                        <input type="password" id="id_old_password" name="old_password" required
+                            placeholder="Enter current password">
                     </div>
-                    
+
                     <div class="input-group">
                         <label for="id_new_password1">New Password</label>
-                        <input type="password" id="id_new_password1" name="new_password1" required placeholder="Enter new password">
+                        <input type="password" id="id_new_password1" name="new_password1" required
+                            placeholder="Enter new password">
                         {% if password_form.new_password1.help_text %}
-                            <small style="display: block; margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">{{ password_form.new_password1.help_text|safe }}</small>
+                        <small
+                            style="display: block; margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">{{
+                            password_form.new_password1.help_text|safe }}</small>
                         {% endif %}
                     </div>
-                    
+
                     <div class="input-group">
                         <label for="id_new_password2">Confirm New Password</label>
-                        <input type="password" id="id_new_password2" name="new_password2" required placeholder="Confirm new password">
+                        <input type="password" id="id_new_password2" name="new_password2" required
+                            placeholder="Confirm new password">
                     </div>
-                    
+
                     <button type="submit" class="add-btn primary-btn">Change Password</button>
                 </form>
             </section>
@@ -472,6 +478,57 @@
                     }
                 } catch (e) { console.error(e); }
             });
+        })();
+    </script>
+    <script>
+        // Password validation logic matching register.html
+        (function () {
+            const passwordInput = document.getElementById('id_new_password1');
+            const usernameInput = document.getElementById('username');
+            if (passwordInput) {
+                const helpText = passwordInput.closest('.input-group').querySelector('small');
+                if (helpText) {
+                    const rules = helpText.querySelectorAll('li');
+
+                    // Hide all rules initially
+                    rules.forEach(rule => {
+                        rule.style.display = 'none';
+                        rule.style.listStyle = 'none';
+                        rule.style.color = '#ff4d4d'; // Violation color
+                        rule.style.fontSize = '0.75rem';
+                        rule.style.marginTop = '4px';
+                    });
+
+                    const validate = () => {
+                        const val = passwordInput.value;
+                        const username = usernameInput ? usernameInput.value : '';
+
+                        if (val === '') {
+                            rules.forEach(rule => rule.style.display = 'none');
+                            return;
+                        }
+
+                        rules.forEach(rule => {
+                            const text = rule.textContent.toLowerCase();
+                            let isViolated = false;
+
+                            if (text.includes('8 characters')) {
+                                isViolated = val.length < 8;
+                            } else if (text.includes('entirely numeric')) {
+                                isViolated = /^\d+$/.test(val);
+                            } else if (text.includes('too similar')) {
+                                isViolated = username && val.toLowerCase().includes(username.toLowerCase());
+                            } else if (text.includes('commonly used')) {
+                                isViolated = false;
+                            }
+
+                            rule.style.display = isViolated ? 'list-item' : 'none';
+                        });
+                    };
+
+                    passwordInput.addEventListener('input', validate);
+                }
+            }
         })();
     </script>
     <script src="{% static 'js/theme.js' %}"></script>
