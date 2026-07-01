@@ -1,12 +1,11 @@
 (function () {
-    // Theme toggle logic
+    // ── Dark / Light theme ──────────────────────────────────────────────────────
     const applyTheme = (theme) => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
 
-        // Update UI if on page
         const lightBtn = document.getElementById('lightThemeBtn');
-        const darkBtn = document.getElementById('darkThemeBtn');
+        const darkBtn  = document.getElementById('darkThemeBtn');
 
         if (lightBtn && darkBtn) {
             if (theme === 'light') {
@@ -19,23 +18,32 @@
         }
     };
 
-    // Initialize UI on DOMContentLoaded
+    // ── Custom colour palette (saved from Settings > Customise) ─────────────────
+    const applyCustomColors = () => {
+        const p = localStorage.getItem('color_accentPrimary');
+        const s = localStorage.getItem('color_accentSecondary');
+        const b = localStorage.getItem('color_background');
+        if (p) document.documentElement.style.setProperty('--accent-primary',   p);
+        if (s) document.documentElement.style.setProperty('--accent-secondary', s);
+        if (b) document.documentElement.style.setProperty('--bg-color',         b);
+    };
+
+    // Apply custom colors immediately (before paint)
+    applyCustomColors();
+
+    // Init UI after DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
         const theme = localStorage.getItem('theme') || 'dark';
         applyTheme(theme);
 
         const lightBtn = document.getElementById('lightThemeBtn');
-        const darkBtn = document.getElementById('darkThemeBtn');
+        const darkBtn  = document.getElementById('darkThemeBtn');
 
-        if (lightBtn) {
-            lightBtn.addEventListener('click', () => applyTheme('light'));
-        }
-        if (darkBtn) {
-            darkBtn.addEventListener('click', () => applyTheme('dark'));
-        }
+        if (lightBtn) lightBtn.addEventListener('click', () => applyTheme('light'));
+        if (darkBtn)  darkBtn.addEventListener('click',  () => applyTheme('dark'));
     });
 
-    // Handle system theme changes (optional but nice)
+    // Handle system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
         if (!localStorage.getItem('theme')) {
             applyTheme(e.matches ? 'dark' : 'light');

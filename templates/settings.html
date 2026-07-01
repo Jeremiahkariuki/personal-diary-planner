@@ -172,6 +172,21 @@
                         </svg>
                     </button>
                 </div>
+                <div>
+                    <button class="theme-btn" id="customiseNavBtn" title="Customise Colors"
+                        onclick="document.getElementById('customiseSection').scrollIntoView({behavior:'smooth',block:'center'}); document.getElementById('customiseSection').style.outline='2px solid var(--accent-primary)'; setTimeout(function(){document.getElementById('customiseSection').style.outline='none'},1500);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="13.5" cy="6.5" r="1.5"></circle>
+                            <circle cx="17.5" cy="10.5" r="1.5"></circle>
+                            <circle cx="8.5" cy="7.5" r="1.5"></circle>
+                            <circle cx="6.5" cy="12.5" r="1.5"></circle>
+                            <path
+                                d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </nav>
 
@@ -331,6 +346,64 @@
 
                     <button type="submit" class="add-btn primary-btn">Change Password</button>
                 </form>
+            </section>
+
+            <section class="settings-section glass-card" id="customiseSection">
+                <h2>Customise</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Personalise your Jdiary experience by
+                    choosing your own accent and background colors. Changes are saved instantly.</p>
+
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+
+                    <!-- Accent Primary -->
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label for="colorAccentPrimary">Accent Primary</label>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <input type="color" id="colorAccentPrimary" value="#818cf8"
+                                style="width:48px; height:48px; padding:3px; border-radius:10px; border:1px solid var(--glass-border); background:transparent; cursor:pointer;">
+                            <span id="labelAccentPrimary"
+                                style="font-size:0.85rem; color:var(--text-secondary); font-family:monospace;">#818cf8</span>
+                        </div>
+                    </div>
+
+                    <!-- Accent Secondary -->
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label for="colorAccentSecondary">Accent Secondary</label>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <input type="color" id="colorAccentSecondary" value="#c084fc"
+                                style="width:48px; height:48px; padding:3px; border-radius:10px; border:1px solid var(--glass-border); background:transparent; cursor:pointer;">
+                            <span id="labelAccentSecondary"
+                                style="font-size:0.85rem; color:var(--text-secondary); font-family:monospace;">#c084fc</span>
+                        </div>
+                    </div>
+
+                    <!-- Background Color -->
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label for="colorBackground">Background</label>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <input type="color" id="colorBackground" value="#0f172a"
+                                style="width:48px; height:48px; padding:3px; border-radius:10px; border:1px solid var(--glass-border); background:transparent; cursor:pointer;">
+                            <span id="labelBackground"
+                                style="font-size:0.85rem; color:var(--text-secondary); font-family:monospace;">#0f172a</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Preview strip -->
+                <div id="colorPreviewStrip"
+                    style="height:10px; border-radius:8px; margin-bottom:1.5rem; background: linear-gradient(to right, #818cf8, #c084fc); transition: background 0.4s ease;">
+                </div>
+
+                <button id="resetColorsBtn" class="add-btn"
+                    style="width:auto; padding:0.6rem 1.4rem; display:inline-flex; align-items:center; gap:0.5rem; border-style:solid; font-size:0.9rem;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 .49-3.5"></path>
+                    </svg>
+                    Reset to Defaults
+                </button>
             </section>
 
             <section class="settings-section glass-card">
@@ -565,6 +638,71 @@
                 btn.querySelector('.eye-off-icon').style.display = show ? 'block' : 'none';
             });
         });
+    </script>
+    <script>
+        // ── Color Customisation ──────────────────────────────────────────────────
+        (function () {
+            var DEFAULTS = {
+                accentPrimary: '#818cf8',
+                accentSecondary: '#c084fc',
+                background: '#0f172a'
+            };
+
+            function applyColors(p, s, b) {
+                document.documentElement.style.setProperty('--accent-primary', p);
+                document.documentElement.style.setProperty('--accent-secondary', s);
+                document.documentElement.style.setProperty('--bg-color', b);
+                var strip = document.getElementById('colorPreviewStrip');
+                if (strip) strip.style.background = 'linear-gradient(to right,' + p + ',' + s + ')';
+            }
+
+            function syncPicker(inputId, labelId, key) {
+                var input = document.getElementById(inputId);
+                var label = document.getElementById(labelId);
+                if (!input) return;
+                // Load saved value
+                var saved = localStorage.getItem('color_' + key);
+                if (saved) { input.value = saved; if (label) label.textContent = saved; }
+
+                input.addEventListener('input', function () {
+                    if (label) label.textContent = input.value;
+                    localStorage.setItem('color_' + key, input.value);
+                    applyColors(
+                        document.getElementById('colorAccentPrimary').value,
+                        document.getElementById('colorAccentSecondary').value,
+                        document.getElementById('colorBackground').value
+                    );
+                });
+            }
+
+            // Init pickers
+            syncPicker('colorAccentPrimary', 'labelAccentPrimary', 'accentPrimary');
+            syncPicker('colorAccentSecondary', 'labelAccentSecondary', 'accentSecondary');
+            syncPicker('colorBackground', 'labelBackground', 'background');
+
+            // Apply saved colors on load
+            var p = localStorage.getItem('color_accentPrimary') || DEFAULTS.accentPrimary;
+            var s = localStorage.getItem('color_accentSecondary') || DEFAULTS.accentSecondary;
+            var b = localStorage.getItem('color_background') || DEFAULTS.background;
+            applyColors(p, s, b);
+
+            // Reset button
+            var resetBtn = document.getElementById('resetColorsBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function () {
+                    localStorage.removeItem('color_accentPrimary');
+                    localStorage.removeItem('color_accentSecondary');
+                    localStorage.removeItem('color_background');
+                    document.getElementById('colorAccentPrimary').value = DEFAULTS.accentPrimary;
+                    document.getElementById('colorAccentSecondary').value = DEFAULTS.accentSecondary;
+                    document.getElementById('colorBackground').value = DEFAULTS.background;
+                    document.getElementById('labelAccentPrimary').textContent = DEFAULTS.accentPrimary;
+                    document.getElementById('labelAccentSecondary').textContent = DEFAULTS.accentSecondary;
+                    document.getElementById('labelBackground').textContent = DEFAULTS.background;
+                    applyColors(DEFAULTS.accentPrimary, DEFAULTS.accentSecondary, DEFAULTS.background);
+                });
+            }
+        })();
     </script>
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=4"></script>
