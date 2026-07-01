@@ -317,8 +317,9 @@
                             placeholder="Enter new password">
                         {% if password_form.new_password1.help_text %}
                         <small
-                            style="display: block; margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">{{
-                            password_form.new_password1.help_text|safe }}</small>
+                            style="display: block; margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">
+                            {{ password_form.new_password1.help_text|safe }}
+                        </small>
                         {% endif %}
                     </div>
 
