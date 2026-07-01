@@ -74,3 +74,60 @@ class QuoteTests(TestCase):
         profile.refresh_from_db()
         self.assertEqual(profile.custom_quote, None)
         self.assertEqual(profile.custom_quote_author, None)
+
+
+class PasswordChangeTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='pwuser', password='old_password123')
+        self.client = Client()
+        self.client.login(username='pwuser', password='old_password123')
+        Quote.objects.create(text="Test Quote", author="Tester")
+
+    def test_password_change_success(self):
+        url = reverse('settings_view')
+        payload = {
+            'action': 'change_password',
+            'old_password': 'old_password123',
+            'new_password1': 'new_valid_password123',
+            'new_password2': 'new_valid_password123'
+        }
+        response = self.client.post(url, data=payload)
+        self.assertEqual(response.status_code, 302) # Should redirect on success
+        
+        # Verify password got changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('new_valid_password123'))
+        
+        # Verify user is still authenticated (due to update_session_auth_hash)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_password_change_wrong_old_password(self):
+        url = reverse('settings_view')
+        payload = {
+            'action': 'change_password',
+            'old_password': 'wrong_password',
+            'new_password1': 'new_valid_password123',
+            'new_password2': 'new_valid_password123'
+        }
+        response = self.client.post(url, data=payload)
+        self.assertEqual(response.status_code, 200) # Should render with errors
+        
+        # Verify password was not changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('old_password123'))
+
+    def test_password_change_mismatched_new_passwords(self):
+        url = reverse('settings_view')
+        payload = {
+            'action': 'change_password',
+            'old_password': 'old_password123',
+            'new_password1': 'new_valid_password123',
+            'new_password2': 'different_password123'
+        }
+        response = self.client.post(url, data=payload)
+        self.assertEqual(response.status_code, 200) # Should render with errors
+        
+        # Verify password was not changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('old_password123'))

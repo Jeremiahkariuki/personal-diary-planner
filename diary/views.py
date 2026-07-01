@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.db import models
 from django.db.models import Q, Count
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
@@ -235,48 +235,63 @@ def settings_view(request):
     from .models import Profile
     profile, created = Profile.objects.get_or_create(user=user)
     
+    password_form = PasswordChangeForm(user=user)
+    
     if request.method == 'POST':
-        email = request.POST.get('email')
-        avatar = request.FILES.get('avatar')
-        is_ajax = request.POST.get('ajax') == '1'
+        action = request.POST.get('action')
         
-        print(f"[SETTINGS POST] is_ajax={is_ajax}, email={email}, avatar={avatar}")
-        print(f"[SETTINGS POST] FILES keys: {list(request.FILES.keys())}")
-        print(f"[SETTINGS POST] POST keys: {list(request.POST.keys())}")
-        
-        if email:
-            user.email = email
-            user.save()
-            
-        if avatar:
-            print(f"[SETTINGS POST] Saving avatar: {avatar.name}, size={avatar.size}")
-            try:
-                profile.avatar = avatar
-                profile.save()
-                print(f"[SETTINGS POST] Avatar saved OK. URL={profile.avatar.url}")
-            except Exception as e:
-                import traceback
-                error_msg = f"Storage error: {str(e)}"
-                print(error_msg)
-                print(traceback.format_exc())
-                if is_ajax:
-                    return JsonResponse({'status': 'error', 'message': error_msg}, status=400)
-                messages.error(request, error_msg)
+        if action == 'change_password':
+            password_form = PasswordChangeForm(user=user, data=request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Your password was successfully updated!')
                 return redirect('settings_view')
-                
-        if email or avatar:
-            if is_ajax:
-                avatar_url = profile.avatar.url if profile.avatar else None
-                print(f"[SETTINGS POST] Returning JSON ok, avatar_url={avatar_url}")
-                return JsonResponse({'status': 'ok', 'avatar_url': avatar_url})
-            messages.success(request, 'Settings updated successfully!')
-            return redirect('settings_view')
+            else:
+                messages.error(request, 'Please correct the error(s) below in the password form.')
         else:
-            print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
+            email = request.POST.get('email')
+            avatar = request.FILES.get('avatar')
+            is_ajax = request.POST.get('ajax') == '1'
+            
+            print(f"[SETTINGS POST] is_ajax={is_ajax}, email={email}, avatar={avatar}")
+            print(f"[SETTINGS POST] FILES keys: {list(request.FILES.keys())}")
+            print(f"[SETTINGS POST] POST keys: {list(request.POST.keys())}")
+            
+            if email:
+                user.email = email
+                user.save()
+                
+            if avatar:
+                print(f"[SETTINGS POST] Saving avatar: {avatar.name}, size={avatar.size}")
+                try:
+                    profile.avatar = avatar
+                    profile.save()
+                    print(f"[SETTINGS POST] Avatar saved OK. URL={profile.avatar.url}")
+                except Exception as e:
+                    import traceback
+                    error_msg = f"Storage error: {str(e)}"
+                    print(error_msg)
+                    print(traceback.format_exc())
+                    if is_ajax:
+                        return JsonResponse({'status': 'error', 'message': error_msg}, status=400)
+                    messages.error(request, error_msg)
+                    return redirect('settings_view')
+                    
+            if email or avatar:
+                if is_ajax:
+                    avatar_url = profile.avatar.url if profile.avatar else None
+                    print(f"[SETTINGS POST] Returning JSON ok, avatar_url={avatar_url}")
+                    return JsonResponse({'status': 'ok', 'avatar_url': avatar_url})
+                messages.success(request, 'Settings updated successfully!')
+                return redirect('settings_view')
+            else:
+                print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
             
     context = {
         'user': user,
         'profile': profile,
+        'password_form': password_form,
     }
     return render(request, 'settings.html', context)
 @login_required
