@@ -11,7 +11,8 @@ from xhtml2pdf import pisa
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog, log_activity
+from django.contrib.auth.models import User
+from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog, SharePermission, log_activity
 from .serializers import (
     DiaryEntrySerializer, TaskSerializer, EventSerializer, 
     UserSerializer, QuoteSerializer
@@ -99,17 +100,38 @@ class DiaryEntryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return DiaryEntry.objects.filter(user=self.request.user)
+        user = self.request.user
+        whole_diary_owners = SharePermission.objects.filter(
+            Q(shared_with_email=user.email) | Q(shared_with_user=user),
+            share_type='whole_diary'
+        ).values_list('owner', flat=True)
+        specific_entry_ids = SharePermission.objects.filter(
+            Q(shared_with_email=user.email) | Q(shared_with_user=user),
+            share_type='specific_diary'
+        ).values_list('diary_entry_id', flat=True)
+        
+        return DiaryEntry.objects.filter(
+            Q(user=user) |
+            Q(user__in=whole_diary_owners) |
+            Q(id__in=specific_entry_ids)
+        ).distinct().order_by('-created_at')
 
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
         log_activity(self.request.user, 'diary_write', f"Wrote a new diary entry via API (mood: {instance.mood})")
 
     def perform_update(self, serializer):
+        instance = serializer.instance
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to modify this entry.")
         instance = serializer.save()
         log_activity(self.request.user, 'diary_edit', f"Updated diary entry '{instance.id}' via API (mood: {instance.mood})")
 
     def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to delete this entry.")
         log_activity(self.request.user, 'diary_delete', f"Deleted diary entry from {instance.created_at.strftime('%Y-%m-%d')}")
         instance.delete()
 
@@ -163,19 +185,82 @@ class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Event.objects.filter(user=self.request.user).order_by('date', 'event_time')
+        user = self.request.user
+        whole_events_owners = SharePermission.objects.filter(
+            Q(shared_with_email=user.email) | Q(shared_with_user=user),
+            share_type='whole_events'
+        ).values_list('owner', flat=True)
+        specific_event_ids = SharePermission.objects.filter(
+            Q(shared_with_email=user.email) | Q(shared_with_user=user),
+            share_type='specific_event'
+        ).values_list('event_id', flat=True)
+        
+        return Event.objects.filter(
+            Q(user=user) |
+            Q(user__in=whole_events_owners) |
+            Q(id__in=specific_event_ids)
+        ).distinct().order_by('date', 'event_time')
 
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
         log_activity(self.request.user, 'event_create', f"Created event: '{instance.title}' on {instance.date}")
+        self.handle_sharing(instance)
 
     def perform_update(self, serializer):
+        instance = serializer.instance
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to modify this event.")
         instance = serializer.save()
         log_activity(self.request.user, 'event_edit', f"Updated event: '{instance.title}'")
+        self.handle_sharing(instance)
 
     def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to delete this event.")
         log_activity(self.request.user, 'event_delete', f"Deleted event: '{instance.title}'")
         instance.delete()
+
+    def handle_sharing(self, instance):
+        shared_emails_str = self.request.data.get('shared_emails', '')
+        emails = [email.strip() for email in shared_emails_str.split(',') if email.strip()]
+
+        existing = set(instance.shares.values_list('shared_with_email', flat=True))
+        new_emails = set(emails) - existing
+        removed_emails = existing - set(emails)
+
+        instance.shares.filter(shared_with_email__in=removed_emails).delete()
+
+        from django.core.mail import send_mail
+        from django.conf import settings
+
+        for email in new_emails:
+            matching_user = User.objects.filter(email=email).first()
+            SharePermission.objects.create(
+                owner=self.request.user,
+                shared_with_email=email,
+                shared_with_user=matching_user,
+                share_type='specific_event',
+                event=instance
+            )
+            try:
+                subject = f"Event Shared with you: {instance.title}"
+                message = (
+                    f"Hello,\n\n"
+                    f"{self.request.user.username} ({self.request.user.email}) has shared a calendar event with you:\n"
+                    f"'{instance.title}' scheduled on {instance.date} at {instance.event_time}.\n\n"
+                    f"Log in to check your calendar."
+                )
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL or 'noreply@jdiary.com',
+                    [email],
+                    fail_silently=True
+                )
+            except Exception:
+                pass
 
 class QuoteViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Quote.objects.all()
@@ -325,10 +410,15 @@ def settings_view(request):
             else:
                 print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
             
+    shares_granted = SharePermission.objects.filter(owner=user)
+    shares_received = SharePermission.objects.filter(Q(shared_with_email=user.email) | Q(shared_with_user=user))
+
     context = {
         'user': user,
         'profile': profile,
         'password_form': password_form,
+        'shares_granted': shares_granted,
+        'shares_received': shares_received,
     }
     return render(request, 'settings.html', context)
 @login_required
@@ -340,6 +430,24 @@ def diary_history(request):
         entries = entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
     
     entries = entries.order_by('-created_at')
+
+    # Fetch shared entries
+    whole_diary_owners = SharePermission.objects.filter(
+        Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
+        share_type='whole_diary'
+    ).values_list('owner', flat=True)
+    specific_entry_ids = SharePermission.objects.filter(
+        Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
+        share_type='specific_diary'
+    ).values_list('diary_entry_id', flat=True)
+    
+    shared_entries = DiaryEntry.objects.filter(
+        Q(user__in=whole_diary_owners) |
+        Q(id__in=specific_entry_ids)
+    ).distinct().order_by('-created_at')
+    
+    if query:
+        shared_entries = shared_entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
     log_activity(request.user, 'diary_view', f'Viewed diary history ({entries.count()} entries)')
 
     # Mood Trends Analytics
@@ -359,6 +467,7 @@ def diary_history(request):
 
     context = {
         'entries': entries,
+        'shared_entries': shared_entries,
         'query': query,
         'mood_trend': mood_trend,
         'chart_labels': chart_labels,
@@ -532,4 +641,82 @@ def system_history(request):
         'profile_count': profile_count,
     }
     return render(request, 'system_history.html', context)
+
+
+@login_required
+def share_item(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email', '').strip()
+            share_type = data.get('share_type', '').strip()
+            item_id = data.get('item_id')
+
+            if not email or not share_type:
+                return JsonResponse({'error': 'Email and Share Type are required.'}, status=400)
+
+            diary_entry = None
+            event = None
+
+            if share_type == 'specific_diary':
+                diary_entry = DiaryEntry.objects.filter(user=request.user, id=item_id).first()
+                if not diary_entry:
+                    return JsonResponse({'error': 'Diary Entry not found.'}, status=404)
+            elif share_type == 'specific_event':
+                event = Event.objects.filter(user=request.user, id=item_id).first()
+                if not event:
+                    return JsonResponse({'error': 'Event not found.'}, status=404)
+
+            matching_user = User.objects.filter(email=email).first()
+
+            share, created = SharePermission.objects.get_or_create(
+                owner=request.user,
+                shared_with_email=email,
+                share_type=share_type,
+                diary_entry=diary_entry,
+                event=event,
+                defaults={'shared_with_user': matching_user}
+            )
+
+            from django.core.mail import send_mail
+            from django.conf import settings
+            
+            subject = f"Shared content from {request.user.username}"
+            if share_type == 'whole_diary':
+                message = f"Hello,\n\n{request.user.username} has shared their entire diary with you on Jdiary. Log in to check it out."
+            elif share_type == 'whole_events':
+                message = f"Hello,\n\n{request.user.username} has shared their entire events calendar with you on Jdiary. Log in to check it out."
+            elif share_type == 'specific_diary':
+                message = f"Hello,\n\n{request.user.username} has shared a diary entry with you on Jdiary. Log in to check it out."
+            else:
+                message = f"Hello,\n\n{request.user.username} has shared an event ('{event.title}') with you on Jdiary. Log in to check it out."
+
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL or 'noreply@jdiary.com',
+                [email],
+                fail_silently=True
+            )
+
+            return JsonResponse({'status': 'ok', 'created': created})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Method not allowed.'}, status=405)
+
+
+@login_required
+def revoke_share(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            share_id = data.get('share_id')
+            share = SharePermission.objects.filter(owner=request.user, id=share_id).first()
+            if not share:
+                return JsonResponse({'error': 'Share permission not found or unauthorized.'}, status=404)
+            share.delete()
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Method not allowed.'}, status=405)
 

@@ -131,3 +131,100 @@ class PasswordChangeTests(TestCase):
         # Verify password was not changed
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password('old_password123'))
+
+
+class SharingTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(username='owner', email='owner@example.com', password='password')
+        self.recipient = User.objects.create_user(username='recipient', email='recipient@example.com', password='password')
+        
+        self.client_owner = Client()
+        self.client_owner.login(username='owner', password='password')
+        
+        self.client_recipient = Client()
+        self.client_recipient.login(username='recipient', password='password')
+        
+        Quote.objects.create(text="Test quote", author="Author")
+        
+        # Create a diary entry
+        self.entry = DiaryEntry.objects.create(user=self.owner, content="Owner's secret journal", mood="happy")
+        # Create an event
+        self.event = Event.objects.create(user=self.owner, title="Owner's meeting", date=datetime.date.today(), event_time="10:00")
+
+    def test_share_diary_entry(self):
+        # Owner shares a diary entry with recipient
+        url = reverse('share_item')
+        payload = {
+            'email': 'recipient@example.com',
+            'share_type': 'specific_diary',
+            'item_id': self.entry.id
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        # Verify that permission exists in database
+        share = SharePermission.objects.get(owner=self.owner, shared_with_email='recipient@example.com', share_type='specific_diary')
+        self.assertEqual(share.diary_entry, self.entry)
+        self.assertEqual(share.shared_with_user, self.recipient)
+
+    def test_share_whole_diary_pending_recipient(self):
+        # Owner shares whole diary with a non-existing email (pending recipient)
+        url = reverse('share_item')
+        payload = {
+            'email': 'pending@example.com',
+            'share_type': 'whole_diary'
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        share = SharePermission.objects.get(owner=self.owner, shared_with_email='pending@example.com', share_type='whole_diary')
+        self.assertIsNone(share.shared_with_user)
+        
+        # Now, pending recipient registers
+        new_user = User.objects.create_user(username='pending_user', email='pending@example.com', password='passwordNew')
+        
+        # The signal should run and link the user
+        share.refresh_from_db()
+        self.assertEqual(share.shared_with_user, new_user)
+
+    def test_revoke_share(self):
+        # Create an existing permission
+        share = SharePermission.objects.create(
+            owner=self.owner,
+            shared_with_email='recipient@example.com',
+            shared_with_user=self.recipient,
+            share_type='whole_events'
+        )
+        
+        url = reverse('revoke_share')
+        payload = {
+            'share_id': share.id
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        self.assertFalse(SharePermission.objects.filter(id=share.id).exists())
+
+    def test_event_viewset_filtering(self):
+        # Initially, self.event is only owned by self.owner. Recipient shouldn't see it on calendar.
+        response = self.client_recipient.get('/api/events/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 0)
+        
+        # Share specific event
+        SharePermission.objects.create(
+            owner=self.owner,
+            shared_with_email='recipient@example.com',
+            shared_with_user=self.recipient,
+            share_type='specific_event',
+            event=self.event
+        )
+        
+        # Now event should be visible
+        response = self.client_recipient.get('/api/events/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]['title'], "Owner's meeting")

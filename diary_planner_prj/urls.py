@@ -31,6 +31,8 @@ urlpatterns = [
     path('system-history/', views.system_history, name='system_history'),
     path('quote/save/', views.save_custom_quote, name='save_custom_quote'),
     path('quote/delete/', views.delete_custom_quote, name='delete_custom_quote'),
+    path('share/create/', views.share_item, name='share_item'),
+    path('share/revoke/', views.revoke_share, name='revoke_share'),
 
     # REST API Endpoints
     path('api/', include(router.urls)),

@@ -291,6 +291,10 @@
                     <label for="eventLocation">Location</label>
                     <input type="text" id="eventLocation" placeholder="Where is it?">
                 </div>
+                <div class="form-group" id="eventSharingGroup">
+                    <label for="eventInvites">Invite / Share Emails (comma separated)</label>
+                    <input type="text" id="eventInvites" placeholder="colleague1@example.com, colleague2@example.com">
+                </div>
                 <div class="modal-actions">
                     <button type="submit" class="primary-btn">Save Event</button>
                 </div>
@@ -310,8 +314,11 @@
         </div>
     </div>
 
+    <script>
+        window.currentUsername = "{{ request.user.username }}";
+    </script>
     <script src="{% static 'js/theme.js' %}"></script>
-    <script src="{% static 'js/app.js' %}?v=4"></script>
+    <script src="{% static 'js/app.js' %}?v=5"></script>
     <script>
         // Custom logic for the full calendar page if needed
         document.addEventListener('DOMContentLoaded', () => {

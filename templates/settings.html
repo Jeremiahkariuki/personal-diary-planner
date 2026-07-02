@@ -407,6 +407,119 @@
 
             </section>
 
+            <section class="settings-section glass-card" id="sharingPermissionsSection">
+                <h2>Sharing & Permissions</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Manage sharing permissions. You can share your entire diary or all events calendar with someone by their email. They will receive an email invite to access your shared contents.</p>
+
+                <!-- Grant Share Form -->
+                <form id="grantShareForm" style="margin-bottom: 2rem;">
+                    {% csrf_token %}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label for="shareEmailInput">Colleague's Email</label>
+                            <input type="email" id="shareEmailInput" placeholder="colleague@example.com" required style="width: 100%;">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label for="shareTypeInput">Permission Type</label>
+                            <select id="shareTypeInput" required style="width: 100%; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 1rem;">
+                                <option value="whole_diary">Whole Diary (View Only)</option>
+                                <option value="whole_events">Whole Events Calendar (View Only)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="add-btn primary-btn" style="height: 48px; min-width: 120px;">Grant Access</button>
+                    </div>
+                </form>
+
+                <!-- Shares Granted Table -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">Access Granted to Others</h3>
+                    {% if shares_granted %}
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
+                                    <th style="padding: 10px 5px;">Shared With</th>
+                                    <th style="padding: 10px 5px;">Type</th>
+                                    <th style="padding: 10px 5px;">Date Shared</th>
+                                    <th style="padding: 10px 5px; text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for share in shares_granted %}
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;" data-share-id="{{ share.id }}">
+                                    <td style="padding: 12px 5px;">
+                                        {{ share.shared_with_email }}
+                                        {% if share.shared_with_user %}
+                                        <span style="font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Registered</span>
+                                        {% else %}
+                                        <span style="font-size: 0.75rem; background: rgba(234, 179, 8, 0.15); color: #eab308; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Pending Join</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 12px 5px;">
+                                        {% if share.share_type == 'specific_diary' %}
+                                        📖 Specific Diary Entry
+                                        {% elif share.share_type == 'whole_diary' %}
+                                        📚 Entire Diary
+                                        {% elif share.share_type == 'specific_event' %}
+                                        📅 Specific Event: "{{ share.event.title }}"
+                                        {% elif share.share_type == 'whole_events' %}
+                                        🗓️ All Events Calendar
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
+                                    <td style="padding: 12px 5px; text-align: right;">
+                                        <button class="revoke-share-btn add-btn danger-btn" style="padding: 4px 10px; font-size: 0.8rem; min-width: auto; width: auto; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;">Revoke</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">You haven't granted sharing permissions to anyone yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Shares Received Table -->
+                <div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">Access Shared with Me</h3>
+                    {% if shares_received %}
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
+                                    <th style="padding: 10px 5px;">Owner</th>
+                                    <th style="padding: 10px 5px;">Type</th>
+                                    <th style="padding: 10px 5px;">Date Shared</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for share in shares_received %}
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;">
+                                    <td style="padding: 12px 5px;">{{ share.owner.username }} ({{ share.owner.email|default:share.owner.username }})</td>
+                                    <td style="padding: 12px 5px;">
+                                        {% if share.share_type == 'specific_diary' %}
+                                        📖 Specific Diary Entry
+                                        {% elif share.share_type == 'whole_diary' %}
+                                        📚 Entire Diary
+                                        {% elif share.share_type == 'specific_event' %}
+                                        📅 Specific Event: "{{ share.event.title }}"
+                                        {% elif share.share_type == 'whole_events' %}
+                                        🗓️ All Events Calendar
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Nobody has shared their diary or events calendar with you yet.</p>
+                    {% endif %}
+                </div>
+            </section>
+
             <section class="settings-section glass-card">
                 <h2>Data Management</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Download a copy of your diary entries,
@@ -710,30 +823,86 @@
                     location.reload();
                 });
             }
+        })();
+    </script>
+    <script>
+        // Sharing & Permissions AJAX Handler
+        (function() {
+            const csrfToken = '{{ csrf_token }}';
+            const grantForm = document.getElementById('grantShareForm');
+            const grantEmail = document.getElementById('shareEmailInput');
+            const grantType = document.getElementById('shareTypeInput');
+            
+            if (grantForm) {
+                grantForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = grantEmail.value.trim();
+                    const share_type = grantType.value;
+                    const grantSubmitBtn = grantForm.querySelector('button[type="submit"]');
 
-            // Reset All button handler – clears colors AND theme preference
-            var resetAllBtn = document.getElementById('resetAllBtn');
-            if (resetAllBtn) {
-                resetAllBtn.addEventListener('click', function () {
-                    // Remove custom color entries
-                    localStorage.removeItem('color_accentPrimary');
-                    localStorage.removeItem('color_accentSecondary');
-                    localStorage.removeItem('color_background');
-                    // Remove theme entry
-                    localStorage.removeItem('theme');
-                    // Reset inputs to defaults
-                    document.getElementById('colorAccentPrimary').value = DEFAULTS.accentPrimary;
-                    document.getElementById('colorAccentSecondary').value = DEFAULTS.accentSecondary;
-                    document.getElementById('colorBackground').value = DEFAULTS.background;
-                    document.getElementById('labelAccentPrimary').textContent = DEFAULTS.accentPrimary;
-                    document.getElementById('labelAccentSecondary').textContent = DEFAULTS.accentSecondary;
-                    document.getElementById('labelBackground').textContent = DEFAULTS.background;
-                    // Apply defaults
-                    applyColors(DEFAULTS.accentPrimary, DEFAULTS.accentSecondary, DEFAULTS.background);
-                    // Re-apply theme (default dark) – reload page to pick up default theme
-                    location.reload();
+                    if (!email) return;
+
+                    grantSubmitBtn.disabled = true;
+                    grantSubmitBtn.textContent = 'Granting...';
+
+                    try {
+                        const res = await fetch('{% url "share_item" %}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                            body: JSON.stringify({ email, share_type })
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.status === 'ok') {
+                            location.reload();
+                        } else {
+                            alert(data.error || 'Failed to grant sharing permission.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Network error when attempting to grant permission.');
+                    } finally {
+                        grantSubmitBtn.disabled = false;
+                        grantSubmitBtn.textContent = 'Grant Access';
+                    }
                 });
             }
+
+            document.querySelectorAll('.revoke-share-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const row = btn.closest('tr');
+                    const share_id = row.dataset.shareId;
+                    
+                    if (!confirm('Are you sure you want to revoke this sharing permission?')) return;
+
+                    btn.disabled = true;
+                    btn.textContent = 'Revoking...';
+
+                    try {
+                        const res = await fetch('{% url "revoke_share" %}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                            body: JSON.stringify({ share_id })
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.status === 'ok') {
+                            row.remove();
+                            // check if table body is empty
+                            const tbody = row.parentElement;
+                            if (tbody && tbody.children.length === 0) {
+                                location.reload();
+                            }
+                        } else {
+                            alert(data.error || 'Failed to revoke sharing permission.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Network error when revoking permission.');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Revoke';
+                    }
+                });
+            });
         })();
     </script>
     <script src="{% static 'js/theme.js' %}"></script>

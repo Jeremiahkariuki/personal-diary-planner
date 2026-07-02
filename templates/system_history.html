@@ -387,7 +387,7 @@
                         </div>
 
                         <!-- Timestamp -->
-                        <div class="log-time">
+                        <div class="log-time" data-utc-time="{{ log.timestamp|date:'c' }}">
                             <span class="date">{{ log.timestamp|date:"M d, Y" }}</span>
                             <span>{{ log.timestamp|time:"H:i" }}</span>
                         </div>
@@ -409,6 +409,30 @@
 
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=5"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.log-time').forEach(function (el) {
+                const utcStr = el.getAttribute('data-utc-time');
+                if (utcStr) {
+                    const dateObj = new Date(utcStr);
+                    if (!isNaN(dateObj.getTime())) {
+                        // format date as "M d, Y" (e.g. Jul 02, 2026)
+                        const dateOptions = { month: 'short', day: '2-digit', year: 'numeric' };
+                        const dateStr = dateObj.toLocaleDateString(undefined, dateOptions);
+
+                        // format time as "H:i" (24h or simple format)
+                        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+                        const timeStr = dateObj.toLocaleTimeString(undefined, timeOptions);
+
+                        const dateEl = el.querySelector('.date');
+                        const timeEl = el.querySelector('span:not(.date)');
+                        if (dateEl) dateEl.textContent = dateStr;
+                        if (timeEl) timeEl.textContent = timeStr;
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
