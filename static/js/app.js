@@ -362,6 +362,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let actionsHtml = '';
             if (isOwner) {
                 actionsHtml = `
+                    <button class="share-event-btn" title="Share Event" data-id="${event.id}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                    </button>
                     <button class="edit-event-btn" title="Edit">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </button>
@@ -372,15 +375,155 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 actionsHtml = `<span style="font-size: 0.75rem; color: var(--accent-primary); font-weight: 600;">Shared by @${event.owner_username}</span>`;
             }
+
+            let sharedDetails = '';
+            if (isOwner && event.shared_emails) {
+                sharedDetails = `<p style="font-size: 0.8rem; color: var(--accent-primary); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    Shared with: ${event.shared_emails}
+                </p>`;
+            }
+
             card.innerHTML = `
                 <div class="event-time">${event.time}</div>
-                <div class="event-details"><h3>${event.title}</h3><p>${event.location || 'No location'}</p></div>
+                <div class="event-details">
+                    <h3>${event.title}</h3>
+                    <p>${event.location || 'No location'}</p>
+                    ${sharedDetails}
+                </div>
                 <div class="event-actions">
                     ${actionsHtml}
                 </div>`;
             targetList.appendChild(card);
         });
         updateStats();
+    }
+
+    // -- Email Chips UI for Event Invites --
+    const emailChipsContainer = document.getElementById('emailChipsContainer');
+    const emailChipInput = document.getElementById('emailChipInput');
+    const eventInvitesHidden = document.getElementById('eventInvites');
+
+    let emailChips = [];
+
+    function renderEmailChips() {
+        if (!emailChipsContainer || !emailChipInput) return;
+        emailChipsContainer.querySelectorAll('.email-chip').forEach(el => el.remove());
+
+        emailChips.forEach((email, idx) => {
+            const chip = document.createElement('span');
+            chip.className = 'email-chip';
+            chip.innerHTML = `
+                ${email}
+                <button type="button" class="chip-remove" data-index="${idx}">&times;</button>
+            `;
+            emailChipsContainer.insertBefore(chip, emailChipInput);
+        });
+
+        if (eventInvitesHidden) {
+            eventInvitesHidden.value = emailChips.join(', ');
+        }
+    }
+
+    if (emailChipsContainer && emailChipInput) {
+        emailChipsContainer.addEventListener('click', () => {
+            emailChipInput.focus();
+        });
+
+        emailChipInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = emailChipInput.value.trim().replace(/,$/, '');
+                if (value) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (emailRegex.test(value)) {
+                        if (!emailChips.includes(value)) {
+                            emailChips.push(value);
+                            renderEmailChips();
+                        }
+                        emailChipInput.value = '';
+                    }
+                }
+            } else if (e.key === 'Backspace' && emailChipInput.value === '') {
+                if (emailChips.length > 0) {
+                    emailChips.pop();
+                    renderEmailChips();
+                }
+            }
+        });
+
+        emailChipsContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.chip-remove');
+            if (removeBtn) {
+                e.stopPropagation();
+                const index = parseInt(removeBtn.dataset.index);
+                emailChips.splice(index, 1);
+                renderEmailChips();
+                emailChipInput.focus();
+            }
+        });
+    }
+
+    // Event Share Modal
+    const eventShareModal = document.getElementById('eventShareModal');
+    const shareEventForm = document.getElementById('shareEventForm');
+    const shareEventIdInput = document.getElementById('shareEventId');
+    const shareEventEmailInput = document.getElementById('shareEventEmail');
+    const cancelEventShareBtn = document.getElementById('cancelEventShareBtn');
+
+    function openEventShareModal(eventId) {
+        if (!eventShareModal) return;
+        shareEventIdInput.value = eventId;
+        shareEventEmailInput.value = '';
+        eventShareModal.classList.remove('hidden');
+    }
+
+    if (cancelEventShareBtn) {
+        cancelEventShareBtn.addEventListener('click', () => {
+            eventShareModal.classList.add('hidden');
+        });
+    }
+
+    if (eventShareModal) {
+        eventShareModal.addEventListener('click', (e) => {
+            if (e.target === eventShareModal) eventShareModal.classList.add('hidden');
+        });
+    }
+
+    if (shareEventForm) {
+        shareEventForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const eventId = shareEventIdInput.value;
+            const email = shareEventEmailInput.value.trim();
+            const submitBtn = document.getElementById('submitEventShareBtn');
+
+            if (!email) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sharing...';
+
+            try {
+                const response = await fetch('/share/create/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ email: email, share_type: 'specific_event', item_id: eventId })
+                });
+                const data = await response.json();
+                if (response.ok && data.status === 'ok') {
+                    eventShareModal.classList.add('hidden');
+                    showNotification('Success', 'Event shared successfully!', true);
+                    await fetchEvents();
+                } else {
+                    alert(data.error || 'Failed to share event.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Network error when attempting to share event.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Share';
+            }
+        });
     }
 
     function openEditModal(eventId) {
@@ -391,10 +534,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('eventTime').value = event.time;
         document.getElementById('eventDate').value = event.date;
         document.getElementById('eventLocation').value = event.location || '';
-        const invitesInput = document.getElementById('eventInvites');
-        if (invitesInput) {
-            invitesInput.value = event.shared_emails || '';
-        }
+
+        emailChips = event.shared_emails ? event.shared_emails.split(',').map(email => email.trim()).filter(Boolean) : [];
+        renderEmailChips();
+
         const modalHeader = eventModal.querySelector('.modal-header h2');
         const submitBtn = eventForm.querySelector('button[type="submit"]');
         if (modalHeader) modalHeader.textContent = 'Edit Event';
@@ -421,18 +564,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (eventList) {
-        eventList.addEventListener('click', (e) => {
+    const targetLists = [eventList, sidebarEventList].filter(Boolean);
+    targetLists.forEach(list => {
+        list.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.edit-event-btn');
             const deleteBtn = e.target.closest('.delete-event-btn');
+            const shareBtn = e.target.closest('.share-event-btn');
             const card = e.target.closest('.event-card');
             if (card) {
                 const eventId = card.dataset.id;
                 if (editBtn) openEditModal(eventId);
                 if (deleteBtn) deleteEvent(eventId);
+                if (shareBtn) openEventShareModal(eventId);
             }
         });
-    }
+    });
 
     let isSubmitting = false;
     if (eventForm) {
@@ -524,6 +670,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (invitesInput) {
             invitesInput.value = '';
         }
+        emailChips = [];
+        renderEmailChips();
         const modalHeader = eventModal.querySelector('.modal-header h2');
         const submitBtn = eventForm.querySelector('button[type="submit"]');
         if (modalHeader) modalHeader.textContent = 'Add New Event';

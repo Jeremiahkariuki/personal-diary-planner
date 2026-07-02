@@ -1,7 +1,8 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from diary.models import Profile, Quote
+from diary.models import Profile, Quote, DiaryEntry, Event, SharePermission
+import datetime
 from diary.context_processors import quote_context
 
 class QuoteTests(TestCase):

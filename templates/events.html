@@ -135,6 +135,111 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
+        /* Email Tag-Chip Styles */
+        .email-chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px;
+            min-height: 44px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: var(--glass-bg);
+            cursor: text;
+            transition: border-color 0.3s ease;
+        }
+
+        .email-chips-container:focus-within {
+            border-color: var(--accent-primary);
+        }
+
+        .email-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(129, 140, 248, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.25);
+            color: var(--accent-primary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 4px 8px 4px 10px;
+            border-radius: 20px;
+            animation: chipIn 0.2s ease;
+        }
+
+        @keyframes chipIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .chip-remove {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .chip-remove:hover {
+            opacity: 1;
+            color: #ef4444;
+        }
+
+        .email-chip-input {
+            flex: 1;
+            min-width: 180px;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            padding: 4px;
+        }
+
+        .email-chip-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .shared-emails-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* Share Event Btn in sidebar */
+        .share-event-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .share-event-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .share-event-btn:hover {
+            color: var(--accent-primary);
+            background: rgba(129, 140, 248, 0.1);
+        }
+
         @media (max-width: 900px) {
             .calendar-page-container {
                 grid-template-columns: 1fr;
@@ -292,8 +397,14 @@
                     <input type="text" id="eventLocation" placeholder="Where is it?">
                 </div>
                 <div class="form-group" id="eventSharingGroup">
-                    <label for="eventInvites">Invite / Share Emails (comma separated)</label>
-                    <input type="text" id="eventInvites" placeholder="colleague1@example.com, colleague2@example.com">
+                    <label>Invite / Share via Email</label>
+                    <div class="email-chips-container" id="emailChipsContainer">
+                        <input type="text" class="email-chip-input" id="emailChipInput"
+                            placeholder="Type email & press Enter">
+                    </div>
+                    <input type="hidden" id="eventInvites">
+                    <p class="shared-emails-label">Press <strong>Enter</strong> or <strong>,</strong> to add an email
+                    </p>
                 </div>
                 <div class="modal-actions">
                     <button type="submit" class="primary-btn">Save Event</button>
@@ -314,6 +425,29 @@
         </div>
     </div>
 
+    <!-- Event Share Modal -->
+    <div id="eventShareModal" class="modal-overlay hidden">
+        <div class="glass-card modal-content" style="max-width: 450px; padding: 2rem;">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary);">Share Event</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Give another user
+                view-only permission to this event by entering their email address.</p>
+            <form id="shareEventForm">
+                <input type="hidden" id="shareEventId">
+                <div class="form-group">
+                    <label for="shareEventEmail">Recipient's Email</label>
+                    <input type="email" id="shareEventEmail" placeholder="colleague@example.com" required
+                        style="width: 100%;">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" id="cancelEventShareBtn" class="text-btn">Cancel</button>
+                    <button type="submit" id="submitEventShareBtn" class="primary-btn"
+                        style="width: auto; padding: 0.6rem 1.5rem;">Share</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <form style="display:none;">{% csrf_token %}</form>
     <script>
         window.currentUsername = "{{ request.user.username }}";
     </script>

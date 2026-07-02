@@ -885,9 +885,10 @@
                         });
                         const data = await res.json();
                         if (res.ok && data.status === 'ok') {
+                            // save parent reference before removing row
+                            const tbody = row.parentElement;
                             row.remove();
                             // check if table body is empty
-                            const tbody = row.parentElement;
                             if (tbody && tbody.children.length === 0) {
                                 location.reload();
                             }
