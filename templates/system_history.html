@@ -321,22 +321,22 @@
                 <!-- FILTER BAR -->
                 <div class="filter-bar">
                     <a href="?filter=all" class="filter-pill {% if active_filter == 'all' %}active{% endif %}">
-                        🗂 All
+                        🗂 All ({{ total_count }})
                     </a>
                     <a href="?filter=login" class="filter-pill {% if active_filter == 'login' %}active{% endif %}">
-                        🔐 Login &amp; Logout
+                        🔐 Login &amp; Logout ({{ login_count }})
                     </a>
                     <a href="?filter=diary" class="filter-pill {% if active_filter == 'diary' %}active{% endif %}">
-                        📖 Diary
+                        📖 Diary ({{ diary_count }})
                     </a>
                     <a href="?filter=tasks" class="filter-pill {% if active_filter == 'tasks' %}active{% endif %}">
-                        ✅ Tasks
+                        ✅ Tasks ({{ tasks_count }})
                     </a>
                     <a href="?filter=events" class="filter-pill {% if active_filter == 'events' %}active{% endif %}">
-                        📅 Events
+                        📅 Events ({{ events_count }})
                     </a>
                     <a href="?filter=profile" class="filter-pill {% if active_filter == 'profile' %}active{% endif %}">
-                        👤 Profile &amp; Settings
+                        👤 Profile &amp; Settings ({{ profile_count }})
                     </a>
                 </div>
 
@@ -350,23 +350,30 @@
                         <div class="log-icon
                             {% if action == 'login' %}cat-login
                             {% elif action == 'logout' %}cat-logout
-                            {% elif action == 'diary_write' or action == 'diary_edit' or action == 'diary_view' %}cat-diary
-                            {% elif action == 'task_view' or action == 'task_create' or action == 'task_complete' %}cat-tasks
-                            {% elif action == 'event_view' or action == 'event_create' %}cat-events
+                            {% elif action == 'diary_write' or action == 'diary_edit' or action == 'diary_view' or action == 'diary_delete' %}cat-diary
+                            {% elif action == 'task_view' or action == 'task_create' or action == 'task_complete' or action == 'task_edit' or action == 'task_delete' %}cat-tasks
+                            {% elif action == 'event_view' or action == 'event_create' or action == 'event_edit' or action == 'event_delete' %}cat-events
                             {% elif action == 'profile_view' %}cat-profile
                             {% elif action == 'settings_view' %}cat-settings
+                            {% elif action == 'dashboard_view' %}cat-profile
                             {% else %}cat-profile
                             {% endif %}">
                             {% if action == 'login' %}🔐
                             {% elif action == 'logout' %}🚪
+                            {% elif action == 'dashboard_view' %}📊
                             {% elif action == 'diary_write' %}✍️
                             {% elif action == 'diary_edit' %}📝
                             {% elif action == 'diary_view' %}📖
+                            {% elif action == 'diary_delete' %}🗑️
                             {% elif action == 'task_view' %}✅
                             {% elif action == 'task_create' %}➕
+                            {% elif action == 'task_edit' %}✏️
                             {% elif action == 'task_complete' %}🎯
+                            {% elif action == 'task_delete' %}🗑️
                             {% elif action == 'event_view' %}📅
                             {% elif action == 'event_create' %}🗓️
+                            {% elif action == 'event_edit' %}✏️
+                            {% elif action == 'event_delete' %}🗑️
                             {% elif action == 'profile_view' %}👤
                             {% elif action == 'settings_view' %}⚙️
                             {% else %}📌

@@ -11,7 +11,7 @@ from xhtml2pdf import pisa
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog
+from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog, log_activity
 from .serializers import (
     DiaryEntrySerializer, TaskSerializer, EventSerializer, 
     UserSerializer, QuoteSerializer
@@ -20,14 +20,6 @@ from datetime import date
 import datetime
 import random
 import json
-
-
-def log_activity(user, action, description):
-    """Create a SystemActivityLog entry; silently ignore errors."""
-    try:
-        SystemActivityLog.objects.create(user=user, action=action, description=description)
-    except Exception:
-        pass
 
 @login_required
 def index(request):
@@ -91,6 +83,7 @@ def index(request):
         'mood_trend': mood_trend_data,
         'task_stats': [completed_tasks_count, pending_tasks_count],
     }
+    log_activity(request.user, 'dashboard_view', 'Viewed the main dashboard')
     return render(request, 'index.html', context)
 
 @login_required
@@ -109,7 +102,16 @@ class DiaryEntryViewSet(viewsets.ModelViewSet):
         return DiaryEntry.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        instance = serializer.save(user=self.request.user)
+        log_activity(self.request.user, 'diary_write', f"Wrote a new diary entry via API (mood: {instance.mood})")
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_activity(self.request.user, 'diary_edit', f"Updated diary entry '{instance.id}' via API (mood: {instance.mood})")
+
+    def perform_destroy(self, instance):
+        log_activity(self.request.user, 'diary_delete', f"Deleted diary entry from {instance.created_at.strftime('%Y-%m-%d')}")
+        instance.delete()
 
     @action(detail=False, methods=['get'])
     def latest(self, request):
@@ -127,18 +129,33 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Task.objects.filter(user=self.request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        instance = serializer.save(user=self.request.user)
+        log_activity(self.request.user, 'task_create', f"Created task: '{instance.title}'")
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_activity(self.request.user, 'task_edit', f"Updated task: '{instance.title}'")
+
+    def perform_destroy(self, instance):
+        log_activity(self.request.user, 'task_delete', f"Deleted task: '{instance.title}'")
+        instance.delete()
 
     @action(detail=True, methods=['post'])
     def toggle(self, request, pk=None):
         task = self.get_object()
         task.completed = not task.completed
         task.save()
+        status_str = "completed" if task.completed else "reopened"
+        action_type = 'task_complete' if task.completed else 'task_edit'
+        log_activity(request.user, action_type, f"Marked task: '{task.title}' as {status_str}")
         return Response({'status': 'success', 'completed': task.completed})
 
     @action(detail=False, methods=['post'], url_path='clear-pending')
     def clear_pending(self, request):
-        self.get_queryset().filter(completed=False).delete()
+        pending = self.get_queryset().filter(completed=False)
+        count = pending.count()
+        pending.delete()
+        log_activity(request.user, 'task_delete', f"Cleared all pending tasks ({count} tasks deleted)")
         return Response({'status': 'success'})
 
 class EventViewSet(viewsets.ModelViewSet):
@@ -149,7 +166,16 @@ class EventViewSet(viewsets.ModelViewSet):
         return Event.objects.filter(user=self.request.user).order_by('date', 'event_time')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        instance = serializer.save(user=self.request.user)
+        log_activity(self.request.user, 'event_create', f"Created event: '{instance.title}' on {instance.date}")
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_activity(self.request.user, 'event_edit', f"Updated event: '{instance.title}'")
+
+    def perform_destroy(self, instance):
+        log_activity(self.request.user, 'event_delete', f"Deleted event: '{instance.title}'")
+        instance.delete()
 
 class QuoteViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Quote.objects.all()
@@ -177,7 +203,6 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                log_activity(user, 'login', f'Logged in successfully')
                 return redirect('index')
     else:
         form = AuthenticationForm()
@@ -195,8 +220,6 @@ def register_view(request):
     return render(request, 'register.html', {'form': form})
 
 def logout_view(request):
-    if request.user.is_authenticated:
-        log_activity(request.user, 'logout', 'Logged out of the system')
     logout(request)
     return redirect('login')
 
@@ -479,21 +502,34 @@ def system_history(request):
     # Category filter groups
     filter_map = {
         'login':    ['login', 'logout'],
-        'diary':    ['diary_write', 'diary_edit', 'diary_view'],
-        'tasks':    ['task_view', 'task_create', 'task_complete'],
-        'events':   ['event_view', 'event_create'],
+        'diary':    ['diary_write', 'diary_edit', 'diary_view', 'diary_delete'],
+        'tasks':    ['task_view', 'task_create', 'task_complete', 'task_edit', 'task_delete'],
+        'events':   ['event_view', 'event_create', 'event_edit', 'event_delete'],
         'profile':  ['profile_view', 'settings_view'],
     }
 
     if filter_action in filter_map:
         logs = logs.filter(action__in=filter_map[filter_action])
 
-    total_count = SystemActivityLog.objects.filter(user=request.user).count()
+    # Calculate count of logs by filter category for the request user
+    all_user_logs = SystemActivityLog.objects.filter(user=request.user)
+    
+    total_count = all_user_logs.count()
+    login_count = all_user_logs.filter(action__in=filter_map['login']).count()
+    diary_count = all_user_logs.filter(action__in=filter_map['diary']).count()
+    tasks_count = all_user_logs.filter(action__in=filter_map['tasks']).count()
+    events_count = all_user_logs.filter(action__in=filter_map['events']).count()
+    profile_count = all_user_logs.filter(action__in=filter_map['profile']).count()
 
     context = {
         'logs': logs[:200],  # cap at 200 most recent
         'active_filter': filter_action,
         'total_count': total_count,
+        'login_count': login_count,
+        'diary_count': diary_count,
+        'tasks_count': tasks_count,
+        'events_count': events_count,
+        'profile_count': profile_count,
     }
     return render(request, 'system_history.html', context)
 

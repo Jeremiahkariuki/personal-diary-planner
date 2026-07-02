@@ -86,14 +86,20 @@ class SystemActivityLog(models.Model):
     ACTION_CHOICES = [
         ('login',           '🔐 Login'),
         ('logout',          '🚪 Logout'),
+        ('dashboard_view',  '📊 Dashboard Viewed'),
         ('diary_write',     '✍️ Diary Written'),
         ('diary_edit',      '📝 Diary Edited'),
         ('diary_view',      '📖 Diary Viewed'),
+        ('diary_delete',    '🗑️ Diary Deleted'),
         ('task_view',       '✅ Tasks Viewed'),
         ('task_create',     '➕ Task Created'),
+        ('task_edit',       '✏️ Task Updated'),
         ('task_complete',   '🎯 Task Completed'),
+        ('task_delete',     '🗑️ Task Deleted'),
         ('event_view',      '📅 Events Viewed'),
         ('event_create',    '🗓️ Event Created'),
+        ('event_edit',      '✏️ Event Updated'),
+        ('event_delete',    '🗑️ Event Deleted'),
         ('profile_view',    '👤 Profile Viewed'),
         ('settings_view',   '⚙️ Settings Visited'),
     ]
@@ -111,3 +117,12 @@ class SystemActivityLog(models.Model):
 
     def get_action_label(self):
         return dict(self.ACTION_CHOICES).get(self.action, self.action)
+
+
+def log_activity(user, action, description):
+    """Create a SystemActivityLog entry; silently ignore errors."""
+    try:
+        SystemActivityLog.objects.create(user=user, action=action, description=description)
+    except Exception:
+        pass
+
