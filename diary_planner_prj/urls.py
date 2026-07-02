@@ -28,6 +28,7 @@ urlpatterns = [
     path('diary/write/', views.write_entry, name='write_entry'),
     path('diary/edit/<int:entry_id>/', views.write_entry, name='edit_entry'),
     path('export/', views.export_pdf, name='export_pdf'),
+    path('system-history/', views.system_history, name='system_history'),
     path('quote/save/', views.save_custom_quote, name='save_custom_quote'),
     path('quote/delete/', views.delete_custom_quote, name='delete_custom_quote'),
 

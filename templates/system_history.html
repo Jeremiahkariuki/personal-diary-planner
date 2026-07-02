@@ -1,0 +1,407 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jdiary | System History</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        /* ── Page-specific styles ── */
+        .history-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem 4rem;
+        }
+
+        .history-header {
+            margin-bottom: 2rem;
+        }
+
+        .history-header h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            margin: 0 0 .3rem;
+        }
+
+        .history-header p {
+            color: var(--text-secondary, #94a3b8);
+            margin: 0;
+        }
+
+        /* filter pills */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .4rem .95rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .05);
+            color: var(--text-secondary, #94a3b8);
+            font-size: .82rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background .2s, color .2s, border-color .2s, transform .15s;
+        }
+
+        .filter-pill:hover {
+            background: rgba(129, 140, 248, .15);
+            color: #818cf8;
+            border-color: rgba(129, 140, 248, .35);
+            transform: translateY(-1px);
+        }
+
+        .filter-pill.active {
+            background: rgba(129, 140, 248, .25);
+            color: #a5b4fc;
+            border-color: rgba(129, 140, 248, .55);
+        }
+
+        /* stat badge */
+        .stat-badge {
+            display: inline-block;
+            padding: .25rem .7rem;
+            border-radius: 999px;
+            background: rgba(129, 140, 248, .18);
+            color: #a5b4fc;
+            font-size: .78rem;
+            font-weight: 600;
+            margin-left: .5rem;
+        }
+
+        /* log list */
+        .log-list {
+            display: flex;
+            flex-direction: column;
+            gap: .75rem;
+        }
+
+        .log-entry {
+            display: grid;
+            grid-template-columns: 2.6rem 1fr auto;
+            align-items: center;
+            gap: 1rem;
+            padding: .9rem 1.2rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .08);
+            transition: background .2s, transform .15s;
+            animation: fadeSlideIn .35s ease both;
+        }
+
+        .log-entry:hover {
+            background: rgba(255, 255, 255, .07);
+            transform: translateX(3px);
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .log-icon {
+            width: 2.6rem;
+            height: 2.6rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        /* colour-coded by category */
+        .log-icon.cat-login {
+            background: rgba(99, 102, 241, .2);
+        }
+
+        .log-icon.cat-logout {
+            background: rgba(239, 68, 68, .15);
+        }
+
+        .log-icon.cat-diary {
+            background: rgba(168, 85, 247, .2);
+        }
+
+        .log-icon.cat-tasks {
+            background: rgba(34, 197, 94, .15);
+        }
+
+        .log-icon.cat-events {
+            background: rgba(251, 146, 60, .15);
+        }
+
+        .log-icon.cat-profile {
+            background: rgba(56, 189, 248, .15);
+        }
+
+        .log-icon.cat-settings {
+            background: rgba(148, 163, 184, .15);
+        }
+
+        .log-body .log-action {
+            font-size: .88rem;
+            font-weight: 600;
+            margin: 0 0 .18rem;
+        }
+
+        .log-body .log-desc {
+            font-size: .8rem;
+            color: var(--text-secondary, #94a3b8);
+            margin: 0;
+        }
+
+        .log-time {
+            text-align: right;
+            font-size: .75rem;
+            color: var(--text-secondary, #94a3b8);
+            white-space: nowrap;
+        }
+
+        .log-time .date {
+            display: block;
+        }
+
+        /* empty state */
+        .empty-log {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary, #94a3b8);
+        }
+
+        .empty-log .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-log h3 {
+            margin: 0 0 .5rem;
+            font-size: 1.1rem;
+            color: inherit;
+        }
+
+        .empty-log p {
+            margin: 0;
+            font-size: .9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- NAV -->
+        <nav class="glass-nav">
+            <div class="logo">Jdiary</div>
+            <div class="nav-links">
+                <a href="{% url 'index' %}">Dashboard</a>
+                <a href="{% url 'task_list' %}">Tasks</a>
+                <a href="{% url 'events_page' %}">Events</a>
+                <a href="{% url 'diary_history' %}">Diary</a>
+            </div>
+            <div class="nav-actions">
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="lightThemeBtn" title="Light Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </button>
+                    <button class="theme-btn" id="darkThemeBtn" title="Dark Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="user-menu-container">
+                    <button id="profileBtn" class="profile-btn" title="Account">
+                        <div class="avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                    </button>
+                    <div id="profileDropdown" class="glass-card dropdown-menu hidden">
+                        <div class="dropdown-header">
+                            <div class="avatar-sm">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            <div class="user-info">
+                                <strong>{{ user.username }}</strong>
+                                <span>{{ user.email }}</span>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'profile' %}" class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Profile
+                        </a>
+                        <a href="{% url 'settings_view' %}" class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                </path>
+                            </svg>
+                            Settings
+                        </a>
+                        <a href="{% url 'system_history' %}" class="dropdown-item active">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            System History
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'logout' %}" class="dropdown-item logout">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Sign Out
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN -->
+        <main style="padding: 1.5rem 1rem;">
+            <div class="history-page">
+                <div class="history-header">
+                    <h1>🕐 System History
+                        <span class="stat-badge">{{ total_count }} total</span>
+                    </h1>
+                    <p>A complete audit trail of your activity in Jdiary.</p>
+                </div>
+
+                <!-- FILTER BAR -->
+                <div class="filter-bar">
+                    <a href="?filter=all" class="filter-pill {% if active_filter == 'all' %}active{% endif %}">
+                        🗂 All
+                    </a>
+                    <a href="?filter=login" class="filter-pill {% if active_filter == 'login' %}active{% endif %}">
+                        🔐 Login &amp; Logout
+                    </a>
+                    <a href="?filter=diary" class="filter-pill {% if active_filter == 'diary' %}active{% endif %}">
+                        📖 Diary
+                    </a>
+                    <a href="?filter=tasks" class="filter-pill {% if active_filter == 'tasks' %}active{% endif %}">
+                        ✅ Tasks
+                    </a>
+                    <a href="?filter=events" class="filter-pill {% if active_filter == 'events' %}active{% endif %}">
+                        📅 Events
+                    </a>
+                    <a href="?filter=profile" class="filter-pill {% if active_filter == 'profile' %}active{% endif %}">
+                        👤 Profile &amp; Settings
+                    </a>
+                </div>
+
+                <!-- LOG LIST -->
+                {% if logs %}
+                <div class="log-list">
+                    {% for log in logs %}
+                    {% with action=log.action %}
+                    <div class="log-entry">
+                        <!-- Icon -->
+                        <div class="log-icon
+                            {% if action == 'login' %}cat-login
+                            {% elif action == 'logout' %}cat-logout
+                            {% elif action == 'diary_write' or action == 'diary_edit' or action == 'diary_view' %}cat-diary
+                            {% elif action == 'task_view' or action == 'task_create' or action == 'task_complete' %}cat-tasks
+                            {% elif action == 'event_view' or action == 'event_create' %}cat-events
+                            {% elif action == 'profile_view' %}cat-profile
+                            {% elif action == 'settings_view' %}cat-settings
+                            {% else %}cat-profile
+                            {% endif %}">
+                            {% if action == 'login' %}🔐
+                            {% elif action == 'logout' %}🚪
+                            {% elif action == 'diary_write' %}✍️
+                            {% elif action == 'diary_edit' %}📝
+                            {% elif action == 'diary_view' %}📖
+                            {% elif action == 'task_view' %}✅
+                            {% elif action == 'task_create' %}➕
+                            {% elif action == 'task_complete' %}🎯
+                            {% elif action == 'event_view' %}📅
+                            {% elif action == 'event_create' %}🗓️
+                            {% elif action == 'profile_view' %}👤
+                            {% elif action == 'settings_view' %}⚙️
+                            {% else %}📌
+                            {% endif %}
+                        </div>
+
+                        <!-- Body -->
+                        <div class="log-body">
+                            <p class="log-action">{{ log.get_action_label }}</p>
+                            <p class="log-desc">{{ log.description }}</p>
+                        </div>
+
+                        <!-- Timestamp -->
+                        <div class="log-time">
+                            <span class="date">{{ log.timestamp|date:"M d, Y" }}</span>
+                            <span>{{ log.timestamp|time:"H:i" }}</span>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-log glass-card">
+                    <div class="empty-icon">🕐</div>
+                    <h3>No activity yet</h3>
+                    <p>Your activity will appear here as you use the app — logins, diary entries, tasks, events and
+                        more.</p>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script src="{% static 'js/app.js' %}?v=5"></script>
+</body>
+
+</html>

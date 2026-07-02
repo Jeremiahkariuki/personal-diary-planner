@@ -80,3 +80,34 @@ class Quote(models.Model):
 
     def __str__(self):
         return self.text[:50]
+
+
+class SystemActivityLog(models.Model):
+    ACTION_CHOICES = [
+        ('login',           '🔐 Login'),
+        ('logout',          '🚪 Logout'),
+        ('diary_write',     '✍️ Diary Written'),
+        ('diary_edit',      '📝 Diary Edited'),
+        ('diary_view',      '📖 Diary Viewed'),
+        ('task_view',       '✅ Tasks Viewed'),
+        ('task_create',     '➕ Task Created'),
+        ('task_complete',   '🎯 Task Completed'),
+        ('event_view',      '📅 Events Viewed'),
+        ('event_create',    '🗓️ Event Created'),
+        ('profile_view',    '👤 Profile Viewed'),
+        ('settings_view',   '⚙️ Settings Visited'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activity_logs')
+    action = models.CharField(max_length=30, choices=ACTION_CHOICES)
+    description = models.CharField(max_length=300)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"[{self.user.username}] {self.action} @ {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+
+    def get_action_label(self):
+        return dict(self.ACTION_CHOICES).get(self.action, self.action)

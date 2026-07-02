@@ -11,7 +11,7 @@ from xhtml2pdf import pisa
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import DiaryEntry, Task, Event, Profile, Quote
+from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog
 from .serializers import (
     DiaryEntrySerializer, TaskSerializer, EventSerializer, 
     UserSerializer, QuoteSerializer
@@ -20,6 +20,14 @@ from datetime import date
 import datetime
 import random
 import json
+
+
+def log_activity(user, action, description):
+    """Create a SystemActivityLog entry; silently ignore errors."""
+    try:
+        SystemActivityLog.objects.create(user=user, action=action, description=description)
+    except Exception:
+        pass
 
 @login_required
 def index(request):
@@ -88,6 +96,7 @@ def index(request):
 @login_required
 def task_list(request):
     tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
+    log_activity(request.user, 'task_view', f'Viewed task list ({tasks.count()} tasks)')
     return render(request, 'tasks.html', {'tasks': tasks})
 
 # --- API ViewSets ---
@@ -168,6 +177,7 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
+                log_activity(user, 'login', f'Logged in successfully')
                 return redirect('index')
     else:
         form = AuthenticationForm()
@@ -185,6 +195,8 @@ def register_view(request):
     return render(request, 'register.html', {'form': form})
 
 def logout_view(request):
+    if request.user.is_authenticated:
+        log_activity(request.user, 'logout', 'Logged out of the system')
     logout(request)
     return redirect('login')
 
@@ -197,6 +209,7 @@ def profile_view(request):
     # Ensure profile exists
     from .models import Profile
     profile, created = Profile.objects.get_or_create(user=user)
+    log_activity(user, 'profile_view', 'Visited the Profile page')
     
     # Aggregate stats
     entry_count = DiaryEntry.objects.filter(user=user).count()
@@ -234,6 +247,7 @@ def settings_view(request):
     # Ensure profile exists
     from .models import Profile
     profile, created = Profile.objects.get_or_create(user=user)
+    log_activity(user, 'settings_view', 'Visited the Settings page')
     
     password_form = PasswordChangeForm(user=user)
     
@@ -303,6 +317,7 @@ def diary_history(request):
         entries = entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
     
     entries = entries.order_by('-created_at')
+    log_activity(request.user, 'diary_view', f'Viewed diary history ({entries.count()} entries)')
 
     # Mood Trends Analytics
     mood_map = {'excited': 5, 'happy': 4, 'neutral': 3, 'sad': 2, 'stressed': 1}
@@ -331,8 +346,7 @@ def diary_history(request):
 
 @login_required
 def events_page(request):
-    # Fetch all events for the user to pass to the template
-    # although the calendar logic in JS will likely fetch them via API
+    log_activity(request.user, 'event_view', 'Viewed the Events calendar')
     return render(request, 'events.html')
 
 @login_required
@@ -357,6 +371,7 @@ def write_entry(request, entry_id=None):
                 entry.image = image
             entry.save()
             messages.success(request, 'Diary entry updated!')
+            log_activity(request.user, 'diary_edit', f'Edited diary entry (mood: {mood})')
         else:
             entry = DiaryEntry.objects.create(
                 user=request.user,
@@ -365,6 +380,7 @@ def write_entry(request, entry_id=None):
                 image=image
             )
             messages.success(request, 'Diary entry saved!')
+            log_activity(request.user, 'diary_write', f'Wrote a new diary entry (mood: {mood})')
 
         # Handle tags
         if tags_str:
@@ -452,4 +468,32 @@ def export_pdf(request):
     if pisa_status.err:
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
+
+
+@login_required
+def system_history(request):
+    """Show all system activity logs for the current user."""
+    filter_action = request.GET.get('filter', 'all')
+    logs = SystemActivityLog.objects.filter(user=request.user)
+
+    # Category filter groups
+    filter_map = {
+        'login':    ['login', 'logout'],
+        'diary':    ['diary_write', 'diary_edit', 'diary_view'],
+        'tasks':    ['task_view', 'task_create', 'task_complete'],
+        'events':   ['event_view', 'event_create'],
+        'profile':  ['profile_view', 'settings_view'],
+    }
+
+    if filter_action in filter_map:
+        logs = logs.filter(action__in=filter_map[filter_action])
+
+    total_count = SystemActivityLog.objects.filter(user=request.user).count()
+
+    context = {
+        'logs': logs[:200],  # cap at 200 most recent
+        'active_filter': filter_action,
+        'total_count': total_count,
+    }
+    return render(request, 'system_history.html', context)
 
