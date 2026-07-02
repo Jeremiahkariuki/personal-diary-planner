@@ -260,10 +260,10 @@ body {
 
 .dropdown-menu {
     position: absolute;
-    top: calc(100% + 15px);
+    top: calc(100% + 12px);
     right: 0;
-    width: 260px;
-    padding: 0.5rem 0 !important;
+    width: 210px;
+    padding: 0.35rem 0 !important;
     /* Override glass-card padding */
     z-index: 1000;
     animation: dropdownIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -294,15 +294,15 @@ body {
 }
 
 .dropdown-header {
-    padding: 1.25rem 1.5rem;
+    padding: 0.75rem 1rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.65rem;
 }
 
 .avatar-sm {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
     display: flex;
@@ -313,8 +313,8 @@ body {
 }
 
 .avatar-sm svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
 }
 
 .user-info {
@@ -325,7 +325,7 @@ body {
 }
 
 .user-info strong {
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
@@ -333,7 +333,7 @@ body {
 }
 
 .user-info span {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -349,9 +349,10 @@ body {
 .dropdown-item {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.8rem 1.5rem;
+    gap: 0.6rem;
+    padding: 0.55rem 1rem;
     color: var(--text-secondary);
+    font-size: 0.82rem;
     text-decoration: none;
     transition: all 0.2s ease;
 }
@@ -362,8 +363,9 @@ body {
 }
 
 .dropdown-item svg {
-    width: 18px;
-    height: 18px;
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
 }
 
 .logout-link:hover {
