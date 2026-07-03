@@ -706,6 +706,36 @@ def share_item(request):
 
 
 @login_required
+def update_share(request):
+    """Allow owner to change the share_type of an existing whole-scope permission."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            share_id = data.get('share_id')
+            new_type = data.get('share_type', '').strip()
+
+            valid_types = ['whole_diary', 'whole_events']
+            if new_type not in valid_types:
+                return JsonResponse({'error': 'Invalid permission type. Only whole_diary or whole_events can be changed.'}, status=400)
+
+            share = SharePermission.objects.filter(
+                owner=request.user,
+                id=share_id,
+                share_type__in=valid_types   # only allow editing whole-scope shares
+            ).first()
+
+            if not share:
+                return JsonResponse({'error': 'Share permission not found or cannot be edited.'}, status=404)
+
+            share.share_type = new_type
+            share.save()
+            log_activity(request.user, 'share_update', f'Updated share permission #{share_id} type to {new_type}')
+            return JsonResponse({'status': 'ok', 'share_type': new_type, 'share_type_display': share.get_share_type_display()})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Method not allowed.'}, status=405)
+
+@login_required
 def revoke_share(request):
     if request.method == 'POST':
         try:

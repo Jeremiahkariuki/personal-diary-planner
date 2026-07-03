@@ -33,6 +33,7 @@ urlpatterns = [
     path('quote/delete/', views.delete_custom_quote, name='delete_custom_quote'),
     path('share/create/', views.share_item, name='share_item'),
     path('share/revoke/', views.revoke_share, name='revoke_share'),
+    path('share/update/', views.update_share, name='update_share'),
 
     # REST API Endpoints
     path('api/', include(router.urls)),

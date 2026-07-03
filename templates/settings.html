@@ -409,7 +409,9 @@
 
             <section class="settings-section glass-card" id="sharingPermissionsSection">
                 <h2>Sharing & Permissions</h2>
-                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Manage sharing permissions. You can share your entire diary or all events calendar with someone by their email. They will receive an email invite to access your shared contents.</p>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Manage sharing permissions. You can
+                    share your entire diary or all events calendar with someone by their email. They will receive an
+                    email invite to access your shared contents.</p>
 
                 <!-- Grant Share Form -->
                 <form id="grantShareForm" style="margin-bottom: 2rem;">
@@ -417,27 +419,33 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
                         <div class="input-group" style="margin-bottom: 0;">
                             <label for="shareEmailInput">Colleague's Email</label>
-                            <input type="email" id="shareEmailInput" placeholder="colleague@example.com" required style="width: 100%;">
+                            <input type="email" id="shareEmailInput" placeholder="colleague@example.com" required
+                                style="width: 100%;">
                         </div>
                         <div class="input-group" style="margin-bottom: 0;">
                             <label for="shareTypeInput">Permission Type</label>
-                            <select id="shareTypeInput" required style="width: 100%; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 1rem;">
+                            <select id="shareTypeInput" required
+                                style="width: 100%; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 1rem;">
                                 <option value="whole_diary">Whole Diary (View Only)</option>
                                 <option value="whole_events">Whole Events Calendar (View Only)</option>
                             </select>
                         </div>
-                        <button type="submit" class="add-btn primary-btn" style="height: 48px; min-width: 120px;">Grant Access</button>
+                        <button type="submit" class="add-btn primary-btn" style="height: 48px; min-width: 120px;">Grant
+                            Access</button>
                     </div>
                 </form>
 
                 <!-- Shares Granted Table -->
                 <div style="margin-bottom: 2rem;">
-                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">Access Granted to Others</h3>
+                    <h3
+                        style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">
+                        Access Granted to Others</h3>
                     {% if shares_granted %}
                     <div class="table-responsive" style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left;">
                             <thead>
-                                <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
+                                <tr
+                                    style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
                                     <th style="padding: 10px 5px;">Shared With</th>
                                     <th style="padding: 10px 5px;">Type</th>
                                     <th style="padding: 10px 5px;">Date Shared</th>
@@ -446,29 +454,57 @@
                             </thead>
                             <tbody>
                                 {% for share in shares_granted %}
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;" data-share-id="{{ share.id }}">
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;"
+                                    data-share-id="{{ share.id }}" data-share-type="{{ share.share_type }}">
                                     <td style="padding: 12px 5px;">
                                         {{ share.shared_with_email }}
                                         {% if share.shared_with_user %}
-                                        <span style="font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Registered</span>
+                                        <span
+                                            style="font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Registered</span>
                                         {% else %}
-                                        <span style="font-size: 0.75rem; background: rgba(234, 179, 8, 0.15); color: #eab308; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Pending Join</span>
+                                        <span
+                                            style="font-size: 0.75rem; background: rgba(234, 179, 8, 0.15); color: #eab308; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Pending
+                                            Join</span>
                                         {% endif %}
                                     </td>
                                     <td style="padding: 12px 5px;">
                                         {% if share.share_type == 'specific_diary' %}
-                                        📖 Specific Diary Entry
+                                        <span class="share-type-label">📖 Specific Diary Entry</span>
                                         {% elif share.share_type == 'whole_diary' %}
-                                        📚 Entire Diary
+                                        <span class="share-type-label">📚 Entire Diary</span>
                                         {% elif share.share_type == 'specific_event' %}
-                                        📅 Specific Event: "{{ share.event.title }}"
+                                        <span class="share-type-label">📅 Specific Event: "{{ share.event.title
+                                            }}"</span>
                                         {% elif share.share_type == 'whole_events' %}
-                                        🗓️ All Events Calendar
+                                        <span class="share-type-label">🗓️ All Events Calendar</span>
+                                        {% endif %}
+                                        {% if share.share_type == 'whole_diary' or share.share_type == 'whole_events' %}
+                                        <div class="change-type-form"
+                                            style="display:none; margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                            <select class="share-type-select"
+                                                style="border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-family: inherit;">
+                                                <option value="whole_diary" {% if share.share_type=='whole_diary'
+                                                    %}selected{% endif %}>📚 Entire Diary</option>
+                                                <option value="whole_events" {% if share.share_type=='whole_events'
+                                                    %}selected{% endif %}>🗓️ All Events Calendar</option>
+                                            </select>
+                                            <button class="apply-change-btn add-btn"
+                                                style="padding: 5px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); color: var(--accent-primary);">Apply</button>
+                                            <button class="cancel-change-btn"
+                                                style="background: none; border: none; color: var(--text-secondary); font-size: 0.8rem; cursor: pointer; padding: 5px 8px;">Cancel</button>
+                                        </div>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
-                                    <td style="padding: 12px 5px; text-align: right;">
-                                        <button class="revoke-share-btn add-btn danger-btn" style="padding: 4px 10px; font-size: 0.8rem; min-width: auto; width: auto; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;">Revoke</button>
+                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{
+                                        share.created_at|date:"M d, Y" }}</td>
+                                    <td style="padding: 12px 5px; text-align: right; white-space: nowrap;">
+                                        {% if share.share_type == 'whole_diary' or share.share_type == 'whole_events' %}
+                                        <button class="change-type-btn add-btn"
+                                            style="padding: 4px 10px; font-size: 0.8rem; min-width: auto; width: auto; background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.2); color: var(--accent-primary); margin-right: 4px;">Change
+                                            Type</button>
+                                        {% endif %}
+                                        <button class="revoke-share-btn add-btn danger-btn"
+                                            style="padding: 4px 10px; font-size: 0.8rem; min-width: auto; width: auto; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;">Revoke</button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -476,18 +512,22 @@
                         </table>
                     </div>
                     {% else %}
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">You haven't granted sharing permissions to anyone yet.</p>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">You haven't granted sharing permissions
+                        to anyone yet.</p>
                     {% endif %}
                 </div>
 
                 <!-- Shares Received Table -->
                 <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">Access Shared with Me</h3>
+                    <h3
+                        style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">
+                        Access Shared with Me</h3>
                     {% if shares_received %}
                     <div class="table-responsive" style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left;">
                             <thead>
-                                <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
+                                <tr
+                                    style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
                                     <th style="padding: 10px 5px;">Owner</th>
                                     <th style="padding: 10px 5px;">Type</th>
                                     <th style="padding: 10px 5px;">Date Shared</th>
@@ -496,7 +536,8 @@
                             <tbody>
                                 {% for share in shares_received %}
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;">
-                                    <td style="padding: 12px 5px;">{{ share.owner.username }} ({{ share.owner.email|default:share.owner.username }})</td>
+                                    <td style="padding: 12px 5px;">{{ share.owner.username }} ({{
+                                        share.owner.email|default:share.owner.username }})</td>
                                     <td style="padding: 12px 5px;">
                                         {% if share.share_type == 'specific_diary' %}
                                         📖 Specific Diary Entry
@@ -508,14 +549,16 @@
                                         🗓️ All Events Calendar
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
+                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{
+                                        share.created_at|date:"M d, Y" }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                     {% else %}
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Nobody has shared their diary or events calendar with you yet.</p>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Nobody has shared their diary or events
+                        calendar with you yet.</p>
                     {% endif %}
                 </div>
             </section>
@@ -827,12 +870,12 @@
     </script>
     <script>
         // Sharing & Permissions AJAX Handler
-        (function() {
+        (function () {
             const csrfToken = '{{ csrf_token }}';
             const grantForm = document.getElementById('grantShareForm');
             const grantEmail = document.getElementById('shareEmailInput');
             const grantType = document.getElementById('shareTypeInput');
-            
+
             if (grantForm) {
                 grantForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -871,7 +914,7 @@
                 btn.addEventListener('click', async () => {
                     const row = btn.closest('tr');
                     const share_id = row.dataset.shareId;
-                    
+
                     if (!confirm('Are you sure you want to revoke this sharing permission?')) return;
 
                     btn.disabled = true;
