@@ -480,13 +480,11 @@
                                         {% endif %}
                                         {% if share.share_type == 'whole_diary' or share.share_type == 'whole_events' %}
                                         <div class="change-type-form"
-                                            style="display:none; margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                            style="display:none; margin-top: 8px; align-items: center; gap: 6px; flex-wrap: wrap;">
                                             <select class="share-type-select"
                                                 style="border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-family: inherit;">
-                                                <option value="whole_diary" {% if share.share_type=='whole_diary'
-                                                    %}selected{% endif %}>📚 Entire Diary</option>
-                                                <option value="whole_events" {% if share.share_type=='whole_events'
-                                                    %}selected{% endif %}>🗓️ All Events Calendar</option>
+                                                <option value="whole_diary" {% if share.share_type == 'whole_diary' %}selected{% endif %}>📚 Entire Diary</option>
+                                                <option value="whole_events" {% if share.share_type == 'whole_events' %}selected{% endif %}>🗓️ All Events Calendar</option>
                                             </select>
                                             <button class="apply-change-btn add-btn"
                                                 style="padding: 5px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); color: var(--accent-primary);">Apply</button>
@@ -944,6 +942,88 @@
                     } finally {
                         btn.disabled = false;
                         btn.textContent = 'Revoke';
+                    }
+                });
+            });
+
+            // Change Type: toggle inline edit form
+            document.querySelectorAll('.change-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const row = btn.closest('tr');
+                    const form = row.querySelector('.change-type-form');
+                    const label = row.querySelector('.share-type-label');
+                    const isOpen = form && form.style.display !== 'none';
+                    if (form) {
+                        form.style.display = isOpen ? 'none' : 'flex';
+                        if (label) label.style.opacity = isOpen ? '1' : '0.4';
+                        btn.textContent = isOpen ? 'Change Type' : 'Cancel Edit';
+                        btn.style.background = isOpen ? 'rgba(129,140,248,0.1)' : 'rgba(234,179,8,0.1)';
+                        btn.style.color = isOpen ? 'var(--accent-primary)' : '#eab308';
+                        btn.style.borderColor = isOpen ? 'rgba(129,140,248,0.2)' : 'rgba(234,179,8,0.2)';
+                    }
+                });
+            });
+
+            // Cancel inline edit
+            document.querySelectorAll('.cancel-change-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const row = btn.closest('tr');
+                    const form = row.querySelector('.change-type-form');
+                    const label = row.querySelector('.share-type-label');
+                    const changeBtn = row.querySelector('.change-type-btn');
+                    if (form) { form.style.display = 'none'; }
+                    if (label) label.style.opacity = '1';
+                    if (changeBtn) {
+                        changeBtn.textContent = 'Change Type';
+                        changeBtn.style.background = 'rgba(129,140,248,0.1)';
+                        changeBtn.style.color = 'var(--accent-primary)';
+                        changeBtn.style.borderColor = 'rgba(129,140,248,0.2)';
+                    }
+                });
+            });
+
+            // Apply new permission type
+            document.querySelectorAll('.apply-change-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const row = btn.closest('tr');
+                    const share_id = row.dataset.shareId;
+                    const select = row.querySelector('.share-type-select');
+                    const new_type = select ? select.value : null;
+                    const label = row.querySelector('.share-type-label');
+                    const form = row.querySelector('.change-type-form');
+                    const changeBtn = row.querySelector('.change-type-btn');
+
+                    if (!new_type) return;
+                    btn.disabled = true;
+                    btn.textContent = 'Applying...';
+
+                    try {
+                        const res = await fetch('{% url "update_share" %}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                            body: JSON.stringify({ share_id, share_type: new_type })
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.status === 'ok') {
+                            const icons = { whole_diary: '📚 Entire Diary', whole_events: '🗓️ All Events Calendar' };
+                            if (label) label.textContent = icons[data.share_type] || data.share_type_display;
+                            if (form) form.style.display = 'none';
+                            if (label) label.style.opacity = '1';
+                            if (changeBtn) {
+                                changeBtn.textContent = 'Change Type';
+                                changeBtn.style.background = 'rgba(129,140,248,0.1)';
+                                changeBtn.style.color = 'var(--accent-primary)';
+                                changeBtn.style.borderColor = 'rgba(129,140,248,0.2)';
+                            }
+                        } else {
+                            alert(data.error || 'Failed to update permission type.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Network error when updating permission.');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Apply';
                     }
                 });
             });
