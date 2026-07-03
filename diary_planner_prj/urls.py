@@ -11,6 +11,7 @@ router.register(r'diary', views.DiaryEntryViewSet, basename='api-diary')
 router.register(r'tasks', views.TaskViewSet, basename='api-tasks')
 router.register(r'events', views.EventViewSet, basename='api-events')
 router.register(r'quotes', views.QuoteViewSet, basename='api-quotes')
+router.register(r'reminders', views.ReminderViewSet, basename='api-reminders')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -157,3 +157,39 @@ class SharePermission(models.Model):
         return f"{self.owner.email} shared {target} with {self.shared_with_email}"
 
 
+class Reminder(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reminders')
+    diary_entry = models.ForeignKey(DiaryEntry, on_delete=models.CASCADE, null=True, blank=True, related_name='reminders')
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True, related_name='reminders')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True, related_name='reminders')
+    reminder_time = models.DateTimeField(db_index=True)
+    email_sent = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['reminder_time']
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        targets = [self.diary_entry, self.event, self.task]
+        if not any(targets):
+            raise ValidationError("A reminder must be associated with a Diary Entry, Event, or Task.")
+        if sum(1 for t in targets if t is not None) > 1:
+            raise ValidationError("A reminder can only be associated with one item (Diary Entry, Event, or Task).")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        target = ""
+        if self.diary_entry:
+            target = f"Diary Entry #{self.diary_entry.id}"
+        elif self.event:
+            target = f"Event '{self.event.title}'"
+        elif self.task:
+            target = f"Task '{self.task.title}'"
+        return f"Reminder for {self.user.username} - {target} at {self.reminder_time.strftime('%Y-%m-%d %H:%M')}"
+
+
+

@@ -12,10 +12,10 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.models import User
-from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog, SharePermission, log_activity
+from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog, SharePermission, log_activity, Reminder
 from .serializers import (
     DiaryEntrySerializer, TaskSerializer, EventSerializer, 
-    UserSerializer, QuoteSerializer
+    UserSerializer, QuoteSerializer, ReminderSerializer
 )
 from datetime import date
 import datetime
@@ -261,6 +261,51 @@ class EventViewSet(viewsets.ModelViewSet):
                 )
             except Exception:
                 pass
+
+class ReminderViewSet(viewsets.ModelViewSet):
+    serializer_class = ReminderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Reminder.objects.filter(user=self.request.user)
+        event_id = self.request.query_params.get('event')
+        task_id = self.request.query_params.get('task')
+        diary_entry_id = self.request.query_params.get('diary_entry')
+        
+        if event_id:
+            queryset = queryset.filter(event_id=event_id)
+        if task_id:
+            queryset = queryset.filter(task_id=task_id)
+        if diary_entry_id:
+            queryset = queryset.filter(diary_entry_id=diary_entry_id)
+            
+        return queryset
+
+    def perform_create(self, serializer):
+        instance = serializer.save(user=self.request.user)
+        target = "an item"
+        if instance.diary_entry:
+            target = f"diary entry #{instance.diary_entry.id}"
+        elif instance.event:
+            target = f"event '{instance.event.title}'"
+        elif instance.task:
+            target = f"task '{instance.task.title}'"
+        log_activity(self.request.user, 'settings_view', f"Scheduled a reminder for {target} at {instance.reminder_time}")
+
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to delete this reminder.")
+        
+        target = "an item"
+        if instance.diary_entry:
+            target = f"diary entry #{instance.diary_entry.id}"
+        elif instance.event:
+            target = f"event '{instance.event.title}'"
+        elif instance.task:
+            target = f"task '{instance.task.title}'"
+        log_activity(self.request.user, 'settings_view', f"Cancelled scheduled reminder for {target}")
+        instance.delete()
 
 class QuoteViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Quote.objects.all()
