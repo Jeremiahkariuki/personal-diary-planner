@@ -22,6 +22,9 @@ import datetime
 import random
 import json
 
+
+
+
 @login_required
 def index(request):
     latest_entry = DiaryEntry.objects.filter(user=request.user).order_by('-created_at').first()
