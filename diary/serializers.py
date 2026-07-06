@@ -31,7 +31,7 @@ class EventSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Event
-        fields = ['id', 'title', 'location', 'time', 'date', 'completed', 'owner_username', 'shared_emails']
+        fields = ['id', 'title', 'location', 'time', 'date', 'completed', 'attendance_status', 'original_date', 'original_time', 'owner_username', 'shared_emails']
         read_only_fields = ['id', 'owner_username', 'shared_emails']
 
     def get_shared_emails(self, obj):

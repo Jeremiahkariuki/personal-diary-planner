@@ -29,10 +29,19 @@ import json
 def index(request):
     latest_entry = DiaryEntry.objects.filter(user=request.user).order_by('-created_at').first()
     tasks = Task.objects.filter(user=request.user)
-    upcoming_events = Event.objects.filter(user=request.user, completed=False).order_by('date', 'event_time')[:5] # Limit for dashboard
-    
-    # Calculate mood streak
+
+    # Only show future events (today onwards, excluding past times for today)
     today = date.today()
+    now = datetime.datetime.now().time()
+    upcoming_events = Event.objects.filter(
+        user=request.user,
+        completed=False,
+    ).filter(
+        Q(date__gt=today) |  # Future dates
+        Q(date=today, event_time__gte=now)  # Today but not past
+    ).order_by('date', 'event_time')[:5]
+
+    # Calculate mood streak
     streak = 0
     entry_dates = DiaryEntry.objects.filter(user=request.user).values_list('created_at__date', flat=True).distinct().order_by('-created_at__date')
     
@@ -264,6 +273,44 @@ class EventViewSet(viewsets.ModelViewSet):
                 )
             except Exception:
                 pass
+
+    @action(detail=True, methods=['post'], url_path='mark-attendance')
+    def mark_attendance(self, request, pk=None):
+        event = self.get_object()
+        if event.user != request.user:
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        new_status = request.data.get('status', '').strip()
+        if new_status not in ('attended', 'unattended'):
+            return Response({'error': 'Invalid status. Use attended or unattended.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Toggle: if same status, reset to pending
+        if event.attendance_status == new_status:
+            event.attendance_status = 'pending'
+        else:
+            event.attendance_status = new_status
+        event.save()
+        log_activity(request.user, 'event_edit', f"Marked '{event.title}' as {event.attendance_status}")
+        serializer = self.get_serializer(event)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='reschedule')
+    def reschedule(self, request, pk=None):
+        event = self.get_object()
+        if event.user != request.user:
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        new_date = request.data.get('date')
+        new_time = request.data.get('time')
+        if not new_date or not new_time:
+            return Response({'error': 'Both date and time are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Save original schedule only on first reschedule
+        if not event.original_date:
+            event.original_date = event.date
+            event.original_time = event.event_time
+        event.date = new_date
+        event.event_time = new_time
+        event.save()
+        log_activity(request.user, 'event_edit', f"Rescheduled '{event.title}' to {new_date} {new_time}")
+        serializer = self.get_serializer(event)
+        return Response(serializer.data)
 
 class ReminderViewSet(viewsets.ModelViewSet):
     serializer_class = ReminderSerializer

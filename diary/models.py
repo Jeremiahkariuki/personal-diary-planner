@@ -51,6 +51,11 @@ class Task(models.Model):
         return self.title
 
 class Event(models.Model):
+    ATTENDANCE_CHOICES = [
+        ('pending', 'Pending'),
+        ('attended', 'Attended'),
+        ('unattended', 'Unattended'),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='events')
     title = models.CharField(max_length=200)
     location = models.CharField(max_length=200, blank=True, null=True)
@@ -58,6 +63,9 @@ class Event(models.Model):
     date = models.DateField(default=date.today, db_index=True)
     completed = models.BooleanField(default=False, db_index=True)
     notified = models.BooleanField(default=False)
+    attendance_status = models.CharField(max_length=12, choices=ATTENDANCE_CHOICES, default='pending', db_index=True)
+    original_date = models.DateField(null=True, blank=True)
+    original_time = models.TimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['date', 'event_time']
