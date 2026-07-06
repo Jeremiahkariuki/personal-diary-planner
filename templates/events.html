@@ -17,7 +17,7 @@
     <style>
         .calendar-page-container {
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 1fr 340px;
             gap: 2rem;
             margin-top: 2rem;
             min-height: 80vh;
@@ -50,89 +50,42 @@
             margin: 0;
         }
 
-        .control-btns {
+        .attendance-actions {
             display: flex;
             gap: 0.5rem;
+            margin-top: 0.6rem;
         }
 
-        .full-calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background: var(--glass-border);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            overflow: hidden;
-            flex-grow: 1;
-        }
-
-        .calendar-header-cell {
+        .attendance-btn {
             background: rgba(255, 255, 255, 0.05);
-            padding: 1rem;
-            text-align: center;
-            font-weight: 600;
-            font-size: 0.9rem;
+            border: 1px solid var(--glass-border);
             color: var(--text-secondary);
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .calendar-day-cell {
-            background: var(--glass-bg);
-            min-height: 120px;
-            padding: 0.8rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            transition: background 0.3s ease;
-            cursor: pointer;
-        }
-
-        .calendar-day-cell:hover {
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .calendar-day-cell.day-outside {
-            background: rgba(0, 0, 0, 0.1);
-            opacity: 0.5;
-        }
-
-        .calendar-day-cell.day-today {
-            background: rgba(129, 140, 248, 0.05);
-        }
-
-        .day-num {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .day-today .day-num {
-            color: var(--accent-primary);
-            background: rgba(129, 140, 248, 0.1);
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        .cell-events {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .day-event-pill {
-            background: var(--accent-primary);
-            color: white;
             font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .attendance-btn:hover {
+            background: rgba(129, 140, 248, 0.1);
+            color: var(--text-primary);
+        }
+
+        .attendance-btn.active.attended {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #4ade80;
+        }
+
+        .attendance-btn.active.unattended {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #f87171;
+        }
+
+        .reschedule-action-btn:hover {
+            color: #fbbf24 !important;
         }
 
         /* Email Tag-Chip Styles */
@@ -219,7 +172,6 @@
             margin-top: 6px;
         }
 
-        /* Share Event Btn in sidebar */
         .share-event-btn {
             background: none;
             border: none;
@@ -246,6 +198,9 @@
             }
 
             .calendar-sidebar {
+                order: 1;
+            }
+            .calendar-main {
                 order: 2;
             }
         }
@@ -318,53 +273,41 @@
             </header>
 
             <div class="calendar-page-container">
-                <aside class="calendar-sidebar">
-                    <div class="glass-card sidebar-card">
-                        <button id="mainCreateEventBtn" class="add-btn primary-btn w-full" style="width: 100%;">+ Create
-                            Event</button>
-                    </div>
-
-                    <div class="glass-card sidebar-card">
-                        <h3 class="section-title">Schedule List</h3>
-                        <div id="sidebarEventList" class="event-list">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-                </aside>
-
                 <div class="calendar-main">
                     <div class="calendar-controls">
-                        <h2 id="calendarMonthYear">June 2026</h2>
-                        <div class="control-btns">
-                            <button id="prevMonthBtn" class="theme-btn" title="Previous Month">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <polyline points="15 18 9 12 15 6"></polyline>
-                                </svg>
-                            </button>
-                            <button id="todayBtn" class="text-btn">Today</button>
-                            <button id="nextMonthBtn" class="theme-btn" title="Next Month">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </button>
-                        </div>
+                        <h2>Events Schedule</h2>
+                        <button id="mainCreateEventBtn" class="add-btn primary-btn">+ Create Event</button>
                     </div>
 
-                    <div class="full-calendar-grid">
-                        <div class="calendar-header-cell">SUN</div>
-                        <div class="calendar-header-cell">MON</div>
-                        <div class="calendar-header-cell">TUE</div>
-                        <div class="calendar-header-cell">WED</div>
-                        <div class="calendar-header-cell">THU</div>
-                        <div class="calendar-header-cell">FRI</div>
-                        <div class="calendar-header-cell">SAT</div>
-                        <div id="fullCalendarBody" style="display: contents;">
+                    <div class="glass-card" style="padding: 1.5rem; flex-grow: 1;">
+                        <div id="sidebarEventList" class="event-list" style="max-height: none;">
                             <!-- Populated by JS -->
                         </div>
                     </div>
                 </div>
+
+                <aside class="calendar-sidebar">
+                    <div class="glass-card sidebar-card calendar-compact">
+                        <div class="calendar-header" style="margin-bottom: 1rem;">
+                            <h2 id="calendarMonthYear" style="font-size: 1.1rem; margin: 0;">June 2026</h2>
+                            <div class="calendar-nav">
+                                <button id="prevMonthBtn" class="nav-icon-btn" title="Previous Month">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                </button>
+                                <button id="todayBtn" class="text-btn" style="font-size: 0.8rem;">Today</button>
+                                <button id="nextMonthBtn" class="nav-icon-btn" title="Next Month">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="calendar-weekdays">
+                            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                        </div>
+                        <div id="calendarGrid" class="calendar-grid">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </aside>
             </div>
         </main>
     </div>
@@ -442,6 +385,30 @@
                     <button type="button" id="cancelEventShareBtn" class="text-btn">Cancel</button>
                     <button type="submit" id="submitEventShareBtn" class="primary-btn"
                         style="width: auto; padding: 0.6rem 1.5rem;">Share</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reschedule Modal -->
+    <div id="rescheduleModal" class="modal-overlay hidden">
+        <div class="glass-card modal-content" style="max-width: 400px; padding: 2rem;">
+            <h2>Reschedule Event</h2>
+            <form id="rescheduleForm">
+                <input type="hidden" id="rescheduleEventId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="rescheduleDate">New Date</label>
+                        <input type="date" id="rescheduleDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rescheduleTime">New Time</label>
+                        <input type="time" id="rescheduleTime" required>
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: 1.5rem;">
+                    <button type="button" id="cancelRescheduleBtn" class="text-btn">Cancel</button>
+                    <button type="submit" class="primary-btn" id="submitRescheduleBtn">Reschedule</button>
                 </div>
             </form>
         </div>

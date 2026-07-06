@@ -360,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.dataset.id = event.id;
             const isOwner = !event.owner_username || event.owner_username === window.currentUsername;
             let actionsHtml = '';
+            let attendanceHtml = '';
             if (isOwner) {
                 actionsHtml = `
                     <button class="share-event-btn" title="Share Event" data-id="${event.id}">
@@ -368,9 +369,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="edit-event-btn" title="Edit">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </button>
+                    <button class="reschedule-action-btn action-icon-btn text-btn" title="Reschedule" style="padding:4px; font-size:16px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </button>
                     <button class="delete-event-btn" title="Delete">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                     </button>
+                `;
+                attendanceHtml = `
+                    <div class="attendance-actions">
+                        <button class="attendance-btn ${event.attendance_status === 'pending' ? 'active pending' : ''}" data-status="pending">Pending</button>
+                        <button class="attendance-btn ${event.attendance_status === 'attended' ? 'active attended' : ''}" data-status="attended">Attended</button>
+                        <button class="attendance-btn ${event.attendance_status === 'unattended' ? 'active unattended' : ''}" data-status="unattended">Unattended</button>
+                    </div>
                 `;
             } else {
                 actionsHtml = `<span style="font-size: 0.75rem; color: var(--accent-primary); font-weight: 600;">Shared by @${event.owner_username}</span>`;
@@ -390,6 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3>${event.title}</h3>
                     <p>${event.location || 'No location'}</p>
                     ${sharedDetails}
+                    ${attendanceHtml}
                 </div>
                 <div class="event-actions">
                     ${actionsHtml}
@@ -566,19 +578,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const targetLists = [eventList, sidebarEventList].filter(Boolean);
     targetLists.forEach(list => {
-        list.addEventListener('click', (e) => {
+        list.addEventListener('click', async (e) => {
             const editBtn = e.target.closest('.edit-event-btn');
             const deleteBtn = e.target.closest('.delete-event-btn');
             const shareBtn = e.target.closest('.share-event-btn');
+            const rescheduleBtn = e.target.closest('.reschedule-action-btn');
+            const attendanceBtn = e.target.closest('.attendance-btn');
             const card = e.target.closest('.event-card');
             if (card) {
                 const eventId = card.dataset.id;
                 if (editBtn) openEditModal(eventId);
                 if (deleteBtn) deleteEvent(eventId);
                 if (shareBtn) openEventShareModal(eventId);
+                if (rescheduleBtn) openRescheduleModal(eventId);
+                if (attendanceBtn) {
+                     const status = attendanceBtn.dataset.status;
+                     await updateAttendance(eventId, status);
+                }
             }
         });
     });
+
+    const rescheduleModal = document.getElementById('rescheduleModal');
+    const rescheduleForm = document.getElementById('rescheduleForm');
+    const cancelRescheduleBtn = document.getElementById('cancelRescheduleBtn');
+    
+    function openRescheduleModal(eventId) {
+        if (!rescheduleModal) return;
+        const event = allUpcomingEvents.find(e => e.id == eventId);
+        if (!event) return;
+        document.getElementById('rescheduleEventId').value = event.id;
+        document.getElementById('rescheduleDate').value = event.date;
+        document.getElementById('rescheduleTime').value = event.time || '';
+        rescheduleModal.classList.remove('hidden');
+    }
+    
+    cancelRescheduleBtn?.addEventListener('click', () => rescheduleModal.classList.add('hidden'));
+    rescheduleModal?.addEventListener('click', (e) => { if (e.target === rescheduleModal) rescheduleModal.classList.add('hidden'); });
+
+    rescheduleForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const eventId = document.getElementById('rescheduleEventId').value;
+        const newDate = document.getElementById('rescheduleDate').value;
+        const newTime = document.getElementById('rescheduleTime').value;
+        const submitBtn = document.getElementById('submitRescheduleBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Updating...';
+        }
+        
+        try {
+            const response = await fetch(`/api/events/${eventId}/reschedule/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ date: newDate, time: newTime })
+            });
+            if (response.ok) {
+                const updatedEvent = await response.json();
+                const index = allUpcomingEvents.findIndex(e => e.id == eventId);
+                if (index !== -1) allUpcomingEvents[index] = updatedEvent;
+                rescheduleModal.classList.add('hidden');
+                showNotification('Success', 'Event rescheduled!');
+                renderCalendarGrid();
+                filterEvents(selectedDate);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Reschedule';
+            }
+        }
+    });
+    
+    async function updateAttendance(eventId, status) {
+        try {
+            const response = await fetch(`/api/events/${eventId}/mark-attendance/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ status: status })
+            });
+            if (response.ok) {
+                 const updatedEvent = await response.json();
+                 const index = allUpcomingEvents.findIndex(e => e.id == eventId);
+                 if (index !== -1) allUpcomingEvents[index] = updatedEvent;
+                 filterEvents(selectedDate);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
 
     let isSubmitting = false;
     if (eventForm) {
