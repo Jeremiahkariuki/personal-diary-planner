@@ -280,10 +280,11 @@ class EventViewSet(viewsets.ModelViewSet):
         if event.user != request.user:
             return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         new_status = request.data.get('status', '').strip()
-        if new_status not in ('attended', 'unattended'):
-            return Response({'error': 'Invalid status. Use attended or unattended.'}, status=status.HTTP_400_BAD_REQUEST)
-        # Toggle: if same status, reset to pending
-        if event.attendance_status == new_status:
+        if new_status not in ('attended', 'unattended', 'pending'):
+            return Response({'error': 'Invalid status. Use attended, unattended, or pending.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # If the same status is sent, maybe they clicked the active button to toggle off
+        if event.attendance_status == new_status and new_status != 'pending':
             event.attendance_status = 'pending'
         else:
             event.attendance_status = new_status
