@@ -407,9 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let attendanceHtml = '';
             if (isOwner) {
                 actionsHtml = `
-                    < button class="share-event-btn" title = "Share Event" data - id="${event.id}" >
+                    <button class="share-event-btn" title="Share Event" data-id="${event.id}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                    </button >
+                    </button>
                     <button class="edit-event-btn" title="Edit">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </button>
@@ -421,26 +421,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 `;
                 attendanceHtml = `
-                    < div class="attendance-actions" >
+                    <div class="attendance-actions">
                         <button class="attendance-btn ${event.attendance_status === 'pending' ? 'active pending' : ''}" data-status="pending">Pending</button>
                         <button class="attendance-btn ${event.attendance_status === 'attended' ? 'active attended' : ''}" data-status="attended">Attended</button>
                         <button class="attendance-btn ${event.attendance_status === 'unattended' ? 'active unattended' : ''}" data-status="unattended">Unattended</button>
-                    </div >
-                    `;
+                    </div>
+                `;
             } else {
-                actionsHtml = `< span style = "font-size: 0.75rem; color: var(--accent-primary); font-weight: 600;" > Shared by @${event.owner_username}</span > `;
+                actionsHtml = `<span style="font-size: 0.75rem; color: var(--accent-primary); font-weight: 600;">Shared by @${event.owner_username}</span>`;
             }
 
             let sharedDetails = '';
             if (isOwner && event.shared_emails) {
-                sharedDetails = `< p style = "font-size: 0.8rem; color: var(--accent-primary); margin-top: 4px; display: flex; align-items: center; gap: 4px;" >
+                sharedDetails = `<p style="font-size: 0.8rem; color: var(--accent-primary); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                     Shared with: ${event.shared_emails}
-                </p > `;
+                </p>`;
             }
 
             card.innerHTML = `
-                    < div class="event-time" > ${event.time}</div >
+                <div class="event-time">${event.time}</div>
                 <div class="event-details">
                     <h3>${event.title}</h3>
                     <p>${event.location || 'No location'}</p>
