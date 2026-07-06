@@ -26,7 +26,15 @@
 
     <div class="app-container">
         <nav class="glass-nav">
-            <div class="logo">Jdiary</div>
+            <a href="{% url 'index' %}" class="logo">Jdiary</a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
             <div class="nav-links">
                 <a href="{% url 'index' %}" class="active">Dashboard</a>
                 <a href="{% url 'task_list' %}">Tasks</a>
@@ -162,7 +170,8 @@
                         {% endif %}
                     </span>
                     {% if upcoming_events %}
-                    <span class="stat-sub">{{ upcoming_events.0.title|truncatechars:24 }} · {{ upcoming_events.0.date|date:"M d" }}</span>
+                    <span class="stat-sub">{{ upcoming_events.0.title|truncatechars:24 }} · {{
+                        upcoming_events.0.date|date:"M d" }}</span>
                     {% endif %}
                 </div>
             </div>
