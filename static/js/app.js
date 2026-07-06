@@ -410,6 +410,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="share-event-btn" title="Share Event" data-id="${event.id}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                     </button>
+                    <button class="reminder-btn" title="Set Reminder" data-id="${event.id}" data-type="event" data-title="${event.title.replace(/"/g, '&quot;')}">
+                        <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    </button>
                     <button class="edit-event-btn" title="Edit">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </button>
@@ -420,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                     </button>
                 `;
+
                 attendanceHtml = `
                     <div class="attendance-actions">
                         <button class="attendance-btn ${event.attendance_status === 'pending' ? 'active pending' : ''}" data-status="pending">Pending</button>
@@ -628,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const shareBtn = e.target.closest('.share-event-btn');
             const rescheduleBtn = e.target.closest('.reschedule-action-btn');
             const attendanceBtn = e.target.closest('.attendance-btn');
+            const reminderBtn = e.target.closest('.reminder-btn');
             const card = e.target.closest('.event-card');
             if (card) {
                 const eventId = card.dataset.id;
@@ -635,6 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (deleteBtn) deleteEvent(eventId);
                 if (shareBtn) openEventShareModal(eventId);
                 if (rescheduleBtn) openRescheduleModal(eventId);
+                if (reminderBtn) return; // handled by the global reminder modal script in events.html
                 if (attendanceBtn) {
                     const status = attendanceBtn.dataset.status;
                     await updateAttendance(eventId, status);
@@ -642,6 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
 
     const rescheduleModal = document.getElementById('rescheduleModal');
     const rescheduleForm = document.getElementById('rescheduleForm');

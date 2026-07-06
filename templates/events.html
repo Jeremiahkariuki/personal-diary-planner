@@ -585,6 +585,117 @@
             // Actually, I named it fullCalendarBody here. I'll reconcile.
         });
     </script>
+
+    <!-- Reminder Modal (shared across events page) -->
+    <div id="reminderModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true"
+        aria-labelledby="reminderModalTitle">
+        <div class="modal-box glass-card">
+            <div class="modal-header">
+                <h3 id="reminderModalTitle">🔔 Set Reminder</h3>
+                <button id="reminderModalClose" class="modal-close-btn" aria-label="Close">&times;</button>
+            </div>
+            <p id="reminderModalSubtitle" style="font-size:0.85rem;opacity:0.7;margin-bottom:1rem;"></p>
+            <label for="reminderDateTime" style="font-size:0.9rem;font-weight:600;">Remind me at:</label>
+            <input type="datetime-local" id="reminderDateTime"
+                style="width:100%;margin-top:0.4rem;padding:0.6rem;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:inherit;font-size:0.95rem;">
+            <div id="reminderExisting" style="margin-top:0.8rem;display:none;">
+                <p style="color:var(--accent);font-size:0.85rem;">⏰ Reminder already set. Save a new time to update it,
+                    or delete the existing one.</p>
+                <button id="reminderDeleteBtn"
+                    style="margin-top:0.4rem;padding:0.4rem 1rem;border-radius:6px;border:none;background:rgba(239,68,68,0.2);color:#f87171;cursor:pointer;">🗑
+                    Delete Reminder</button>
+            </div>
+            <div style="margin-top:1.2rem;display:flex;gap:0.7rem;justify-content:flex-end;">
+                <button id="reminderCancelBtn"
+                    style="padding:0.5rem 1.2rem;border-radius:8px;cursor:pointer;background:transparent;border:1px solid rgba(255,255,255,0.2);color:inherit;">Cancel</button>
+                <button id="reminderSaveBtn"
+                    style="padding:0.5rem 1.4rem;border-radius:8px;background:var(--accent-primary,#6366f1);border:none;color:#fff;cursor:pointer;font-weight:600;">Save
+                    Reminder</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            let currentItemId = null, currentItemType = null, currentReminderId = null;
+
+            async function loadReminders() {
+                try {
+                    const res = await fetch('/api/reminders/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const data = await res.json();
+                    const reminders = Array.isArray(data) ? data : (data.results || []);
+                    document.querySelectorAll('.reminder-btn').forEach(btn => {
+                        const id = btn.dataset.id, type = btn.dataset.type;
+                        const match = reminders.find(r => r[type] == id && !r.email_sent);
+                        btn.classList.toggle('reminder-active', !!match);
+                        btn.dataset.reminderId = match ? match.id : '';
+                    });
+                } catch (e) { }
+            }
+
+            // Load reminders when events are rendered (listen for DOM mutations on event list)
+            const eventListEl = document.getElementById('sidebarEventList');
+            if (eventListEl) {
+                new MutationObserver(loadReminders).observe(eventListEl, { childList: true, subtree: true });
+            }
+
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.reminder-btn');
+                if (!btn) return;
+                e.stopPropagation();
+                currentItemId = btn.dataset.id;
+                currentItemType = btn.dataset.type;
+                currentReminderId = btn.dataset.reminderId || null;
+                document.getElementById('reminderModalSubtitle').textContent = btn.dataset.title || 'this item';
+                const now = new Date(Date.now() + 10 * 60 * 1000);
+                document.getElementById('reminderDateTime').value = now.toISOString().slice(0, 16);
+                document.getElementById('reminderExisting').style.display = currentReminderId ? 'block' : 'none';
+                document.getElementById('reminderModal').style.display = 'flex';
+            });
+
+            document.getElementById('reminderModalClose').addEventListener('click', closeModal);
+            document.getElementById('reminderCancelBtn').addEventListener('click', closeModal);
+            document.getElementById('reminderModal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+            function closeModal() { document.getElementById('reminderModal').style.display = 'none'; }
+
+            document.getElementById('reminderSaveBtn').addEventListener('click', async function () {
+                const dt = document.getElementById('reminderDateTime').value;
+                if (!dt) { alert('Please pick a date and time.'); return; }
+                const payload = { reminder_time: dt + ':00' };
+                payload[currentItemType === 'diary' ? 'diary_entry' : currentItemType] = parseInt(currentItemId);
+                try {
+                    const res = await fetch('/api/reminders/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) { closeModal(); loadReminders(); showToast('🔔 Reminder set!'); }
+                    else { const err = await res.json(); alert('Error: ' + JSON.stringify(err)); }
+                } catch (ex) { alert('Network error: ' + ex); }
+            });
+
+            document.getElementById('reminderDeleteBtn').addEventListener('click', async function () {
+                if (!currentReminderId) return;
+                try {
+                    await fetch('/api/reminders/' + currentReminderId + '/', {
+                        method: 'DELETE',
+                        headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    closeModal(); loadReminders(); showToast('🗑 Reminder deleted.');
+                } catch (ex) { alert('Network error: ' + ex); }
+            });
+
+            function showToast(msg) {
+                const t = document.createElement('div');
+                t.textContent = msg;
+                Object.assign(t.style, { position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: 'var(--accent-primary,#6366f1)', color: '#fff', padding: '0.7rem 1.2rem', borderRadius: '8px', zIndex: 9999, fontSize: '0.9rem', boxShadow: '0 4px 20px rgba(0,0,0,0.4)', opacity: '0', transition: 'opacity 0.3s' });
+                document.body.appendChild(t);
+                requestAnimationFrame(() => t.style.opacity = '1');
+                setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+            }
+        })();
+    </script>
 </body>
 
 </html>
