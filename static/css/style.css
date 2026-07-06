@@ -133,6 +133,8 @@ body {
     align-items: center;
     margin-bottom: 3rem;
     box-shadow: var(--glass-shadow);
+    position: relative;
+    z-index: 100;
 }
 
 .logo {
