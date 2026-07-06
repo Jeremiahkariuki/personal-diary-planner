@@ -315,6 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         card.addEventListener('click', () => {
             selectedDate = dateStr;
+            currentPage = 1;
             if (isOutside) {
                 currentViewDate = new Date(year, month, 1);
                 renderCalendarGrid();
@@ -339,8 +340,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('todayBtn')?.addEventListener('click', () => {
         currentViewDate = new Date();
         selectedDate = currentViewDate.toISOString().split('T')[0];
+        currentPage = 1;
         renderCalendarGrid();
         filterEvents(selectedDate);
+    });
+
+    let currentPage = 1;
+    const eventsPerPage = 7;
+
+    document.getElementById('prevPageBtn')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            filterEvents(selectedDate);
+        }
+    });
+
+    document.getElementById('nextPageBtn')?.addEventListener('click', () => {
+        const filtered = allUpcomingEvents.filter(e => e.date === selectedDate);
+        const totalPages = Math.ceil(filtered.length / eventsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            filterEvents(selectedDate);
+        }
     });
 
     function filterEvents(dateStr) {
@@ -349,12 +370,35 @@ document.addEventListener('DOMContentLoaded', () => {
         targetList.innerHTML = '';
         const filtered = allUpcomingEvents.filter(e => e.date === dateStr);
 
+        const pagination = document.getElementById('eventPagination');
         if (filtered.length === 0) {
             targetList.innerHTML = `<div class="empty-state"><p class="empty-msg">No events scheduled.</p></div>`;
+            if (pagination) pagination.style.setProperty('display', 'none', 'important');
             return;
         }
 
-        filtered.forEach(event => {
+        const totalPages = Math.ceil(filtered.length / eventsPerPage);
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        if (pagination) {
+            if (totalPages > 1) {
+                pagination.style.setProperty('display', 'flex', 'important');
+                document.getElementById('pageIndicator').textContent = `Page ${currentPage} of ${totalPages}`;
+
+                const prev = document.getElementById('prevPageBtn');
+                const next = document.getElementById('nextPageBtn');
+                if (prev) { prev.disabled = currentPage === 1; prev.style.opacity = prev.disabled ? '0.5' : '1'; }
+                if (next) { next.disabled = currentPage === totalPages; next.style.opacity = next.disabled ? '0.5' : '1'; }
+            } else {
+                pagination.style.setProperty('display', 'none', 'important');
+            }
+        }
+
+        const startIndex = (currentPage - 1) * eventsPerPage;
+        const pageEvents = filtered.slice(startIndex, startIndex + eventsPerPage);
+
+        pageEvents.forEach(event => {
             const card = document.createElement('div');
             card.className = 'event-card';
             card.dataset.id = event.id;
@@ -363,9 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let attendanceHtml = '';
             if (isOwner) {
                 actionsHtml = `
-                    <button class="share-event-btn" title="Share Event" data-id="${event.id}">
+                    < button class="share-event-btn" title = "Share Event" data - id="${event.id}" >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                    </button>
+                    </button >
                     <button class="edit-event-btn" title="Edit">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </button>
@@ -377,26 +421,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 `;
                 attendanceHtml = `
-                    <div class="attendance-actions">
+                    < div class="attendance-actions" >
                         <button class="attendance-btn ${event.attendance_status === 'pending' ? 'active pending' : ''}" data-status="pending">Pending</button>
                         <button class="attendance-btn ${event.attendance_status === 'attended' ? 'active attended' : ''}" data-status="attended">Attended</button>
                         <button class="attendance-btn ${event.attendance_status === 'unattended' ? 'active unattended' : ''}" data-status="unattended">Unattended</button>
-                    </div>
-                `;
+                    </div >
+                    `;
             } else {
-                actionsHtml = `<span style="font-size: 0.75rem; color: var(--accent-primary); font-weight: 600;">Shared by @${event.owner_username}</span>`;
+                actionsHtml = `< span style = "font-size: 0.75rem; color: var(--accent-primary); font-weight: 600;" > Shared by @${event.owner_username}</span > `;
             }
 
             let sharedDetails = '';
             if (isOwner && event.shared_emails) {
-                sharedDetails = `<p style="font-size: 0.8rem; color: var(--accent-primary); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                sharedDetails = `< p style = "font-size: 0.8rem; color: var(--accent-primary); margin-top: 4px; display: flex; align-items: center; gap: 4px;" >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                     Shared with: ${event.shared_emails}
-                </p>`;
+                </p > `;
             }
 
             card.innerHTML = `
-                <div class="event-time">${event.time}</div>
+                    < div class="event-time" > ${event.time}</div >
                 <div class="event-details">
                     <h3>${event.title}</h3>
                     <p>${event.location || 'No location'}</p>
@@ -428,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chip.innerHTML = `
                 ${email}
                 <button type="button" class="chip-remove" data-index="${idx}">&times;</button>
-            `;
+                `;
             emailChipsContainer.insertBefore(chip, emailChipInput);
         });
 
@@ -561,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmed = await window.showConfirmModal('Delete Event', 'Are you sure you want to delete this event?');
         if (!confirmed) return;
         try {
-            const response = await fetch(`/api/events/${eventId}/`, {
+            const response = await fetch(`/ api / events / ${eventId}/`, {
                 method: 'DELETE',
                 headers: { 'X-CSRFToken': csrfToken }
             });
@@ -592,8 +636,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (shareBtn) openEventShareModal(eventId);
                 if (rescheduleBtn) openRescheduleModal(eventId);
                 if (attendanceBtn) {
-                     const status = attendanceBtn.dataset.status;
-                     await updateAttendance(eventId, status);
+                    const status = attendanceBtn.dataset.status;
+                    await updateAttendance(eventId, status);
                 }
             }
         });
@@ -602,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rescheduleModal = document.getElementById('rescheduleModal');
     const rescheduleForm = document.getElementById('rescheduleForm');
     const cancelRescheduleBtn = document.getElementById('cancelRescheduleBtn');
-    
+
     function openRescheduleModal(eventId) {
         if (!rescheduleModal) return;
         const event = allUpcomingEvents.find(e => e.id == eventId);
@@ -612,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('rescheduleTime').value = event.time || '';
         rescheduleModal.classList.remove('hidden');
     }
-    
+
     cancelRescheduleBtn?.addEventListener('click', () => rescheduleModal.classList.add('hidden'));
     rescheduleModal?.addEventListener('click', (e) => { if (e.target === rescheduleModal) rescheduleModal.classList.add('hidden'); });
 
@@ -626,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
             submitBtn.textContent = 'Updating...';
         }
-        
+
         try {
             const response = await fetch(`/api/events/${eventId}/reschedule/`, {
                 method: 'POST',
@@ -651,7 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    
+
     async function updateAttendance(eventId, status) {
         try {
             const response = await fetch(`/api/events/${eventId}/mark-attendance/`, {
@@ -660,10 +704,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ status: status })
             });
             if (response.ok) {
-                 const updatedEvent = await response.json();
-                 const index = allUpcomingEvents.findIndex(e => e.id == eventId);
-                 if (index !== -1) allUpcomingEvents[index] = updatedEvent;
-                 filterEvents(selectedDate);
+                const updatedEvent = await response.json();
+                const index = allUpcomingEvents.findIndex(e => e.id == eventId);
+                if (index !== -1) allUpcomingEvents[index] = updatedEvent;
+                filterEvents(selectedDate);
             }
         } catch (err) {
             console.error(err);
