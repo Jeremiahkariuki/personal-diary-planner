@@ -34,6 +34,22 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        import sys
+        
+        # Wrap stdout/stderr write methods to safely encode emojis or special chars on Windows console
+        orig_stdout_write = self.stdout.write
+        orig_stderr_write = self.stderr.write
+        
+        def safe_write_factory(orig_write, system_stream):
+            def safe_write(msg, *args, **kwargs):
+                encoding = getattr(system_stream, 'encoding', 'utf-8') or 'utf-8'
+                safe_msg = msg.encode(encoding, errors='replace').decode(encoding)
+                return orig_write(safe_msg, *args, **kwargs)
+            return safe_write
+
+        self.stdout.write = safe_write_factory(orig_stdout_write, sys.stdout)
+        self.stderr.write = safe_write_factory(orig_stderr_write, sys.stderr)
+
         once = options["once"]
         interval = options["interval"]
 

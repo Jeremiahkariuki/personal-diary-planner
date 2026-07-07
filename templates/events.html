@@ -630,6 +630,7 @@
                         const match = reminders.find(r => r[type] == id && !r.email_sent);
                         btn.classList.toggle('reminder-active', !!match);
                         btn.dataset.reminderId = match ? match.id : '';
+                        btn.dataset.reminderTime = match ? match.reminder_time : '';
                     });
                 } catch (e) { }
             }
@@ -648,8 +649,16 @@
                 currentItemType = btn.dataset.type;
                 currentReminderId = btn.dataset.reminderId || null;
                 document.getElementById('reminderModalSubtitle').textContent = btn.dataset.title || 'this item';
-                const now = new Date(Date.now() + 10 * 60 * 1000);
-                document.getElementById('reminderDateTime').value = now.toISOString().slice(0, 16);
+                // Pre-fill existing reminder time if one exists, otherwise default to now+10min
+                if (currentReminderId && btn.dataset.reminderTime) {
+                    const existingDt = new Date(btn.dataset.reminderTime);
+                    const tzOff = existingDt.getTimezoneOffset() * 60000;
+                    document.getElementById('reminderDateTime').value = new Date(existingDt - tzOff).toISOString().slice(0, 16);
+                } else {
+                    const now = new Date(Date.now() + 10 * 60 * 1000);
+                    const tzOff = now.getTimezoneOffset() * 60000;
+                    document.getElementById('reminderDateTime').value = new Date(now - tzOff).toISOString().slice(0, 16);
+                }
                 document.getElementById('reminderExisting').style.display = currentReminderId ? 'block' : 'none';
                 document.getElementById('reminderModal').style.display = 'flex';
             });
@@ -662,15 +671,20 @@
             document.getElementById('reminderSaveBtn').addEventListener('click', async function () {
                 const dt = document.getElementById('reminderDateTime').value;
                 if (!dt) { alert('Please pick a date and time.'); return; }
-                const payload = { reminder_time: dt + ':00' };
+                // Convert local datetime to UTC ISO string for correct server storage
+                const utcISO = new Date(dt).toISOString();
+                const payload = { reminder_time: utcISO };
                 payload[currentItemType === 'diary' ? 'diary_entry' : currentItemType] = parseInt(currentItemId);
                 try {
-                    const res = await fetch('/api/reminders/', {
-                        method: 'POST',
+                    // PATCH existing reminder to avoid duplicates, POST only for new ones
+                    const url = currentReminderId ? '/api/reminders/' + currentReminderId + '/' : '/api/reminders/';
+                    const method = currentReminderId ? 'PATCH' : 'POST';
+                    const res = await fetch(url, {
+                        method: method,
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
                         body: JSON.stringify(payload)
                     });
-                    if (res.ok) { closeModal(); loadReminders(); showToast('🔔 Reminder set!'); }
+                    if (res.ok) { closeModal(); loadReminders(); showToast('🔔 Reminder ' + (currentReminderId ? 'updated!' : 'set!')); }
                     else { const err = await res.json(); alert('Error: ' + JSON.stringify(err)); }
                 } catch (ex) { alert('Network error: ' + ex); }
             });
