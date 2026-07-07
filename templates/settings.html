@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,15 +21,18 @@
             margin: 0 auto;
             padding: 2rem;
         }
+
         .profile-header {
             display: flex;
             align-items: center;
             gap: 2rem;
             margin-bottom: 3rem;
         }
+
         .profile-avatar-container {
             position: relative;
         }
+
         .profile-avatar-large {
             width: 120px;
             height: 120px;
@@ -44,11 +48,13 @@
             overflow: hidden;
             color: white;
         }
+
         .profile-avatar-large img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         .edit-avatar-btn {
             position: absolute;
             bottom: 0;
@@ -66,28 +72,35 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
+
         .edit-avatar-btn:hover {
             transform: scale(1.1);
             background: var(--accent-secondary);
         }
+
         .edit-avatar-btn svg {
             width: 18px;
             height: 18px;
         }
+
         #avatarInput {
             display: none;
         }
+
         .profile-info h1 {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
         }
+
         .profile-info p {
             color: var(--text-secondary);
             font-size: 1.1rem;
         }
+
         .settings-section {
             margin-top: 3rem;
         }
+
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -98,11 +111,13 @@
             transition: color 0.2s;
             font-size: 1.1rem;
         }
+
         .back-link:hover {
             color: var(--text-primary);
         }
     </style>
 </head>
+
 <body>
     <div class="background-decor">
         <div class="blob blob-1"></div>
@@ -466,7 +481,7 @@
                         style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">
                         Access Granted to Others</h3>
                     {% if shares_granted %}
-                    <div class="table-responsive" style="overflow-x: auto;">
+                    <div class="table-responsive" id="sharesGrantedTableWrap" style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left;">
                             <thead>
                                 <tr
@@ -477,7 +492,7 @@
                                     <th style="padding: 10px 5px; text-align: right;">Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="sharesGrantedBody">
                                 {% for share in shares_granted %}
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;"
                                     data-share-id="{{ share.id }}" data-share-type="{{ share.share_type }}">
@@ -508,8 +523,10 @@
                                             style="display:none; margin-top: 8px; align-items: center; gap: 6px; flex-wrap: wrap;">
                                             <select class="share-type-select"
                                                 style="border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-family: inherit;">
-                                                <option value="whole_diary" {% if share.share_type == 'whole_diary' %}selected{% endif %}>📚 Entire Diary</option>
-                                                <option value="whole_events" {% if share.share_type == 'whole_events' %}selected{% endif %}>🗓️ All Events Calendar</option>
+                                                <option value="whole_diary" {% if share.share_type=='whole_diary'
+                                                    %}selected{% endif %}>📚 Entire Diary</option>
+                                                <option value="whole_events" {% if share.share_type=='whole_events'
+                                                    %}selected{% endif %}>🗓️ All Events Calendar</option>
                                             </select>
                                             <button class="apply-change-btn add-btn"
                                                 style="padding: 5px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); color: var(--accent-primary);">Apply</button>
@@ -545,7 +562,7 @@
                         style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">
                         Access Shared with Me</h3>
                     {% if shares_received %}
-                    <div class="table-responsive" style="overflow-x: auto;">
+                    <div class="table-responsive" id="sharesReceivedTableWrap" style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left;">
                             <thead>
                                 <tr
@@ -555,7 +572,7 @@
                                     <th style="padding: 10px 5px;">Date Shared</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="sharesReceivedBody">
                                 {% for share in shares_received %}
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;">
                                     <td style="padding: 12px 5px;">{{ share.owner.username }} ({{
@@ -1018,6 +1035,88 @@
                     }
                 });
             });
+
+            // ── Client-side pagination Helper ───────────────────────
+            function paginateTable(tbodyId, wrapperId, itemsPerPage = 5) {
+                const tbody = document.getElementById(tbodyId);
+                const wrapper = document.getElementById(wrapperId);
+                if (!tbody || !wrapper) return null;
+
+                let currentPage = 1;
+
+                function update() {
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    const totalItems = rows.length;
+                    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+                    if (currentPage > totalPages) {
+                        currentPage = totalPages;
+                    }
+
+                    // Hide/Show rows based on page
+                    rows.forEach((row, idx) => {
+                        const start = (currentPage - 1) * itemsPerPage;
+                        const end = start + itemsPerPage;
+                        if (idx >= start && idx < end) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+
+                    // Manage controls
+                    let controls = wrapper.querySelector('.pagination-controls');
+                    if (totalItems <= itemsPerPage) {
+                        if (controls) controls.remove();
+                        return;
+                    }
+
+                    if (!controls) {
+                        controls = document.createElement('div');
+                        controls.className = 'pagination-controls';
+                        controls.style.cssText = 'display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--glass-border);';
+                        wrapper.appendChild(controls);
+                    }
+
+                    controls.innerHTML = `
+                        <button type="button" class="pagination-prev add-btn" style="padding: 4px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 6px; cursor: pointer; transition: all 0.2s;" ${currentPage === 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}>&larr; Prev</button>
+                        <span class="pagination-info" style="font-size: 0.85rem; color: var(--text-secondary);">Page ${currentPage} of ${totalPages}</span>
+                        <button type="button" class="pagination-next add-btn" style="padding: 4px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 6px; cursor: pointer; transition: all 0.2s;" ${currentPage === totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}>Next &rarr;</button>
+                    `;
+
+                    // Wire up buttons
+                    controls.querySelector('.pagination-prev').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) {
+                            currentPage--;
+                            update();
+                        }
+                    });
+                    controls.querySelector('.pagination-next').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) {
+                            currentPage++;
+                            update();
+                        }
+                    });
+                }
+
+                update();
+                return { refresh: update };
+            }
+
+            const grantedPager = paginateTable('sharesGrantedBody', 'sharesGrantedTableWrap');
+            const receivedPager = paginateTable('sharesReceivedBody', 'sharesReceivedTableWrap');
+
+            // Wire refresh into Revoke button success
+            document.querySelectorAll('.revoke-share-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Check if row has been removed from DOM in revocation logic and refresh pager
+                    setTimeout(() => {
+                        if (grantedPager) grantedPager.refresh();
+                    }, 500);
+                });
+            });
         })();
     </script>
     <script src="{% static 'js/theme.js' %}"></script>
@@ -1093,4 +1192,5 @@
         })();
     </script>
 </body>
+
 </html>
