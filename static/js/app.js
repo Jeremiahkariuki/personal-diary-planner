@@ -214,9 +214,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Helper to get local YYYY-MM-DD
+    function getLocalYMD(date = new Date()) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
     // --- Events Logic ---
     let allUpcomingEvents = [];
-    let selectedDate = new Date().toISOString().split('T')[0];
+    let selectedDate = getLocalYMD();
     let currentViewDate = new Date();
 
     async function fetchEvents() {
@@ -251,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const daysInPrevMonth = new Date(year, month, 0).getDate();
 
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = getLocalYMD(today);
 
         for (let i = firstDayOfMonth - 1; i >= 0; i--) {
             grid.appendChild(createDayCard(year, month - 1, daysInPrevMonth - i, true, isFullPage));
@@ -339,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('todayBtn')?.addEventListener('click', () => {
         currentViewDate = new Date();
-        selectedDate = currentViewDate.toISOString().split('T')[0];
+        selectedDate = getLocalYMD(currentViewDate);
         currentPage = 1;
         renderCalendarGrid();
         filterEvents(selectedDate);
