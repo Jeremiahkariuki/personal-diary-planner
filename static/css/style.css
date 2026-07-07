@@ -2167,3 +2167,87 @@ h2 {
     gap: 0.5rem;
     color: #ef4444;
 }
+
+/* ── Reminder Bell Button ─────────────────────────────── */
+.reminder-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px 6px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.reminder-btn svg.bell-icon {
+    width: 16px;
+    height: 16px;
+    transition: fill 0.2s, stroke 0.2s;
+}
+
+.reminder-btn:hover {
+    color: var(--accent-primary);
+    background: rgba(129, 140, 248, 0.12);
+}
+
+/* Active state: bell is filled (amber glow) */
+.reminder-btn.reminder-active {
+    color: #f59e0b;
+}
+
+.reminder-btn.reminder-active svg.bell-icon {
+    fill: #f59e0b;
+    stroke: #f59e0b;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+}
+
+/* ── Reminder Modal ─────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-box {
+    width: 100%;
+    max-width: 420px;
+    padding: 1.8rem;
+    border-radius: 20px;
+    animation: dropdownIn 0.25s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.modal-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.2s;
+}
+
+.modal-close-btn:hover { color: var(--text-primary); }

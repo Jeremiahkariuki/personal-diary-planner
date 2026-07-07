@@ -628,6 +628,16 @@
                 </div>
             </section>
 
+            <!-- My Reminders Section -->
+            <section class="settings-section glass-card" id="myRemindersSection">
+                <h2>🔔 My Reminders</h2>
+                <p style="margin-bottom:1.5rem;color:var(--text-secondary);">View and manage all your scheduled email
+                    reminders below.</p>
+                <div id="remindersTableWrap">
+                    <p style="color:var(--text-secondary);">Loading reminders…</p>
+                </div>
+            </section>
+
             <section class="settings-section glass-card">
                 <h2>Data Management</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Download a copy of your diary entries,
@@ -642,6 +652,7 @@
             </section>
         </div>
     </div>
+
 
     <script src="{% static 'js/theme.js' %}"></script>
     <script>
@@ -1098,6 +1109,80 @@
     </script>
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=4"></script>
+
+    <script>
+        // ── My Reminders Table ─────────────────────────────────
+        (function () {
+            const CSRF = '{{csrf_token}}';
+            const wrap = document.getElementById('remindersTableWrap');
+            if (!wrap) return;
+
+            const TYPE_LABELS = { task: 'Task', event: 'Event', diary_entry: 'Diary Entry' };
+
+            async function loadReminders() {
+                try {
+                    const res = await fetch('/api/reminders/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const data = await res.json();
+                    const reminders = (Array.isArray(data) ? data : (data.results || [])).filter(r => !r.email_sent);
+                    if (reminders.length === 0) {
+                        wrap.innerHTML = '<p style="color:var(--text-secondary);">No active reminders. Set one from the 🔔 bell icon on any task, event, or diary entry.</p>';
+                        return;
+                    }
+                    wrap.innerHTML = `
+                <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;text-align:left;">
+                    <thead><tr style="border-bottom:1px solid var(--glass-border);color:var(--text-secondary);font-size:0.9rem;">
+                        <th style="padding:10px 5px;">Type</th>
+                        <th style="padding:10px 5px;">Item</th>
+                        <th style="padding:10px 5px;">Remind At</th>
+                        <th style="padding:10px 5px;text-align:right;">Action</th>
+                    </tr></thead>
+                    <tbody id="remindersBody"></tbody>
+                </table></div>`;
+                    const tbody = document.getElementById('remindersBody');
+                    reminders.forEach(r => {
+                        const typeKey = r.task ? 'task' : r.event ? 'event' : 'diary_entry';
+                        const label = TYPE_LABELS[typeKey] || typeKey;
+                        const itemId = r[typeKey];
+                        const dt = new Date(r.reminder_time);
+                        const dtStr = dt.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        const tr = document.createElement('tr');
+                        tr.style.cssText = 'border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.95rem;';
+                        tr.innerHTML = `
+                        <td style="padding:12px 5px;">${label}</td>
+                        <td style="padding:12px 5px;color:var(--text-secondary);">ID #${itemId}</td>
+                        <td style="padding:12px 5px;">⏰ ${dtStr}</td>
+                        <td style="padding:12px 5px;text-align:right;">
+                            <button data-id="${r.id}" class="del-reminder-btn add-btn danger-btn"
+                                style="padding:4px 12px;font-size:0.8rem;min-width:auto;width:auto;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444;">
+                                🗑 Delete
+                            </button>
+                        </td>`;
+                        tbody.appendChild(tr);
+                    });
+
+                    tbody.addEventListener('click', async function (e) {
+                        const btn = e.target.closest('.del-reminder-btn');
+                        if (!btn) return;
+                        btn.disabled = true; btn.textContent = '…';
+                        try {
+                            await fetch('/api/reminders/' + btn.dataset.id + '/', {
+                                method: 'DELETE',
+                                headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+                            btn.closest('tr').remove();
+                            if (!document.querySelector('#remindersBody tr')) {
+                                wrap.innerHTML = '<p style="color:var(--text-secondary);">No active reminders.</p>';
+                            }
+                        } catch (ex) { btn.disabled = false; btn.textContent = '🗑 Delete'; }
+                    });
+                } catch (e) {
+                    wrap.innerHTML = '<p style="color:var(--text-secondary);">Could not load reminders.</p>';
+                }
+            }
+            loadReminders();
+        })();
+    </script>
 </body>
 
 </html>
