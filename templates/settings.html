@@ -513,8 +513,7 @@
                                         {% elif share.share_type == 'whole_diary' %}
                                         <span class="share-type-label">📚 Entire Diary</span>
                                         {% elif share.share_type == 'specific_event' %}
-                                        <span class="share-type-label">📅 Specific Event: "{{ share.event.title
-                                            }}"</span>
+                                        <span class="share-type-label">📅 Specific Event: "{{ share.event.title }}"</span>
                                         {% elif share.share_type == 'whole_events' %}
                                         <span class="share-type-label">🗓️ All Events Calendar</span>
                                         {% endif %}
@@ -533,8 +532,7 @@
                                         </div>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{
-                                        share.created_at|date:"M d, Y" }}</td>
+                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
                                     <td style="padding: 12px 5px; text-align: right; white-space: nowrap;">
                                         {% if share.share_type == 'whole_diary' or share.share_type == 'whole_events' %}
                                         <button class="change-type-btn add-btn"
@@ -573,8 +571,7 @@
                             <tbody id="sharesReceivedBody">
                                 {% for share in shares_received %}
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;">
-                                    <td style="padding: 12px 5px;">{{ share.owner.username }} ({{
-                                        share.owner.email|default:share.owner.username }})</td>
+                                    <td style="padding: 12px 5px;">{{ share.owner.username }} ({{ share.owner.email|default:share.owner.username }})</td>
                                     <td style="padding: 12px 5px;">
                                         {% if share.share_type == 'specific_diary' %}
                                         📖 Specific Diary Entry
@@ -586,8 +583,7 @@
                                         🗓️ All Events Calendar
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{
-                                        share.created_at|date:"M d, Y" }}</td>
+                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
