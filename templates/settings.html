@@ -1,7 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,18 +20,15 @@
             margin: 0 auto;
             padding: 2rem;
         }
-
         .profile-header {
             display: flex;
             align-items: center;
             gap: 2rem;
             margin-bottom: 3rem;
         }
-
         .profile-avatar-container {
             position: relative;
         }
-
         .profile-avatar-large {
             width: 120px;
             height: 120px;
@@ -48,13 +44,11 @@
             overflow: hidden;
             color: white;
         }
-
         .profile-avatar-large img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
         .edit-avatar-btn {
             position: absolute;
             bottom: 0;
@@ -72,35 +66,28 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
-
         .edit-avatar-btn:hover {
             transform: scale(1.1);
             background: var(--accent-secondary);
         }
-
         .edit-avatar-btn svg {
             width: 18px;
             height: 18px;
         }
-
         #avatarInput {
             display: none;
         }
-
         .profile-info h1 {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
         }
-
         .profile-info p {
             color: var(--text-secondary);
             font-size: 1.1rem;
         }
-
         .settings-section {
             margin-top: 3rem;
         }
-
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -111,20 +98,17 @@
             transition: color 0.2s;
             font-size: 1.1rem;
         }
-
         .back-link:hover {
             color: var(--text-primary);
         }
     </style>
 </head>
-
 <body>
     <div class="background-decor">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
         <div class="blob blob-3"></div>
     </div>
-
     <div class="app-container">
         <nav class="glass-nav">
             <a href="{% url 'index' %}" class="logo">Jdiary</a>
@@ -254,7 +238,6 @@
                 </div>
             </div>
         </nav>
-
         <div class="profile-container">
             <a href="{% url 'profile' %}" class="back-link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -263,7 +246,6 @@
                 </svg>
                 Back to Profile
             </a>
-
             <header class="profile-header">
                 <div class="profile-avatar-container">
                     <div class="profile-avatar-large">
@@ -291,12 +273,10 @@
                     <p>Manage your account settings, quotes and diary data.</p>
                 </div>
             </header>
-
             <section class="settings-section glass-card" id="customQuoteSection">
                 <h2>Custom Quote Settings</h2>
                 <p style="margin-bottom:1.5rem;color:var(--text-secondary)">Set your own personalized quote that will be
                     displayed permanently on all pages.</p>
-
                 <!-- Display Mode -->
                 <div id="quoteDisplay" style="margin-bottom:1.5rem">
                     <div class="quote-display-card">
@@ -305,7 +285,6 @@
                         <!-- prettier-ignore -->
                         {% if quote_author %}<span id="quoteAuthor">— {{ quote_author }}</span>{% else %}<span
                             id="quoteAuthor"></span>{% endif %}
-
                         <div class="quote-actions" style="margin-top:15px;display:flex;gap:10px">
                             <button id="editQuoteBtn" class="add-btn quote-settings-btn">✏️ Edit Quote</button>
                             {% if quote_is_custom %}
@@ -317,7 +296,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Edit Mode (hidden by default) -->
                 <div id="quoteEditor" style="display:none" class="quote-display-card">
                     <div class="input-group">
@@ -339,7 +317,6 @@
                     </div>
                 </div>
             </section>
-
             <section class="settings-section glass-card">
                 <h2>Profile Settings</h2>
                 {% if messages %}
@@ -365,7 +342,6 @@
                     <button type="submit" class="add-btn primary-btn">Update Profile</button>
                 </form>
             </section>
-
             <section class="settings-section glass-card">
                 <h2>Change Password</h2>
                 {% if password_form.errors %}
@@ -384,13 +360,11 @@
                 <form method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="change_password">
-
                     <div class="input-group">
                         <label for="id_old_password">Current Password</label>
                         <input type="password" id="id_old_password" name="old_password" required
                             placeholder="Enter current password">
                     </div>
-
                     <div class="input-group">
                         <label for="id_new_password1">New Password</label>
                         <input type="password" id="id_new_password1" name="new_password1" required
@@ -402,25 +376,20 @@
                         </small>
                         {% endif %}
                     </div>
-
                     <div class="input-group">
                         <label for="id_new_password2">Confirm New Password</label>
                         <input type="password" id="id_new_password2" name="new_password2" required
                             placeholder="Confirm new password">
                     </div>
-
                     <button type="submit" class="add-btn primary-btn">Change Password</button>
                 </form>
             </section>
-
             <section class="settings-section glass-card" id="customiseSection">
                 <h2>Customise</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Personalise your Jdiary experience by
                     choosing your own accent and background colors. Changes are saved instantly.</p>
-
                 <div
                     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-
                     <!-- Accent Primary -->
                     <div class="input-group" style="margin-bottom:0;">
                         <label for="colorAccentPrimary">Accent Primary</label>
@@ -431,7 +400,6 @@
                                 style="font-size:0.85rem; color:var(--text-secondary); font-family:monospace;">#818cf8</span>
                         </div>
                     </div>
-
                     <!-- Accent Secondary -->
                     <div class="input-group" style="margin-bottom:0;">
                         <label for="colorAccentSecondary">Accent Secondary</label>
@@ -442,7 +410,6 @@
                                 style="font-size:0.85rem; color:var(--text-secondary); font-family:monospace;">#c084fc</span>
                         </div>
                     </div>
-
                     <!-- Background Color -->
                     <div class="input-group" style="margin-bottom:0;">
                         <label for="colorBackground">Background</label>
@@ -453,14 +420,11 @@
                                 style="font-size:0.85rem; color:var(--text-secondary); font-family:monospace;">#0f172a</span>
                         </div>
                     </div>
-
                 </div>
-
                 <!-- Preview strip -->
                 <div id="colorPreviewStrip"
                     style="height:10px; border-radius:8px; margin-bottom:1.5rem; background: linear-gradient(to right, #818cf8, #c084fc); transition: background 0.4s ease;">
                 </div>
-
                 <button id="resetColorsBtn" class="add-btn"
                     style="width:auto; padding:0.6rem 1.4rem; display:inline-flex; align-items:center; gap:0.5rem; border-style:solid; font-size:0.9rem;">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -469,15 +433,12 @@
                     </svg>
                     Reset to Defaults
                 </button>
-
             </section>
-
             <section class="settings-section glass-card" id="sharingPermissionsSection">
                 <h2>Sharing & Permissions</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Manage sharing permissions. You can
                     share your entire diary or all events calendar with someone by their email. They will receive an
                     email invite to access your shared contents.</p>
-
                 <!-- Grant Share Form -->
                 <form id="grantShareForm" style="margin-bottom: 2rem;">
                     {% csrf_token %}
@@ -499,7 +460,6 @@
                             Access</button>
                     </div>
                 </form>
-
                 <!-- Shares Granted Table -->
                 <div style="margin-bottom: 2rem;">
                     <h3
@@ -548,10 +508,8 @@
                                             style="display:none; margin-top: 8px; align-items: center; gap: 6px; flex-wrap: wrap;">
                                             <select class="share-type-select"
                                                 style="border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-family: inherit;">
-                                                <option value="whole_diary" {% if share.share_type=='whole_diary'
-                                                    %}selected{% endif %}>📚 Entire Diary</option>
-                                                <option value="whole_events" {% if share.share_type=='whole_events'
-                                                    %}selected{% endif %}>🗓️ All Events Calendar</option>
+                                                <option value="whole_diary" {% if share.share_type == 'whole_diary' %}selected{% endif %}>📚 Entire Diary</option>
+                                                <option value="whole_events" {% if share.share_type == 'whole_events' %}selected{% endif %}>🗓️ All Events Calendar</option>
                                             </select>
                                             <button class="apply-change-btn add-btn"
                                                 style="padding: 5px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); color: var(--accent-primary);">Apply</button>
@@ -581,7 +539,6 @@
                         to anyone yet.</p>
                     {% endif %}
                 </div>
-
                 <!-- Shares Received Table -->
                 <div>
                     <h3
@@ -627,7 +584,6 @@
                     {% endif %}
                 </div>
             </section>
-
             <!-- My Reminders Section -->
             <section class="settings-section glass-card" id="myRemindersSection">
                 <h2>🔔 My Reminders</h2>
@@ -637,7 +593,6 @@
                     <p style="color:var(--text-secondary);">Loading reminders…</p>
                 </div>
             </section>
-
             <section class="settings-section glass-card">
                 <h2>Data Management</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Download a copy of your diary entries,
@@ -652,32 +607,26 @@
             </section>
         </div>
     </div>
-
-
     <script src="{% static 'js/theme.js' %}"></script>
     <script>
         const editAvatarBtn = document.getElementById('editAvatarBtn');
         const avatarInput = document.getElementById('avatarInput');
         const avatarPreview = document.getElementById('avatarPreview');
         const avatarInitials = document.getElementById('avatarInitials');
-
         if (editAvatarBtn && avatarInput) {
             editAvatarBtn.addEventListener('click', () => {
                 avatarInput.click();
             });
-
             avatarInput.addEventListener('change', async () => {
                 if (avatarInput.files.length > 0) {
                     console.log('[AVATAR] File selected:', avatarInput.files[0].name, avatarInput.files[0].size);
                     const formData = new FormData();
                     formData.append('avatar', avatarInput.files[0]);
                     formData.append('ajax', '1');
-
                     const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
                     if (!csrfEl) { alert('CSRF token not found! Cannot upload.'); return; }
                     const csrfToken = csrfEl.value;
                     console.log('[AVATAR] CSRF token found:', csrfToken ? 'YES' : 'NO');
-
                     try {
                         console.log('[AVATAR] Sending fetch to /settings/...');
                         const res = await fetch("{% url 'settings_view' %}", {
@@ -686,7 +635,6 @@
                             body: formData
                         });
                         console.log('[AVATAR] Response status:', res.status, res.ok);
-
                         let data;
                         try {
                             data = await res.json();
@@ -696,7 +644,6 @@
                             console.error('[AVATAR] JSON parse error:', err);
                             return;
                         }
-
                         if (!res.ok || data.status === 'error') {
                             alert(data.message || "Error uploading avatar.");
                         } else if (data.status === 'ok' && data.avatar_url) {
@@ -727,9 +674,7 @@
             const authorEl = document.getElementById('quoteAuthor');
             const quoteInput = document.getElementById('quoteInput');
             const authorInput = document.getElementById('authorInput');
-
             if (!editBtn) return;
-
             editBtn.addEventListener('click', () => {
                 quoteInput.value = quoteEl.textContent.replace(/^"|"$/g, '');
                 authorInput.value = authorEl.textContent.replace(/^— /, '');
@@ -737,12 +682,10 @@
                 editor.style.display = 'block';
                 quoteInput.focus();
             });
-
             cancelBtn.addEventListener('click', () => {
                 editor.style.display = 'none';
                 display.style.display = 'block';
             });
-
             saveBtn.addEventListener('click', async () => {
                 const text = quoteInput.value.trim();
                 if (!text) { quoteInput.focus(); return; }
@@ -769,7 +712,6 @@
                     saveBtn.textContent = 'Save';
                 }
             });
-
             deleteBtn.addEventListener('click', async () => {
                 if (!confirm('Remove your custom quote and go back to random quotes?')) return;
                 try {
@@ -796,7 +738,6 @@
                 const helpText = passwordInput.closest('.input-group').querySelector('small');
                 if (helpText) {
                     const rules = helpText.querySelectorAll('li');
-
                     // Hide all rules initially
                     rules.forEach(rule => {
                         rule.style.display = 'none';
@@ -805,20 +746,16 @@
                         rule.style.fontSize = '0.75rem';
                         rule.style.marginTop = '4px';
                     });
-
                     const validate = () => {
                         const val = passwordInput.value;
                         const username = usernameInput ? usernameInput.value : '';
-
                         if (val === '') {
                             rules.forEach(rule => rule.style.display = 'none');
                             return;
                         }
-
                         rules.forEach(rule => {
                             const text = rule.textContent.toLowerCase();
                             let isViolated = false;
-
                             if (text.includes('8 characters')) {
                                 isViolated = val.length < 8;
                             } else if (text.includes('entirely numeric')) {
@@ -828,11 +765,9 @@
                             } else if (text.includes('commonly used')) {
                                 isViolated = false;
                             }
-
                             rule.style.display = isViolated ? 'list-item' : 'none';
                         });
                     };
-
                     passwordInput.addEventListener('input', validate);
                 }
             }
@@ -843,12 +778,10 @@
         ['id_old_password', 'id_new_password1', 'id_new_password2'].forEach(function (id) {
             var input = document.getElementById(id);
             if (!input) return;
-
             var wrapper = document.createElement('div');
             wrapper.className = 'password-wrapper';
             input.parentNode.insertBefore(wrapper, input);
             wrapper.appendChild(input);
-
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'toggle-password';
@@ -863,7 +796,6 @@
                     <line x1="1" y1="1" x2="23" y2="23"></line>
                 </svg>`;
             wrapper.appendChild(btn);
-
             btn.addEventListener('click', function () {
                 var show = input.type === 'password';
                 input.type = show ? 'text' : 'password';
@@ -880,7 +812,6 @@
                 accentSecondary: '#c084fc',
                 background: '#0f172a'
             };
-
             function applyColors(p, s, b) {
                 document.documentElement.style.setProperty('--accent-primary', p);
                 document.documentElement.style.setProperty('--accent-secondary', s);
@@ -888,7 +819,6 @@
                 var strip = document.getElementById('colorPreviewStrip');
                 if (strip) strip.style.background = 'linear-gradient(to right,' + p + ',' + s + ')';
             }
-
             function syncPicker(inputId, labelId, key) {
                 var input = document.getElementById(inputId);
                 var label = document.getElementById(labelId);
@@ -896,7 +826,6 @@
                 // Load saved value
                 var saved = localStorage.getItem('color_' + key);
                 if (saved) { input.value = saved; if (label) label.textContent = saved; }
-
                 input.addEventListener('input', function () {
                     if (label) label.textContent = input.value;
                     localStorage.setItem('color_' + key, input.value);
@@ -907,18 +836,15 @@
                     );
                 });
             }
-
             // Init pickers
             syncPicker('colorAccentPrimary', 'labelAccentPrimary', 'accentPrimary');
             syncPicker('colorAccentSecondary', 'labelAccentSecondary', 'accentSecondary');
             syncPicker('colorBackground', 'labelBackground', 'background');
-
             // Apply saved colors on load
             var p = localStorage.getItem('color_accentPrimary') || DEFAULTS.accentPrimary;
             var s = localStorage.getItem('color_accentSecondary') || DEFAULTS.accentSecondary;
             var b = localStorage.getItem('color_background') || DEFAULTS.background;
             applyColors(p, s, b);
-
             // Reset button – clears custom colors and theme, then reloads page
             var resetBtn = document.getElementById('resetColorsBtn');
             if (resetBtn) {
@@ -951,19 +877,15 @@
             const grantForm = document.getElementById('grantShareForm');
             const grantEmail = document.getElementById('shareEmailInput');
             const grantType = document.getElementById('shareTypeInput');
-
             if (grantForm) {
                 grantForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const email = grantEmail.value.trim();
                     const share_type = grantType.value;
                     const grantSubmitBtn = grantForm.querySelector('button[type="submit"]');
-
                     if (!email) return;
-
                     grantSubmitBtn.disabled = true;
                     grantSubmitBtn.textContent = 'Granting...';
-
                     try {
                         const res = await fetch('{% url "share_item" %}', {
                             method: 'POST',
@@ -985,17 +907,13 @@
                     }
                 });
             }
-
             document.querySelectorAll('.revoke-share-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const row = btn.closest('tr');
                     const share_id = row.dataset.shareId;
-
                     if (!confirm('Are you sure you want to revoke this sharing permission?')) return;
-
                     btn.disabled = true;
                     btn.textContent = 'Revoking...';
-
                     try {
                         const res = await fetch('{% url "revoke_share" %}', {
                             method: 'POST',
@@ -1023,7 +941,6 @@
                     }
                 });
             });
-
             // Change Type: toggle inline edit form
             document.querySelectorAll('.change-type-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -1041,7 +958,6 @@
                     }
                 });
             });
-
             // Cancel inline edit
             document.querySelectorAll('.cancel-change-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -1059,7 +975,6 @@
                     }
                 });
             });
-
             // Apply new permission type
             document.querySelectorAll('.apply-change-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
@@ -1070,11 +985,9 @@
                     const label = row.querySelector('.share-type-label');
                     const form = row.querySelector('.change-type-form');
                     const changeBtn = row.querySelector('.change-type-btn');
-
                     if (!new_type) return;
                     btn.disabled = true;
                     btn.textContent = 'Applying...';
-
                     try {
                         const res = await fetch('{% url "update_share" %}', {
                             method: 'POST',
@@ -1109,16 +1022,13 @@
     </script>
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=4"></script>
-
     <script>
         // ── My Reminders Table ─────────────────────────────────
         (function () {
             const CSRF = '{{csrf_token}}';
             const wrap = document.getElementById('remindersTableWrap');
             if (!wrap) return;
-
             const TYPE_LABELS = { task: 'Task', event: 'Event', diary_entry: 'Diary Entry' };
-
             async function loadReminders() {
                 try {
                     const res = await fetch('/api/reminders/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -1160,7 +1070,6 @@
                         </td>`;
                         tbody.appendChild(tr);
                     });
-
                     tbody.addEventListener('click', async function (e) {
                         const btn = e.target.closest('.del-reminder-btn');
                         if (!btn) return;
@@ -1184,5 +1093,4 @@
         })();
     </script>
 </body>
-
 </html>
