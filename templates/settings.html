@@ -523,10 +523,8 @@
                                             style="display:none; margin-top: 8px; align-items: center; gap: 6px; flex-wrap: wrap;">
                                             <select class="share-type-select"
                                                 style="border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-family: inherit;">
-                                                <option value="whole_diary" {% if share.share_type=='whole_diary'
-                                                    %}selected{% endif %}>📚 Entire Diary</option>
-                                                <option value="whole_events" {% if share.share_type=='whole_events'
-                                                    %}selected{% endif %}>🗓️ All Events Calendar</option>
+                                                <option value="whole_diary" {% if share.share_type == 'whole_diary' %}selected{% endif %}>📚 Entire Diary</option>
+                                                <option value="whole_events" {% if share.share_type == 'whole_events' %}selected{% endif %}>🗓️ All Events Calendar</option>
                                             </select>
                                             <button class="apply-change-btn add-btn"
                                                 style="padding: 5px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); color: var(--accent-primary);">Apply</button>
