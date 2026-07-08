@@ -361,6 +361,39 @@
             const CSRF = '{{ csrf_token }}';
             let currentItemId = null, currentItemType = null, currentReminderId = null;
 
+            // Tab switching logic
+            const tabMyTasks = document.getElementById('tabMyTasks');
+            const tabSharedTasks = document.getElementById('tabSharedTasks');
+            const myTasksPanel = document.getElementById('myTasksPanel');
+            const sharedTasksPanel = document.getElementById('sharedTasksPanel');
+
+            if (tabMyTasks && tabSharedTasks && myTasksPanel && sharedTasksPanel) {
+                const activeStyles = {
+                    background: 'var(--accent-primary)',
+                    color: 'white',
+                    boxShadow: '0 4px 12px rgba(129, 140, 248, 0.3)'
+                };
+                const inactiveStyles = {
+                    background: 'transparent',
+                    color: '',
+                    boxShadow: 'none'
+                };
+
+                tabMyTasks.addEventListener('click', () => {
+                    myTasksPanel.style.display = 'block';
+                    sharedTasksPanel.style.display = 'none';
+                    Object.assign(tabMyTasks.style, activeStyles);
+                    Object.assign(tabSharedTasks.style, inactiveStyles);
+                });
+
+                tabSharedTasks.addEventListener('click', () => {
+                    myTasksPanel.style.display = 'none';
+                    sharedTasksPanel.style.display = 'block';
+                    Object.assign(tabSharedTasks.style, activeStyles);
+                    Object.assign(tabMyTasks.style, inactiveStyles);
+                });
+            }
+
             // Gather all reminder-btns and load active reminders
             async function loadReminders() {
                 try {
