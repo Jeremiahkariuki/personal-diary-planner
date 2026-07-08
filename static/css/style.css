@@ -2251,3 +2251,190 @@ h2 {
 }
 
 .modal-close-btn:hover { color: var(--text-primary); }
+
+/* ════════════════════════════════════════════════════
+   Additional Responsive Improvements
+   ════════════════════════════════════════════════════ */
+
+/* Settings / Profile page */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 1rem !important;
+    }
+
+    .profile-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    .profile-info h1 {
+        font-size: 1.6rem !important;
+    }
+
+    .profile-info p {
+        font-size: 0.9rem !important;
+    }
+
+    /* Share grants form: stack email + button */
+    #grantShareForm > div {
+        grid-template-columns: 1fr !important;
+    }
+
+    #grantShareForm button[type="submit"] {
+        width: 100% !important;
+        height: 44px !important;
+    }
+
+    /* Sharing permission checkboxes: wrap */
+    #grantShareForm > div:last-child {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+
+    /* Tables: horizontal scroll on small screens */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive table {
+        min-width: 420px;
+    }
+
+    /* Reminders table */
+    #remindersTableWrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Settings sections spacing */
+    .settings-section {
+        margin-top: 1.5rem !important;
+    }
+
+    /* Color picker grid */
+    #customiseSection > div[style*="grid"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Tasks tab nav: full width */
+    .tabs-nav {
+        max-width: 100% !important;
+        width: 100% !important;
+        justify-content: stretch !important;
+    }
+
+    .tabs-nav .tab-btn {
+        flex: 1 !important;
+        text-align: center !important;
+    }
+
+    /* Events page: full-calendar grid */
+    .full-calendar-grid .calendar-day-cell {
+        font-size: 0.7rem;
+    }
+
+    /* Event card on mobile: stack time + details vertically */
+    .event-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .event-time {
+        width: auto !important;
+        margin-right: 0 !important;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .event-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .attendance-actions {
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    /* Write-entry page: editor toolbar wrap */
+    .editor-toolbar {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .entry-meta-row,
+    .entry-form-row {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+
+    /* History page: diary card grid */
+    .history-grid,
+    .diary-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Profile page stats grid */
+    .profile-stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* Mood chart on profile */
+    .mood-bar-chart {
+        gap: 0.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Even smaller: single column profile stats */
+    .profile-stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Task tab buttons full width */
+    .tabs-nav {
+        flex-direction: column !important;
+    }
+
+    /* Share table: tighter padding */
+    .table-responsive table th,
+    .table-responsive table td {
+        padding: 8px 3px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Event actions always visible */
+    .event-actions {
+        opacity: 1 !important;
+    }
+
+    /* Reminder modal: full width */
+    .modal-box {
+        margin: 0.5rem;
+        padding: 1.2rem;
+    }
+
+    /* Modal overlay: tighter */
+    .modal-overlay {
+        padding: 0.5rem !important;
+        align-items: flex-end !important;
+    }
+
+    .modal-box {
+        border-radius: 20px 20px 0 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* Nav actions: wrap but don't expand unnecessarily */
+    .nav-actions {
+        gap: 0.4rem;
+    }
+}
+

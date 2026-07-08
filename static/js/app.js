@@ -1,6 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Jdiary Initialized');
 
+    // --- Mobile Nav Toggle (works on ALL pages) ---
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const glassNav = document.querySelector('.glass-nav');
+    if (mobileMenuBtn && glassNav) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            glassNav.classList.toggle('nav-open');
+        });
+        // Close menu when a nav link is clicked
+        glassNav.querySelectorAll('.nav-links a, .nav-links button').forEach(link => {
+            link.addEventListener('click', () => glassNav.classList.remove('nav-open'));
+        });
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!glassNav.contains(e.target)) {
+                glassNav.classList.remove('nav-open');
+            }
+        });
+    }
+
+
     // Selectors
     const profileBtn = document.getElementById('profileBtn');
     const profileDropdown = document.getElementById('profileDropdown');
