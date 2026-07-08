@@ -43,9 +43,9 @@ def index(request):
 
     # Calculate mood streak
     streak = 0
-    entry_dates = DiaryEntry.objects.filter(user=request.user).values_list('created_at__date', flat=True).distinct().order_by('-created_at__date')
+    entry_dates = list(DiaryEntry.objects.filter(user=request.user).values_list('created_at__date', flat=True).distinct().order_by('-created_at__date'))
     
-    if entry_dates.exists():
+    if entry_dates:
         current_date = today
         if entry_dates[0] == today:
             streak = 1
@@ -71,17 +71,23 @@ def index(request):
     # 2. Mood Trend Chart (Last 7 days)
     mood_trend_data = []
     labels = []
+    start_date = today - datetime.timedelta(days=6)
+    recent_entries_list = DiaryEntry.objects.filter(
+        user=request.user,
+        created_at__date__gte=start_date,
+        created_at__date__lte=today
+    ).values('created_at__date', 'mood')
+    recent_entries_map = {e['created_at__date']: e['mood'] for e in recent_entries_list}
+    
+    mood_map = {'happy': 5, 'excited': 4, 'neutral': 3, 'sad': 2, 'stressed': 1}
     for i in range(6, -1, -1):
         day = today - datetime.timedelta(days=i)
         labels.append(day.strftime('%a'))
-        # Assign numeric values to moods for the chart
-        # happy: 5, excited: 4, neutral: 3, sad: 2, stressed: 1
-        mood_map = {'happy': 5, 'excited': 4, 'neutral': 3, 'sad': 2, 'stressed': 1}
-        day_entry = DiaryEntry.objects.filter(user=request.user, created_at__date=day).first()
-        if day_entry:
-            mood_trend_data.append(mood_map.get(day_entry.mood, 3))
+        day_mood = recent_entries_map.get(day)
+        if day_mood:
+            mood_trend_data.append(mood_map.get(day_mood, 3))
         else:
-            mood_trend_data.append(None) # Or 0/3 depending on how we want it to look
+            mood_trend_data.append(None)
             
     context = {
         'latest_entry': latest_entry,
@@ -105,16 +111,26 @@ def task_list(request):
     log_activity(request.user, 'task_view', f'Viewed task list ({tasks.count()} tasks)')
 
     # Shared tasks: users who granted whole_tasks to this user
-    whole_tasks_owners = SharePermission.objects.filter(
+    whole_tasks_shares = SharePermission.objects.filter(
         Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
         share_type='whole_tasks'
-    ).values_list('owner', flat=True)
+    ).select_related('owner')
+    
+    owner_ids = {s.owner.id for s in whole_tasks_shares}
+    owners_by_id = {s.owner.id: s.owner for s in whole_tasks_shares}
+    
     shared_tasks_by_owner = []
-    for owner_id in set(whole_tasks_owners):
-        owner_user = User.objects.filter(id=owner_id).first()
-        if owner_user:
-            owner_tasks = Task.objects.filter(user=owner_user).order_by('completed', 'due_date', 'due_time', '-created_at')
-            if owner_tasks.exists():
+    if owner_ids:
+        all_shared_tasks = Task.objects.filter(user_id__in=owner_ids).order_by('completed', 'due_date', 'due_time', '-created_at')
+        from collections import defaultdict
+        tasks_by_owner_id = defaultdict(list)
+        for t in all_shared_tasks:
+            tasks_by_owner_id[t.user_id].append(t)
+            
+        for owner_id in sorted(owner_ids):
+            owner_user = owners_by_id[owner_id]
+            owner_tasks = tasks_by_owner_id[owner_id]
+            if owner_tasks:
                 shared_tasks_by_owner.append({'owner': owner_user, 'tasks': owner_tasks})
 
     return render(request, 'tasks.html', {'tasks': tasks, 'shared_tasks_by_owner': shared_tasks_by_owner})
@@ -140,7 +156,7 @@ class DiaryEntryViewSet(viewsets.ModelViewSet):
             Q(user=user) |
             Q(user__in=whole_diary_owners) |
             Q(id__in=specific_entry_ids)
-        ).distinct().order_by('-created_at')
+        ).select_related('user').prefetch_related('tags').distinct().order_by('-created_at')
 
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
@@ -225,7 +241,7 @@ class EventViewSet(viewsets.ModelViewSet):
             Q(user=user) |
             Q(user__in=whole_events_owners) |
             Q(id__in=specific_event_ids)
-        ).distinct().order_by('date', 'event_time')
+        ).select_related('user').prefetch_related('shares').distinct().order_by('date', 'event_time')
 
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
@@ -332,7 +348,7 @@ class ReminderViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Reminder.objects.filter(user=self.request.user)
+        queryset = Reminder.objects.filter(user=self.request.user).select_related('user', 'diary_entry', 'event', 'task')
         event_id = self.request.query_params.get('event')
         task_id = self.request.query_params.get('task')
         diary_entry_id = self.request.query_params.get('diary_entry')
@@ -435,10 +451,13 @@ def profile_view(request):
     completed_tasks = Task.objects.filter(user=user, completed=True).count()
     event_count = Event.objects.filter(user=user).count()
     
-    # Mood statistics
+    # Mood statistics - optimized to single database query
+    mood_counts_list = DiaryEntry.objects.filter(user=user).values('mood').annotate(count=Count('mood'))
+    mood_counts = {item['mood']: item['count'] for item in mood_counts_list}
+    
     mood_stats = []
     for mood_val, mood_label in DiaryEntry.MOOD_CHOICES:
-        count = DiaryEntry.objects.filter(user=user, mood=mood_val).count()
+        count = mood_counts.get(mood_val, 0)
         # Split "😊 Happy" into "😊" and "Happy"
         parts = mood_label.split(' ', 1)
         mood_stats.append({
@@ -520,8 +539,8 @@ def settings_view(request):
             else:
                 print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
             
-    shares_granted_qs = SharePermission.objects.filter(owner=user)
-    shares_received = SharePermission.objects.filter(Q(shared_with_email=user.email) | Q(shared_with_user=user))
+    shares_granted_qs = SharePermission.objects.filter(owner=user).select_related('shared_with_user', 'diary_entry', 'event')
+    shares_received = SharePermission.objects.filter(Q(shared_with_email=user.email) | Q(shared_with_user=user)).select_related('owner', 'diary_entry', 'event')
 
     # Group shares by email for the template
     from collections import OrderedDict
@@ -582,7 +601,7 @@ def settings_view(request):
 @login_required
 def diary_history(request):
     query = request.GET.get('q')
-    entries = DiaryEntry.objects.filter(user=request.user)
+    entries = DiaryEntry.objects.filter(user=request.user).prefetch_related('tags')
     
     if query:
         entries = entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
@@ -602,7 +621,7 @@ def diary_history(request):
     shared_entries = DiaryEntry.objects.filter(
         Q(user__in=whole_diary_owners) |
         Q(id__in=specific_entry_ids)
-    ).distinct().order_by('-created_at')
+    ).prefetch_related('tags').distinct().order_by('-created_at')
     
     if query:
         shared_entries = shared_entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()

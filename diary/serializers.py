@@ -35,7 +35,7 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'owner_username', 'shared_emails']
 
     def get_shared_emails(self, obj):
-        return ", ".join(obj.shares.values_list('shared_with_email', flat=True))
+        return ", ".join([share.shared_with_email for share in obj.shares.all()])
 
 
 class QuoteSerializer(serializers.ModelSerializer):
