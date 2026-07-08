@@ -103,7 +103,21 @@ def index(request):
 def task_list(request):
     tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
     log_activity(request.user, 'task_view', f'Viewed task list ({tasks.count()} tasks)')
-    return render(request, 'tasks.html', {'tasks': tasks})
+
+    # Shared tasks: users who granted whole_tasks to this user
+    whole_tasks_owners = SharePermission.objects.filter(
+        Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
+        share_type='whole_tasks'
+    ).values_list('owner', flat=True)
+    shared_tasks_by_owner = []
+    for owner_id in set(whole_tasks_owners):
+        owner_user = User.objects.filter(id=owner_id).first()
+        if owner_user:
+            owner_tasks = Task.objects.filter(user=owner_user).order_by('completed', 'due_date', 'due_time', '-created_at')
+            if owner_tasks.exists():
+                shared_tasks_by_owner.append({'owner': owner_user, 'tasks': owner_tasks})
+
+    return render(request, 'tasks.html', {'tasks': tasks, 'shared_tasks_by_owner': shared_tasks_by_owner})
 
 # --- API ViewSets ---
 
@@ -506,15 +520,63 @@ def settings_view(request):
             else:
                 print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
             
-    shares_granted = SharePermission.objects.filter(owner=user)
+    shares_granted_qs = SharePermission.objects.filter(owner=user)
     shares_received = SharePermission.objects.filter(Q(shared_with_email=user.email) | Q(shared_with_user=user))
+
+    # Group shares by email for the template
+    from collections import OrderedDict
+    grouped = OrderedDict()
+    for s in shares_granted_qs:
+        email = s.shared_with_email
+        if email not in grouped:
+            grouped[email] = {
+                'email': email,
+                'shared_with_user': s.shared_with_user,
+                'has_diary': False,
+                'has_events': False,
+                'has_tasks': False,
+                'specific_shares': [],
+                'created_at': s.created_at,
+            }
+        if s.share_type == 'whole_diary':
+            grouped[email]['has_diary'] = True
+        elif s.share_type == 'whole_events':
+            grouped[email]['has_events'] = True
+        elif s.share_type == 'whole_tasks':
+            grouped[email]['has_tasks'] = True
+        elif s.share_type in ('specific_diary', 'specific_event'):
+            grouped[email]['specific_shares'].append(s)
+    shares_grouped = list(grouped.values())
+
+    # Group received shares by owner
+    received_grouped = OrderedDict()
+    for s in shares_received:
+        owner_key = s.owner_id
+        if owner_key not in received_grouped:
+            received_grouped[owner_key] = {
+                'owner': s.owner,
+                'has_diary': False,
+                'has_events': False,
+                'has_tasks': False,
+                'specific_shares': [],
+                'created_at': s.created_at,
+            }
+        if s.share_type == 'whole_diary':
+            received_grouped[owner_key]['has_diary'] = True
+        elif s.share_type == 'whole_events':
+            received_grouped[owner_key]['has_events'] = True
+        elif s.share_type == 'whole_tasks':
+            received_grouped[owner_key]['has_tasks'] = True
+        elif s.share_type in ('specific_diary', 'specific_event'):
+            received_grouped[owner_key]['specific_shares'].append(s)
+    shares_received_grouped = list(received_grouped.values())
 
     context = {
         'user': user,
         'profile': profile,
         'password_form': password_form,
-        'shares_granted': shares_granted,
-        'shares_received': shares_received,
+        'shares_grouped': shares_grouped,
+        'shares_received_grouped': shares_received_grouped,
     }
     return render(request, 'settings.html', context)
 @login_required
@@ -745,47 +807,59 @@ def share_item(request):
         try:
             data = json.loads(request.body)
             email = data.get('email', '').strip()
+            # Support both single share_type and array of share_types
+            share_types = data.get('share_types', [])
             share_type = data.get('share_type', '').strip()
             item_id = data.get('item_id')
 
-            if not email or not share_type:
-                return JsonResponse({'error': 'Email and Share Type are required.'}, status=400)
+            if share_type and not share_types:
+                share_types = [share_type]
 
-            diary_entry = None
-            event = None
-
-            if share_type == 'specific_diary':
-                diary_entry = DiaryEntry.objects.filter(user=request.user, id=item_id).first()
-                if not diary_entry:
-                    return JsonResponse({'error': 'Diary Entry not found.'}, status=404)
-            elif share_type == 'specific_event':
-                event = Event.objects.filter(user=request.user, id=item_id).first()
-                if not event:
-                    return JsonResponse({'error': 'Event not found.'}, status=404)
+            if not email or not share_types:
+                return JsonResponse({'error': 'Email and at least one permission type are required.'}, status=400)
 
             matching_user = User.objects.filter(email=email).first()
+            created_any = False
 
-            share, created = SharePermission.objects.get_or_create(
-                owner=request.user,
-                shared_with_email=email,
-                share_type=share_type,
-                diary_entry=diary_entry,
-                event=event,
-                defaults={'shared_with_user': matching_user}
-            )
+            for st in share_types:
+                st = st.strip()
+                diary_entry = None
+                event = None
 
+                if st == 'specific_diary':
+                    diary_entry = DiaryEntry.objects.filter(user=request.user, id=item_id).first()
+                    if not diary_entry:
+                        continue
+                elif st == 'specific_event':
+                    event = Event.objects.filter(user=request.user, id=item_id).first()
+                    if not event:
+                        continue
+
+                share, created = SharePermission.objects.get_or_create(
+                    owner=request.user,
+                    shared_with_email=email,
+                    share_type=st,
+                    diary_entry=diary_entry,
+                    event=event,
+                    defaults={'shared_with_user': matching_user}
+                )
+                if created:
+                    created_any = True
+
+            # Send one notification email
             from django.core.mail import send_mail
             from django.conf import settings
-            
+
+            type_labels = []
+            for st in share_types:
+                if st == 'whole_diary': type_labels.append('Diary')
+                elif st == 'whole_events': type_labels.append('Events Calendar')
+                elif st == 'whole_tasks': type_labels.append('Tasks')
+                elif st == 'specific_diary': type_labels.append('a Diary Entry')
+                elif st == 'specific_event': type_labels.append('an Event')
+
             subject = f"Shared content from {request.user.username}"
-            if share_type == 'whole_diary':
-                message = f"Hello,\n\n{request.user.username} has shared their entire diary with you on Jdiary. Log in to check it out."
-            elif share_type == 'whole_events':
-                message = f"Hello,\n\n{request.user.username} has shared their entire events calendar with you on Jdiary. Log in to check it out."
-            elif share_type == 'specific_diary':
-                message = f"Hello,\n\n{request.user.username} has shared a diary entry with you on Jdiary. Log in to check it out."
-            else:
-                message = f"Hello,\n\n{request.user.username} has shared an event ('{event.title}') with you on Jdiary. Log in to check it out."
+            message = f"Hello,\n\n{request.user.username} has shared the following with you on Jdiary: {', '.join(type_labels)}.\n\nLog in to check it out."
 
             send_mail(
                 subject,
@@ -795,7 +869,7 @@ def share_item(request):
                 fail_silently=True
             )
 
-            return JsonResponse({'status': 'ok', 'created': created})
+            return JsonResponse({'status': 'ok', 'created': created_any})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Method not allowed.'}, status=405)
@@ -803,30 +877,38 @@ def share_item(request):
 
 @login_required
 def update_share(request):
-    """Allow owner to change the share_type of an existing whole-scope permission."""
+    """Toggle a whole-scope share type on or off for a given email."""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            share_id = data.get('share_id')
-            new_type = data.get('share_type', '').strip()
+            email = data.get('email', '').strip()
+            share_type = data.get('share_type', '').strip()
+            enabled = data.get('enabled', True)
 
-            valid_types = ['whole_diary', 'whole_events']
-            if new_type not in valid_types:
-                return JsonResponse({'error': 'Invalid permission type. Only whole_diary or whole_events can be changed.'}, status=400)
+            valid_types = ['whole_diary', 'whole_events', 'whole_tasks']
+            if share_type not in valid_types:
+                return JsonResponse({'error': 'Invalid permission type.'}, status=400)
+            if not email:
+                return JsonResponse({'error': 'Email is required.'}, status=400)
 
-            share = SharePermission.objects.filter(
-                owner=request.user,
-                id=share_id,
-                share_type__in=valid_types   # only allow editing whole-scope shares
-            ).first()
+            if enabled:
+                matching_user = User.objects.filter(email=email).first()
+                share, created = SharePermission.objects.get_or_create(
+                    owner=request.user,
+                    shared_with_email=email,
+                    share_type=share_type,
+                    defaults={'shared_with_user': matching_user}
+                )
+                action = 'granted' if created else 'already granted'
+            else:
+                deleted_count, _ = SharePermission.objects.filter(
+                    owner=request.user,
+                    shared_with_email=email,
+                    share_type=share_type
+                ).delete()
+                action = 'revoked' if deleted_count else 'not found'
 
-            if not share:
-                return JsonResponse({'error': 'Share permission not found or cannot be edited.'}, status=404)
-
-            share.share_type = new_type
-            share.save()
-            log_activity(request.user, 'share_update', f'Updated share permission #{share_id} type to {new_type}')
-            return JsonResponse({'status': 'ok', 'share_type': new_type, 'share_type_display': share.get_share_type_display()})
+            return JsonResponse({'status': 'ok', 'action': action, 'share_type': share_type, 'enabled': enabled})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Method not allowed.'}, status=405)

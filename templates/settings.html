@@ -450,29 +450,40 @@
                 </button>
             </section>
             <section class="settings-section glass-card" id="sharingPermissionsSection">
-                <h2>Sharing & Permissions</h2>
-                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Manage sharing permissions. You can
-                    share your entire diary or all events calendar with someone by their email. They will receive an
-                    email invite to access your shared contents.</p>
+                <h2>Sharing &amp; Permissions</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Manage sharing permissions. Choose
+                    exactly what each colleague can see in your system.</p>
                 <!-- Grant Share Form -->
                 <form id="grantShareForm" style="margin-bottom: 2rem;">
                     {% csrf_token %}
-                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: flex-end;">
                         <div class="input-group" style="margin-bottom: 0;">
                             <label for="shareEmailInput">Colleague's Email</label>
                             <input type="email" id="shareEmailInput" placeholder="colleague@example.com" required
                                 style="width: 100%;">
                         </div>
-                        <div class="input-group" style="margin-bottom: 0;">
-                            <label for="shareTypeInput">Permission Type</label>
-                            <select id="shareTypeInput" required
-                                style="width: 100%; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 1rem;">
-                                <option value="whole_diary">Whole Diary (View Only)</option>
-                                <option value="whole_events">Whole Events Calendar (View Only)</option>
-                            </select>
-                        </div>
                         <button type="submit" class="add-btn primary-btn" style="height: 48px; min-width: 120px;">Grant
                             Access</button>
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem;">
+                            <input type="checkbox" name="share_diary" value="whole_diary" checked
+                                style="accent-color: var(--accent-primary); width: 18px; height: 18px;">
+                            📚 Diary (Read-Only)
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem;">
+                            <input type="checkbox" name="share_events" value="whole_events"
+                                style="accent-color: var(--accent-primary); width: 18px; height: 18px;">
+                            🗓️ Calendar (Read-Only)
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem;">
+                            <input type="checkbox" name="share_tasks" value="whole_tasks"
+                                style="accent-color: var(--accent-primary); width: 18px; height: 18px;">
+                            ✅ Tasks (Read-Only)
+                        </label>
                     </div>
                 </form>
                 <!-- Shares Granted Table -->
@@ -480,25 +491,26 @@
                     <h3
                         style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">
                         Access Granted to Others</h3>
-                    {% if shares_granted %}
+                    {% if shares_grouped %}
                     <div class="table-responsive" id="sharesGrantedTableWrap" style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left;">
                             <thead>
                                 <tr
                                     style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
                                     <th style="padding: 10px 5px;">Shared With</th>
-                                    <th style="padding: 10px 5px;">Type</th>
-                                    <th style="padding: 10px 5px;">Date Shared</th>
+                                    <th style="padding: 10px 5px; text-align: center;">📚 Diary</th>
+                                    <th style="padding: 10px 5px; text-align: center;">🗓️ Calendar</th>
+                                    <th style="padding: 10px 5px; text-align: center;">✅ Tasks</th>
                                     <th style="padding: 10px 5px; text-align: right;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="sharesGrantedBody">
-                                {% for share in shares_granted %}
+                                {% for g in shares_grouped %}
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;"
-                                    data-share-id="{{ share.id }}" data-share-type="{{ share.share_type }}">
+                                    data-email="{{ g.email }}">
                                     <td style="padding: 12px 5px;">
-                                        {{ share.shared_with_email }}
-                                        {% if share.shared_with_user %}
+                                        {{ g.email }}
+                                        {% if g.shared_with_user %}
                                         <span
                                             style="font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Registered</span>
                                         {% else %}
@@ -507,40 +519,25 @@
                                             Join</span>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 12px 5px;">
-                                        {% if share.share_type == 'specific_diary' %}
-                                        <span class="share-type-label">📖 Specific Diary Entry</span>
-                                        {% elif share.share_type == 'whole_diary' %}
-                                        <span class="share-type-label">📚 Entire Diary</span>
-                                        {% elif share.share_type == 'specific_event' %}
-                                        <span class="share-type-label">📅 Specific Event: "{{ share.event.title }}"</span>
-                                        {% elif share.share_type == 'whole_events' %}
-                                        <span class="share-type-label">🗓️ All Events Calendar</span>
-                                        {% endif %}
-                                        {% if share.share_type == 'whole_diary' or share.share_type == 'whole_events' %}
-                                        <div class="change-type-form"
-                                            style="display:none; margin-top: 8px; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                            <select class="share-type-select"
-                                                style="border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-family: inherit;">
-                                                <option value="whole_diary" {% if share.share_type == 'whole_diary' %}selected{% endif %}>📚 Entire Diary</option>
-                                                <option value="whole_events" {% if share.share_type == 'whole_events' %}selected{% endif %}>🗓️ All Events Calendar</option>
-                                            </select>
-                                            <button class="apply-change-btn add-btn"
-                                                style="padding: 5px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); color: var(--accent-primary);">Apply</button>
-                                            <button class="cancel-change-btn"
-                                                style="background: none; border: none; color: var(--text-secondary); font-size: 0.8rem; cursor: pointer; padding: 5px 8px;">Cancel</button>
-                                        </div>
-                                        {% endif %}
+                                    <td style="padding: 12px 5px; text-align: center;">
+                                        <input type="checkbox" class="share-toggle" data-email="{{ g.email }}"
+                                            data-type="whole_diary" {% if g.has_diary %}checked{% endif %}
+                                            style="accent-color: var(--accent-primary); width: 18px; height: 18px; cursor: pointer;">
                                     </td>
-                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
-                                    <td style="padding: 12px 5px; text-align: right; white-space: nowrap;">
-                                        {% if share.share_type == 'whole_diary' or share.share_type == 'whole_events' %}
-                                        <button class="change-type-btn add-btn"
-                                            style="padding: 4px 10px; font-size: 0.8rem; min-width: auto; width: auto; background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.2); color: var(--accent-primary); margin-right: 4px;">Change
-                                            Type</button>
-                                        {% endif %}
-                                        <button class="revoke-share-btn add-btn danger-btn"
-                                            style="padding: 4px 10px; font-size: 0.8rem; min-width: auto; width: auto; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;">Revoke</button>
+                                    <td style="padding: 12px 5px; text-align: center;">
+                                        <input type="checkbox" class="share-toggle" data-email="{{ g.email }}"
+                                            data-type="whole_events" {% if g.has_events %}checked{% endif %}
+                                            style="accent-color: var(--accent-primary); width: 18px; height: 18px; cursor: pointer;">
+                                    </td>
+                                    <td style="padding: 12px 5px; text-align: center;">
+                                        <input type="checkbox" class="share-toggle" data-email="{{ g.email }}"
+                                            data-type="whole_tasks" {% if g.has_tasks %}checked{% endif %}
+                                            style="accent-color: var(--accent-primary); width: 18px; height: 18px; cursor: pointer;">
+                                    </td>
+                                    <td style="padding: 12px 5px; text-align: right;">
+                                        <button class="revoke-all-btn add-btn danger-btn" data-email="{{ g.email }}"
+                                            style="padding: 4px 10px; font-size: 0.8rem; min-width: auto; width: auto; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;">Revoke
+                                            All</button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -557,41 +554,52 @@
                     <h3
                         style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px;">
                         Access Shared with Me</h3>
-                    {% if shares_received %}
+                    {% if shares_received_grouped %}
                     <div class="table-responsive" id="sharesReceivedTableWrap" style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left;">
                             <thead>
                                 <tr
                                     style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
                                     <th style="padding: 10px 5px;">Owner</th>
-                                    <th style="padding: 10px 5px;">Type</th>
-                                    <th style="padding: 10px 5px;">Date Shared</th>
+                                    <th style="padding: 10px 5px; text-align: center;">📚 Diary</th>
+                                    <th style="padding: 10px 5px; text-align: center;">🗓️ Calendar</th>
+                                    <th style="padding: 10px 5px; text-align: center;">✅ Tasks</th>
                                 </tr>
                             </thead>
                             <tbody id="sharesReceivedBody">
-                                {% for share in shares_received %}
+                                {% for r in shares_received_grouped %}
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;">
-                                    <td style="padding: 12px 5px;">{{ share.owner.username }} ({{ share.owner.email|default:share.owner.username }})</td>
-                                    <td style="padding: 12px 5px;">
-                                        {% if share.share_type == 'specific_diary' %}
-                                        📖 Specific Diary Entry
-                                        {% elif share.share_type == 'whole_diary' %}
-                                        📚 Entire Diary
-                                        {% elif share.share_type == 'specific_event' %}
-                                        📅 Specific Event: "{{ share.event.title }}"
-                                        {% elif share.share_type == 'whole_events' %}
-                                        🗓️ All Events Calendar
+                                    <td style="padding: 12px 5px;">{{ r.owner.username }}
+                                        ({{ r.owner.email|default:r.owner.username }})</td>
+                                    <td style="padding: 12px 5px; text-align: center;">
+                                        {% if r.has_diary %}
+                                        <span style="color: #22c55e; font-size: 1.1rem;">✓</span>
+                                        {% else %}
+                                        <span style="color: var(--text-secondary); font-size: 1.1rem;">—</span>
                                         {% endif %}
                                     </td>
-                                    <td style="padding: 12px 5px; color: var(--text-secondary);">{{ share.created_at|date:"M d, Y" }}</td>
+                                    <td style="padding: 12px 5px; text-align: center;">
+                                        {% if r.has_events %}
+                                        <span style="color: #22c55e; font-size: 1.1rem;">✓</span>
+                                        {% else %}
+                                        <span style="color: var(--text-secondary); font-size: 1.1rem;">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 12px 5px; text-align: center;">
+                                        {% if r.has_tasks %}
+                                        <span style="color: #22c55e; font-size: 1.1rem;">✓</span>
+                                        {% else %}
+                                        <span style="color: var(--text-secondary); font-size: 1.1rem;">—</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                     {% else %}
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Nobody has shared their diary or events
-                        calendar with you yet.</p>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Nobody has shared their diary, events
+                        or tasks with you yet.</p>
                     {% endif %}
                 </div>
             </section>
@@ -887,21 +895,28 @@
             const csrfToken = '{{ csrf_token }}';
             const grantForm = document.getElementById('grantShareForm');
             const grantEmail = document.getElementById('shareEmailInput');
-            const grantType = document.getElementById('shareTypeInput');
             if (grantForm) {
                 grantForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const email = grantEmail.value.trim();
-                    const share_type = grantType.value;
-                    const grantSubmitBtn = grantForm.querySelector('button[type="submit"]');
                     if (!email) return;
+
+                    // Collect checked share types
+                    const checkboxes = grantForm.querySelectorAll('input[type="checkbox"]:checked');
+                    const share_types = Array.from(checkboxes).map(cb => cb.value);
+                    if (share_types.length === 0) {
+                        alert('Please select at least one permission type.');
+                        return;
+                    }
+
+                    const grantSubmitBtn = grantForm.querySelector('button[type="submit"]');
                     grantSubmitBtn.disabled = true;
                     grantSubmitBtn.textContent = 'Granting...';
                     try {
                         const res = await fetch('{% url "share_item" %}', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                            body: JSON.stringify({ email, share_type })
+                            body: JSON.stringify({ email, share_types })
                         });
                         const data = await res.json();
                         if (res.ok && data.status === 'ok') {
@@ -918,197 +933,71 @@
                     }
                 });
             }
-            document.querySelectorAll('.revoke-share-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const row = btn.closest('tr');
-                    const share_id = row.dataset.shareId;
-                    if (!confirm('Are you sure you want to revoke this sharing permission?')) return;
-                    btn.disabled = true;
-                    btn.textContent = 'Revoking...';
-                    try {
-                        const res = await fetch('{% url "revoke_share" %}', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                            body: JSON.stringify({ share_id })
-                        });
-                        const data = await res.json();
-                        if (res.ok && data.status === 'ok') {
-                            // save parent reference before removing row
-                            const tbody = row.parentElement;
-                            row.remove();
-                            // check if table body is empty
-                            if (tbody && tbody.children.length === 0) {
-                                location.reload();
-                            }
-                        } else {
-                            alert(data.error || 'Failed to revoke sharing permission.');
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        alert('Network error when revoking permission.');
-                    } finally {
-                        btn.disabled = false;
-                        btn.textContent = 'Revoke';
-                    }
-                });
-            });
-            // Change Type: toggle inline edit form
-            document.querySelectorAll('.change-type-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const row = btn.closest('tr');
-                    const form = row.querySelector('.change-type-form');
-                    const label = row.querySelector('.share-type-label');
-                    const isOpen = form && form.style.display !== 'none';
-                    if (form) {
-                        form.style.display = isOpen ? 'none' : 'flex';
-                        if (label) label.style.opacity = isOpen ? '1' : '0.4';
-                        btn.textContent = isOpen ? 'Change Type' : 'Cancel Edit';
-                        btn.style.background = isOpen ? 'rgba(129,140,248,0.1)' : 'rgba(234,179,8,0.1)';
-                        btn.style.color = isOpen ? 'var(--accent-primary)' : '#eab308';
-                        btn.style.borderColor = isOpen ? 'rgba(129,140,248,0.2)' : 'rgba(234,179,8,0.2)';
-                    }
-                });
-            });
-            // Cancel inline edit
-            document.querySelectorAll('.cancel-change-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const row = btn.closest('tr');
-                    const form = row.querySelector('.change-type-form');
-                    const label = row.querySelector('.share-type-label');
-                    const changeBtn = row.querySelector('.change-type-btn');
-                    if (form) { form.style.display = 'none'; }
-                    if (label) label.style.opacity = '1';
-                    if (changeBtn) {
-                        changeBtn.textContent = 'Change Type';
-                        changeBtn.style.background = 'rgba(129,140,248,0.1)';
-                        changeBtn.style.color = 'var(--accent-primary)';
-                        changeBtn.style.borderColor = 'rgba(129,140,248,0.2)';
-                    }
-                });
-            });
-            // Apply new permission type
-            document.querySelectorAll('.apply-change-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const row = btn.closest('tr');
-                    const share_id = row.dataset.shareId;
-                    const select = row.querySelector('.share-type-select');
-                    const new_type = select ? select.value : null;
-                    const label = row.querySelector('.share-type-label');
-                    const form = row.querySelector('.change-type-form');
-                    const changeBtn = row.querySelector('.change-type-btn');
-                    if (!new_type) return;
-                    btn.disabled = true;
-                    btn.textContent = 'Applying...';
+
+            // Inline checkbox toggle for existing shares
+            document.querySelectorAll('.share-toggle').forEach(cb => {
+                cb.addEventListener('change', async () => {
+                    const email = cb.dataset.email;
+                    const shareType = cb.dataset.type;
+                    const enabled = cb.checked;
+                    cb.disabled = true;
                     try {
                         const res = await fetch('{% url "update_share" %}', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                            body: JSON.stringify({ share_id, share_type: new_type })
+                            body: JSON.stringify({ email, share_type: shareType, enabled })
                         });
                         const data = await res.json();
-                        if (res.ok && data.status === 'ok') {
-                            const icons = { whole_diary: '📚 Entire Diary', whole_events: '🗓️ All Events Calendar' };
-                            if (label) label.textContent = icons[data.share_type] || data.share_type_display;
-                            if (form) form.style.display = 'none';
-                            if (label) label.style.opacity = '1';
-                            if (changeBtn) {
-                                changeBtn.textContent = 'Change Type';
-                                changeBtn.style.background = 'rgba(129,140,248,0.1)';
-                                changeBtn.style.color = 'var(--accent-primary)';
-                                changeBtn.style.borderColor = 'rgba(129,140,248,0.2)';
-                            }
+                        if (!res.ok || data.status !== 'ok') {
+                            cb.checked = !enabled; // revert
+                            alert(data.error || 'Failed to update permission.');
+                        }
+                        // Check if all checkboxes for this row are unchecked
+                        const row = cb.closest('tr');
+                        const allUnchecked = Array.from(row.querySelectorAll('.share-toggle')).every(c => !c.checked);
+                        if (allUnchecked) {
+                            row.style.opacity = '0.5';
                         } else {
-                            alert(data.error || 'Failed to update permission type.');
+                            row.style.opacity = '1';
                         }
                     } catch (err) {
+                        cb.checked = !enabled;
                         console.error(err);
-                        alert('Network error when updating permission.');
                     } finally {
-                        btn.disabled = false;
-                        btn.textContent = 'Apply';
+                        cb.disabled = false;
                     }
                 });
             });
 
-            // ── Client-side pagination Helper ───────────────────────
-            function paginateTable(tbodyId, wrapperId, itemsPerPage = 5) {
-                const tbody = document.getElementById(tbodyId);
-                const wrapper = document.getElementById(wrapperId);
-                if (!tbody || !wrapper) return null;
-
-                let currentPage = 1;
-
-                function update() {
-                    const rows = Array.from(tbody.querySelectorAll('tr'));
-                    const totalItems = rows.length;
-                    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-
-                    if (currentPage > totalPages) {
-                        currentPage = totalPages;
-                    }
-
-                    // Hide/Show rows based on page
-                    rows.forEach((row, idx) => {
-                        const start = (currentPage - 1) * itemsPerPage;
-                        const end = start + itemsPerPage;
-                        if (idx >= start && idx < end) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
+            // Revoke All button – remove all shares for an email
+            document.querySelectorAll('.revoke-all-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const email = btn.dataset.email;
+                    if (!confirm(`Revoke ALL sharing permissions for ${email}?`)) return;
+                    btn.disabled = true;
+                    btn.textContent = 'Revoking...';
+                    try {
+                        // Revoke each type
+                        for (const type of ['whole_diary', 'whole_events', 'whole_tasks']) {
+                            await fetch('{% url "update_share" %}', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                                body: JSON.stringify({ email, share_type: type, enabled: false })
+                            });
                         }
-                    });
-
-                    // Manage controls
-                    let controls = wrapper.querySelector('.pagination-controls');
-                    if (totalItems <= itemsPerPage) {
-                        if (controls) controls.remove();
-                        return;
-                    }
-
-                    if (!controls) {
-                        controls = document.createElement('div');
-                        controls.className = 'pagination-controls';
-                        controls.style.cssText = 'display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--glass-border);';
-                        wrapper.appendChild(controls);
-                    }
-
-                    controls.innerHTML = `
-                        <button type="button" class="pagination-prev add-btn" style="padding: 4px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 6px; cursor: pointer; transition: all 0.2s;" ${currentPage === 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}>&larr; Prev</button>
-                        <span class="pagination-info" style="font-size: 0.85rem; color: var(--text-secondary);">Page ${currentPage} of ${totalPages}</span>
-                        <button type="button" class="pagination-next add-btn" style="padding: 4px 12px; font-size: 0.8rem; min-width: auto; width: auto; height: auto; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 6px; cursor: pointer; transition: all 0.2s;" ${currentPage === totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}>Next &rarr;</button>
-                    `;
-
-                    // Wire up buttons
-                    controls.querySelector('.pagination-prev').addEventListener('click', (e) => {
-                        e.preventDefault();
-                        if (currentPage > 1) {
-                            currentPage--;
-                            update();
+                        const row = btn.closest('tr');
+                        const tbody = row.parentElement;
+                        row.remove();
+                        if (tbody && tbody.children.length === 0) {
+                            location.reload();
                         }
-                    });
-                    controls.querySelector('.pagination-next').addEventListener('click', (e) => {
-                        e.preventDefault();
-                        if (currentPage < totalPages) {
-                            currentPage++;
-                            update();
-                        }
-                    });
-                }
-
-                update();
-                return { refresh: update };
-            }
-
-            const grantedPager = paginateTable('sharesGrantedBody', 'sharesGrantedTableWrap');
-            const receivedPager = paginateTable('sharesReceivedBody', 'sharesReceivedTableWrap');
-
-            // Wire refresh into Revoke button success
-            document.querySelectorAll('.revoke-share-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    // Check if row has been removed from DOM in revocation logic and refresh pager
-                    setTimeout(() => {
-                        if (grantedPager) grantedPager.refresh();
-                    }, 500);
+                    } catch (err) {
+                        console.error(err);
+                        alert('Network error when revoking permissions.');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Revoke All';
+                    }
                 });
             });
         })();

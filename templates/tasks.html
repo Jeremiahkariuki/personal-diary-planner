@@ -148,94 +148,177 @@
                 </div>
             </header>
 
-            <section class="tasks-section glass-card">
-                <form id="quickTaskForm" class="quick-task-form">
-                    {% csrf_token %}
-                    <div class="quick-task-inputs">
-                        <input type="text" id="newTaskTitle" placeholder="What needs to be done?" required>
-                        <div class="task-time-inputs">
-                            <input type="date" id="newTaskDate" title="Due Date">
-                            <input type="time" id="newTaskTime" title="Due Time">
+            <!-- Tabs Navigation -->
+            <div class="tabs-nav glass-card"
+                style="display: flex; gap: 0.5rem; padding: 0.4rem; border-radius: 12px; margin-bottom: 2rem; max-width: fit-content; border: 1px solid var(--glass-border); background: var(--glass-bg);">
+                <button id="tabMyTasks" class="add-btn tab-btn active"
+                    style="padding: 0.5rem 1.2rem; font-size: 0.9rem; border-radius: 8px; background: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(129, 140, 248, 0.3); border: 1px solid transparent; cursor: pointer; transition: all 0.3s ease;">My
+                    Tasks</button>
+                <button id="tabSharedTasks" class="add-btn tab-btn"
+                    style="padding: 0.5rem 1.2rem; font-size: 0.9rem; border-radius: 8px; background: transparent; border: 1px solid transparent; cursor: pointer; transition: all 0.3s ease;">Shared
+                    Tasks</button>
+            </div>
+
+            <!-- My Tasks Section -->
+            <div id="myTasksPanel">
+                <section class="tasks-section glass-card">
+                    <form id="quickTaskForm" class="quick-task-form">
+                        {% csrf_token %}
+                        <div class="quick-task-inputs">
+                            <input type="text" id="newTaskTitle" placeholder="What needs to be done?" required>
+                            <div class="task-time-inputs">
+                                <input type="date" id="newTaskDate" title="Due Date">
+                                <input type="time" id="newTaskTime" title="Due Time">
+                            </div>
+                        </div>
+                        <button type="submit" class="add-task-btn">+</button>
+                    </form>
+
+                    <div class="task-sections">
+                        <div class="task-column pending-column">
+                            <div class="agenda-header">
+                                <div class="header-flex">
+                                    <h3>Pending</h3>
+                                    <button id="clearTasksBtn" class="text-btn">Clear All</button>
+                                </div>
+                            </div>
+                            <div class="task-list pending-tasks">
+                                {% for task in tasks %}
+                                {% if not task.completed %}
+                                <div class="task-item" data-id="{{ task.id }}">
+                                    <input type="checkbox" class="task-checkbox">
+                                    <div class="task-info">
+                                        <span class="task-title">{{ task.title }}</span>
+                                        {% if task.due_date %}
+                                        <span class="task-due-date">
+                                            📅 {{ task.due_date|date:"M d" }}
+                                            {% if task.due_time %}
+                                            {{ task.due_time|time:"H:i" }}
+                                            {% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <button class="reminder-btn" title="Set Reminder" data-id="{{ task.id }}"
+                                        data-type="task" data-title="{{ task.title }}">
+                                        <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                        </svg>
+                                    </button>
+                                    <button class="delete-task-btn">&times;</button>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="task-column completed-column">
+                            <div class="agenda-header">
+                                <h3>Completed</h3>
+                            </div>
+                            <div class="task-list completed-tasks">
+                                {% for task in tasks %}
+                                {% if task.completed %}
+                                <div class="task-item completed" data-id="{{ task.id }}">
+                                    <input type="checkbox" checked class="task-checkbox">
+                                    <div class="task-info">
+                                        <span class="task-title">{{ task.title }}</span>
+                                        {% if task.due_date %}
+                                        <span class="task-due-date">
+                                            📅 {{ task.due_date|date:"M d" }}
+                                            {% if task.due_time %}
+                                            {{ task.due_time|time:"H:i" }}
+                                            {% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <button class="reminder-btn" title="Set Reminder" data-id="{{ task.id }}"
+                                        data-type="task" data-title="{{ task.title }}">
+                                        <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                        </svg>
+                                    </button>
+                                    <button class="delete-task-btn">&times;</button>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
-                    <button type="submit" class="add-task-btn">+</button>
-                </form>
+                </section>
+            </div>
 
-                <div class="task-sections">
-                    <div class="task-column pending-column">
-                        <div class="agenda-header">
-                            <div class="header-flex">
+            <!-- Shared Tasks Section -->
+            <div id="sharedTasksPanel" style="display: none;">
+                {% if shared_tasks_by_owner %}
+                {% for group in shared_tasks_by_owner %}
+                <section class="tasks-section glass-card" style="margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--accent-primary);">
+                        📋 {{ group.owner.username }}'s Tasks
+                        <span
+                            style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; margin-left: 8px;">({{
+                            group.tasks.count }} total)</span>
+                    </h3>
+                    <div class="task-sections">
+                        <div class="task-column pending-column">
+                            <div class="agenda-header">
                                 <h3>Pending</h3>
-                                <button id="clearTasksBtn" class="text-btn">Clear All</button>
+                            </div>
+                            <div class="task-list">
+                                {% for task in group.tasks %}
+                                {% if not task.completed %}
+                                <div class="task-item" style="opacity: 0.85; pointer-events: none;">
+                                    <input type="checkbox" class="task-checkbox" disabled>
+                                    <div class="task-info">
+                                        <span class="task-title">{{ task.title }}</span>
+                                        {% if task.due_date %}
+                                        <span class="task-due-date">
+                                            📅 {{ task.due_date|date:"M d" }}
+                                            {% if task.due_time %}{{ task.due_time|time:"H:i" }}{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
                             </div>
                         </div>
-                        <div class="task-list pending-tasks">
-                            {% for task in tasks %}
-                            {% if not task.completed %}
-                            <div class="task-item" data-id="{{ task.id }}">
-                                <input type="checkbox" class="task-checkbox">
-                                <div class="task-info">
-                                    <span class="task-title">{{ task.title }}</span>
-                                    {% if task.due_date %}
-                                    <span class="task-due-date">
-                                        📅 {{ task.due_date|date:"M d" }}
-                                        {% if task.due_time %}
-                                        {{ task.due_time|time:"H:i" }}
-                                        {% endif %}
-                                    </span>
-                                    {% endif %}
-                                </div>
-                                <button class="reminder-btn" title="Set Reminder" data-id="{{ task.id }}"
-                                    data-type="task" data-title="{{ task.title }}">
-                                    <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                    </svg>
-                                </button>
-                                <button class="delete-task-btn">&times;</button>
+                        <div class="task-column completed-column">
+                            <div class="agenda-header">
+                                <h3>Completed</h3>
                             </div>
-                            {% endif %}
-                            {% endfor %}
+                            <div class="task-list">
+                                {% for task in group.tasks %}
+                                {% if task.completed %}
+                                <div class="task-item completed" style="opacity: 0.85; pointer-events: none;">
+                                    <input type="checkbox" checked class="task-checkbox" disabled>
+                                    <div class="task-info">
+                                        <span class="task-title">{{ task.title }}</span>
+                                        {% if task.due_date %}
+                                        <span class="task-due-date">
+                                            📅 {{ task.due_date|date:"M d" }}
+                                            {% if task.due_time %}{{ task.due_time|time:"H:i" }}{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
-
-                    <div class="task-column completed-column">
-                        <div class="agenda-header">
-                            <h3>Completed</h3>
-                        </div>
-                        <div class="task-list completed-tasks">
-                            {% for task in tasks %}
-                            {% if task.completed %}
-                            <div class="task-item completed" data-id="{{ task.id }}">
-                                <input type="checkbox" checked class="task-checkbox">
-                                <div class="task-info">
-                                    <span class="task-title">{{ task.title }}</span>
-                                    {% if task.due_date %}
-                                    <span class="task-due-date">
-                                        📅 {{ task.due_date|date:"M d" }}
-                                        {% if task.due_time %}
-                                        {{ task.due_time|time:"H:i" }}
-                                        {% endif %}
-                                    </span>
-                                    {% endif %}
-                                </div>
-                                <button class="reminder-btn" title="Set Reminder" data-id="{{ task.id }}"
-                                    data-type="task" data-title="{{ task.title }}">
-                                    <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                    </svg>
-                                </button>
-                                <button class="delete-task-btn">&times;</button>
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
+                </section>
+                {% endfor %}
+                {% else %}
+                <div class="glass-card" style="padding: 4rem 2rem; text-align: center;">
+                    <p style="font-size: 1.1rem; color: var(--text-secondary);">No shared tasks yet. Ask someone to
+                        share their tasks with you from Settings.</p>
                 </div>
-            </section>
+                {% endif %}
+            </div>
         </main>
     </div>
 

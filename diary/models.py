@@ -141,6 +141,7 @@ class SharePermission(models.Model):
         ('whole_diary', 'Whole Diary'),
         ('specific_event', 'Specific Event'),
         ('whole_events', 'Whole Events'),
+        ('whole_tasks', 'Whole Tasks'),
     ]
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shares_granted')
     shared_with_email = models.EmailField(db_index=True)
