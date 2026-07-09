@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,11 +16,13 @@
             min-height: 100vh;
             padding: 2rem;
         }
+
         .error-card {
             max-width: 500px;
             padding: 4rem 2rem;
             text-align: center;
         }
+
         .error-code {
             font-size: 6rem;
             font-weight: 800;
@@ -29,10 +32,19 @@
             -webkit-text-fill-color: transparent;
             line-height: 1;
         }
-        h2 { font-size: 1.5rem; margin: 1.5rem 0 1rem; }
-        p { color: var(--text-secondary); margin-bottom: 2.5rem; }
+
+        h2 {
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+        }
     </style>
 </head>
+
 <body>
     <div class="background-decor">
         <div class="blob blob-1"></div>
@@ -43,9 +55,11 @@
         <div class="glass-card error-card">
             <h1 class="error-code">500</h1>
             <h2>Unexpected System Drift</h2>
-            <p>Something went wrong on our end. We're looking into it. Please try again in a moment.</p>
-            <a href="{% url 'index' %}" class="add-btn primary-btn" style="text-decoration:none; display:inline-block;">Try Again</a>
+            <p>Something went wrong on our end. We're looking into it. Please try again Later.</p>
+            <a href="{% url 'index' %}" class="add-btn primary-btn"
+                style="text-decoration:none; display:inline-block;">Try Again</a>
         </div>
     </div>
 </body>
+
 </html>
