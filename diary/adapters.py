@@ -25,3 +25,16 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
     def is_auto_signup_allowed(self, request, sociallogin):
         # Force auto-signup to skip the signup form
         return True
+
+    def list_apps(self, request, provider=None, client_id=None):
+        apps = super().list_apps(request, provider=provider, client_id=client_id)
+        deduped = {}
+        for app in apps:
+            key = (app.provider, app.client_id)
+            if key not in deduped:
+                deduped[key] = app
+            else:
+                # Prioritize database-backed apps (they have a primary key/id)
+                if getattr(app, 'pk', None) is not None:
+                    deduped[key] = app
+        return list(deduped.values())

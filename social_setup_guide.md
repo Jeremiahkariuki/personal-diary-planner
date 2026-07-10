@@ -15,8 +15,10 @@ This guide provides professional, step-by-step instructions to configure **Googl
 4.  **Credentials:**
     *   Create **OAuth 2.0 Client ID**.
     *   Application type: **Web application**.
-    *   **Authorized JavaScript origins:** `http://127.0.0.1:8000` (and your production domain).
-    *   **Authorized redirect URIs:** `http://127.0.0.1:8000/accounts/google/login/callback/`.
+    *   **Authorized JavaScript origins:** `http://127.0.0.1:8080`, `http://localhost:8080` (and your production domain: `https://jdiary-wa5s.onrender.com`).
+    *   **Authorized redirect URIs:** 
+        *   Local Dev: `http://127.0.0.1:8080/accounts/google/login/callback/` or `http://localhost:8080/accounts/google/login/callback/`
+        *   Production: `https://jdiary-wa5s.onrender.com/accounts/google/login/callback/`
 5.  **Save Credentials:** Copy the **Client ID** and **Client Secret**.
 
 ---
@@ -32,7 +34,9 @@ This guide provides professional, step-by-step instructions to configure **Googl
 4.  **Facebook Login:**
     *   Add the **Facebook Login** product.
     *   Go to **Settings > Client OAuth Settings**.
-    *   **Valid OAuth Redirect URIs:** `http://127.0.0.1:8000/accounts/facebook/login/callback/`.
+    *   **Valid OAuth Redirect URIs:** 
+        *   Local Dev: `http://127.0.0.1:8080/accounts/facebook/login/callback/` or `http://localhost:8080/accounts/facebook/login/callback/`
+        *   Production: `https://jdiary-wa5s.onrender.com/accounts/facebook/login/callback/`
 5.  **Save Credentials:** Copy the **App ID** and **App Secret**.
 
 ---
