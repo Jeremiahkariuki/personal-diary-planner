@@ -317,10 +317,12 @@
                             </svg>
                             <div>
                                 <span
-                                    style="font-size: 0.95rem; display: block; {% if task.completed %}text-decoration: line-through; opacity: 0.6;{% endif %}">{{
-                                    task.title }}</span>
-                                <span style="font-size: 0.75rem; color: var(--text-secondary);">Shared with {{
-                                    group.label }}</span>
+                                    style="font-size: 0.95rem; display: block; {% if task.completed %}text-decoration: line-through; opacity: 0.6;{% endif %}">
+                                    {{ task.title }}
+                                </span>
+                                <span style="font-size: 0.75rem; color: var(--text-secondary);">
+                                    Shared with {{ group.label }}
+                                </span>
                             </div>
                         </div>
                         {% if task.completed %}
@@ -345,10 +347,12 @@
                             </svg>
                             <div>
                                 <span
-                                    style="font-size: 0.95rem; display: block; {% if task.completed %}text-decoration: line-through; opacity: 0.6;{% endif %}">{{
-                                    task.title }}</span>
-                                <span style="font-size: 0.75rem; color: var(--text-secondary);">From {{
-                                    group.owner.username }}</span>
+                                    style="font-size: 0.95rem; display: block; {% if task.completed %}text-decoration: line-through; opacity: 0.6;{% endif %}">
+                                    {{ task.title }}
+                                </span>
+                                <span style="font-size: 0.75rem; color: var(--text-secondary);">
+                                    From {{ group.owner.username }}
+                                </span>
                             </div>
                         </div>
                         {% if task.completed %}
