@@ -107,8 +107,6 @@ def index(request):
 
 @login_required
 def task_list(request):
-    tasks = Task.objects.filter(request.user).order_by('completed', 'due_date', 'due_time', '-created_at') if hasattr(request.user, 'id') else Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
-    # Use regular Task.objects.filter(user=request.user) for safety
     tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
     log_activity(request.user, 'task_view', f'Viewed task list ({tasks.count()} tasks)')
 
