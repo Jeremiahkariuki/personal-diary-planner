@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from diary.models import Profile, Quote, DiaryEntry, Event, SharePermission
+from diary.models import Profile, Quote, DiaryEntry, Event, SharePermission, Task
 import datetime
 from diary.context_processors import quote_context
 
@@ -229,3 +229,35 @@ class SharingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]['title'], "Owner's meeting")
+
+    def test_share_specific_task(self):
+        # Create a task for owner
+        self.task = Task.objects.create(user=self.owner, title="Owner's task")
+        
+        # Owner shares the specific task with recipient
+        url = reverse('share_item')
+        payload = {
+            'email': 'recipient@example.com',
+            'share_type': 'specific_task',
+            'item_id': self.task.id
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        # Verify that permission exists in database
+        share = SharePermission.objects.get(owner=self.owner, shared_with_email='recipient@example.com', share_type='specific_task')
+        self.assertEqual(share.task, self.task)
+        self.assertEqual(share.shared_with_user, self.recipient)
+        
+        # Verify recipient can view the shared task in task_list view
+        url_tasks = reverse('task_list')
+        response = self.client_recipient.get(url_tasks)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Owner's task")
+        
+        # Verify owner has another task that recipient cannot see
+        other_task = Task.objects.create(user=self.owner, title="Owner's private task")
+        response = self.client_recipient.get(url_tasks)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Owner's private task")

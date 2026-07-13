@@ -142,6 +142,7 @@ class SharePermission(models.Model):
         ('specific_event', 'Specific Event'),
         ('whole_events', 'Whole Events'),
         ('whole_tasks', 'Whole Tasks'),
+        ('specific_task', 'Specific Task'),
     ]
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shares_granted')
     shared_with_email = models.EmailField(db_index=True)
@@ -149,11 +150,12 @@ class SharePermission(models.Model):
     share_type = models.CharField(max_length=20, choices=SHARE_TYPE_CHOICES)
     diary_entry = models.ForeignKey(DiaryEntry, on_delete=models.CASCADE, null=True, blank=True, related_name='shares')
     event = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True, related_name='shares')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True, related_name='shares')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
-        unique_together = ('owner', 'shared_with_email', 'share_type', 'diary_entry', 'event')
+        unique_together = ('owner', 'shared_with_email', 'share_type', 'diary_entry', 'event', 'task')
 
     def __str__(self):
         target = ""
@@ -161,6 +163,8 @@ class SharePermission(models.Model):
             target = f"Diary Entry {self.diary_entry_id}"
         elif self.share_type == 'specific_event':
             target = f"Event '{self.event.title}'"
+        elif self.share_type == 'specific_task':
+            target = f"Task '{self.task.title}'"
         else:
             target = self.get_share_type_display()
         return f"{self.owner.email} shared {target} with {self.shared_with_email}"

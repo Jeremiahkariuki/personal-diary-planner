@@ -8,6 +8,30 @@
     <title>Task Planner | Jdiary</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        .share-task-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 6px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .share-task-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .share-task-btn:hover {
+            color: var(--accent-primary);
+            background: rgba(129, 140, 248, 0.1);
+        }
+    </style>
     <script>
         (function () {
             const theme = localStorage.getItem('theme') || 'dark';
@@ -198,6 +222,17 @@
                                         </span>
                                         {% endif %}
                                     </div>
+                                    <button class="share-task-btn" title="Share Task" data-id="{{ task.id }}"
+                                        data-title="{{ task.title }}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="18" cy="5" r="3"></circle>
+                                            <circle cx="6" cy="12" r="3"></circle>
+                                            <circle cx="18" cy="19" r="3"></circle>
+                                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                        </svg>
+                                    </button>
                                     <button class="reminder-btn" title="Set Reminder" data-id="{{ task.id }}"
                                         data-type="task" data-title="{{ task.title }}">
                                         <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -233,6 +268,17 @@
                                         </span>
                                         {% endif %}
                                     </div>
+                                    <button class="share-task-btn" title="Share Task" data-id="{{ task.id }}"
+                                        data-title="{{ task.title }}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="18" cy="5" r="3"></circle>
+                                            <circle cx="6" cy="12" r="3"></circle>
+                                            <circle cx="18" cy="19" r="3"></circle>
+                                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                        </svg>
+                                    </button>
                                     <button class="reminder-btn" title="Set Reminder" data-id="{{ task.id }}"
                                         data-type="task" data-title="{{ task.title }}">
                                         <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -327,7 +373,37 @@
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}"></script>
 
-    <!-- Reminder Modal -->
+    <!-- Share Modal -->
+    <div id="shareModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true"
+        aria-labelledby="shareModalTitle">
+        <div class="modal-box glass-card" style="max-width: 450px; padding: 2rem;">
+            <div class="modal-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h3 id="shareModalTitle" style="font-size: 1.5rem; color: var(--text-primary); margin: 0;">Share Task
+                </h3>
+                <button id="shareModalClose" class="modal-close-btn" aria-label="Close"
+                    style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <p id="shareModalSubtitle"
+                style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.4;"></p>
+            <form id="shareTaskForm">
+                <input type="hidden" id="shareTaskId">
+                <div class="input-group" style="margin-bottom: 1.5rem;">
+                    <label for="shareTaskEmail"
+                        style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600;">Recipient's
+                        Email</label>
+                    <input type="email" id="shareTaskEmail" placeholder="colleague@example.com" required
+                        style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: inherit; font-size: 0.95rem;">
+                </div>
+                <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" id="cancelShareBtn" class="btn-outline"
+                        style="padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: inherit;">Cancel</button>
+                    <button type="submit" id="submitShareBtn" class="btn-primary"
+                        style="padding:0.5rem 1.4rem; border-radius:8px; background:var(--accent,#6366f1); border:none; color:#fff; cursor:pointer; font-weight:600;">Share</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div id="reminderModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true"
         aria-labelledby="reminderModalTitle">
         <div class="modal-box glass-card">
@@ -491,6 +567,71 @@
                 document.body.appendChild(t);
                 requestAnimationFrame(() => t.style.opacity = '1');
                 setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+            }
+            // Share task logic
+            const shareModal = document.getElementById('shareModal');
+            const shareTaskForm = document.getElementById('shareTaskForm');
+            const shareTaskIdInput = document.getElementById('shareTaskId');
+            const shareTaskEmailInput = document.getElementById('shareTaskEmail');
+            const cancelShareBtn = document.getElementById('cancelShareBtn');
+            const shareModalClose = document.getElementById('shareModalClose');
+
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.share-task-btn');
+                if (!btn) return;
+                const taskId = btn.dataset.id;
+                const title = btn.dataset.title || 'this task';
+                shareTaskIdInput.value = taskId;
+                shareTaskEmailInput.value = '';
+                document.getElementById('shareModalSubtitle').textContent = 'Give another user view-only permission to the task: "' + title + '" by entering their email address.';
+                shareModal.style.display = 'flex';
+            });
+
+            if (cancelShareBtn) cancelShareBtn.addEventListener('click', closeShareModal);
+            if (shareModalClose) shareModalClose.addEventListener('click', closeShareModal);
+            if (shareModal) {
+                shareModal.addEventListener('click', function (e) {
+                    if (e.target === this) closeShareModal();
+                });
+            }
+
+            function closeShareModal() {
+                shareModal.style.display = 'none';
+            }
+
+            if (shareTaskForm) {
+                shareTaskForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const taskId = shareTaskIdInput.value;
+                    const email = shareTaskEmailInput.value.trim();
+                    const submitButton = document.getElementById('submitShareBtn');
+
+                    if (!email) return;
+
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Sharing...';
+
+                    try {
+                        const res = await fetch('/share/create/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                            body: JSON.stringify({ email: email, share_type: 'specific_task', item_id: taskId })
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.status === 'ok') {
+                            closeShareModal();
+                            showToast('✅ Task shared successfully!');
+                        } else {
+                            alert(data.error || 'Failed to share task.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Network error when attempting to share.');
+                    } finally {
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Share';
+                    }
+                });
             }
         })();
     </script>

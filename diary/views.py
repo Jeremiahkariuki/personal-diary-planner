@@ -107,21 +107,38 @@ def index(request):
 
 @login_required
 def task_list(request):
+    tasks = Task.objects.filter(request.user).order_by('completed', 'due_date', 'due_time', '-created_at') if hasattr(request.user, 'id') else Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
+    # Use regular Task.objects.filter(user=request.user) for safety
     tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date', 'due_time', '-created_at')
     log_activity(request.user, 'task_view', f'Viewed task list ({tasks.count()} tasks)')
 
-    # Shared tasks: users who granted whole_tasks to this user
+    # Shared tasks: users who granted whole_tasks or shared specific tasks with this user
     whole_tasks_shares = SharePermission.objects.filter(
         Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
         share_type='whole_tasks'
     ).select_related('owner')
     
-    owner_ids = {s.owner.id for s in whole_tasks_shares}
-    owners_by_id = {s.owner.id: s.owner for s in whole_tasks_shares}
+    specific_task_permissions = SharePermission.objects.filter(
+        Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
+        share_type='specific_task'
+    ).select_related('owner', 'task')
     
+    owner_ids = {s.owner.id for s in whole_tasks_shares} | {s.owner.id for s in specific_task_permissions}
+    owners_by_id = {}
+    for s in whole_tasks_shares:
+        owners_by_id[s.owner.id] = s.owner
+    for s in specific_task_permissions:
+        owners_by_id[s.owner.id] = s.owner
+        
     shared_tasks_by_owner = []
     if owner_ids:
-        all_shared_tasks = Task.objects.filter(user_id__in=owner_ids).order_by('completed', 'due_date', 'due_time', '-created_at')
+        whole_owners = {s.owner.id for s in whole_tasks_shares}
+        specific_task_ids = {s.task.id for s in specific_task_permissions if s.task}
+        
+        all_shared_tasks = Task.objects.filter(
+            Q(user_id__in=whole_owners) | Q(id__in=specific_task_ids)
+        ).select_related('user').order_by('completed', 'due_date', 'due_time', '-created_at').distinct()
+        
         from collections import defaultdict
         tasks_by_owner_id = defaultdict(list)
         for t in all_shared_tasks:
@@ -539,8 +556,8 @@ def settings_view(request):
             else:
                 print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
             
-    shares_granted_qs = SharePermission.objects.filter(owner=user).select_related('shared_with_user', 'diary_entry', 'event')
-    shares_received = SharePermission.objects.filter(Q(shared_with_email=user.email) | Q(shared_with_user=user)).select_related('owner', 'diary_entry', 'event')
+    shares_granted_qs = SharePermission.objects.filter(owner=user).select_related('shared_with_user', 'diary_entry', 'event', 'task')
+    shares_received = SharePermission.objects.filter(Q(shared_with_email=user.email) | Q(shared_with_user=user)).select_related('owner', 'diary_entry', 'event', 'task')
 
     # Group shares by email for the template
     from collections import OrderedDict
@@ -563,7 +580,7 @@ def settings_view(request):
             grouped[email]['has_events'] = True
         elif s.share_type == 'whole_tasks':
             grouped[email]['has_tasks'] = True
-        elif s.share_type in ('specific_diary', 'specific_event'):
+        elif s.share_type in ('specific_diary', 'specific_event', 'specific_task'):
             grouped[email]['specific_shares'].append(s)
     shares_grouped = list(grouped.values())
 
@@ -586,7 +603,7 @@ def settings_view(request):
             received_grouped[owner_key]['has_events'] = True
         elif s.share_type == 'whole_tasks':
             received_grouped[owner_key]['has_tasks'] = True
-        elif s.share_type in ('specific_diary', 'specific_event'):
+        elif s.share_type in ('specific_diary', 'specific_event', 'specific_task'):
             received_grouped[owner_key]['specific_shares'].append(s)
     shares_received_grouped = list(received_grouped.values())
 
@@ -844,6 +861,7 @@ def share_item(request):
                 st = st.strip()
                 diary_entry = None
                 event = None
+                task = None
 
                 if st == 'specific_diary':
                     diary_entry = DiaryEntry.objects.filter(user=request.user, id=item_id).first()
@@ -853,6 +871,10 @@ def share_item(request):
                     event = Event.objects.filter(user=request.user, id=item_id).first()
                     if not event:
                         continue
+                elif st == 'specific_task':
+                    task = Task.objects.filter(user=request.user, id=item_id).first()
+                    if not task:
+                        continue
 
                 share, created = SharePermission.objects.get_or_create(
                     owner=request.user,
@@ -860,6 +882,7 @@ def share_item(request):
                     share_type=st,
                     diary_entry=diary_entry,
                     event=event,
+                    task=task,
                     defaults={'shared_with_user': matching_user}
                 )
                 if created:
@@ -876,6 +899,7 @@ def share_item(request):
                 elif st == 'whole_tasks': type_labels.append('Tasks')
                 elif st == 'specific_diary': type_labels.append('a Diary Entry')
                 elif st == 'specific_event': type_labels.append('an Event')
+                elif st == 'specific_task': type_labels.append('a Task')
 
             subject = f"Shared content from {request.user.username}"
             message = f"Hello,\n\n{request.user.username} has shared the following with you on Jdiary: {', '.join(type_labels)}.\n\nLog in to check it out."
