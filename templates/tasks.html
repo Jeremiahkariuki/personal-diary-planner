@@ -299,14 +299,63 @@
 
             <!-- Shared Tasks Section -->
             <div id="sharedTasksPanel" style="display: none;">
+
+                <!-- Shared by Me -->
+                {% if my_shared_tasks %}
+                <h2
+                    style="font-size: 1.1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">
+                    📤 Shared by Me</h2>
+                {% for group in my_shared_tasks %}
+                <section class="tasks-section glass-card" style="margin-bottom: 1.5rem;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h3 style="font-size: 1.05rem; color: var(--accent-primary); margin: 0;">
+                            Shared with <span style="font-weight: 700;">{{ group.label }}</span>
+                        </h3>
+                        <span
+                            style="font-size: 0.8rem; color: var(--text-secondary); background: rgba(129,140,248,0.1); padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(129,140,248,0.2);">
+                            {{ group.email }}
+                        </span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        {% for task in group.tasks %}
+                        <div
+                            style="display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid var(--glass-border);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"
+                                width="16" height="16" style="flex-shrink:0;">
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <circle cx="6" cy="12" r="3"></circle>
+                                <circle cx="18" cy="19" r="3"></circle>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                            </svg>
+                            <span style="flex: 1; font-size: 0.95rem;">{{ task.title }}</span>
+                            {% if task.completed %}
+                            <span
+                                style="font-size: 0.75rem; color: #22c55e; background: rgba(34,197,94,0.1); padding: 2px 8px; border-radius: 10px;">Done</span>
+                            {% else %}
+                            <span
+                                style="font-size: 0.75rem; color: var(--accent-primary); background: rgba(129,140,248,0.1); padding: 2px 8px; border-radius: 10px;">Pending</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endfor %}
+                {% endif %}
+
+                <!-- Shared with Me -->
                 {% if shared_tasks_by_owner %}
+                <h2
+                    style="font-size: 1.1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; margin-top: 2rem;">
+                    📥 Shared with Me</h2>
                 {% for group in shared_tasks_by_owner %}
                 <section class="tasks-section glass-card" style="margin-bottom: 1.5rem;">
                     <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--accent-primary);">
                         📋 {{ group.owner.username }}'s Tasks
                         <span
                             style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; margin-left: 8px;">({{
-                            group.tasks.count }} total)</span>
+                            group.tasks|length }} total)</span>
                     </h3>
                     <div class="task-sections">
                         <div class="task-column pending-column">
@@ -358,10 +407,13 @@
                     </div>
                 </section>
                 {% endfor %}
-                {% else %}
+                {% endif %}
+
+                {% if not my_shared_tasks and not shared_tasks_by_owner %}
                 <div class="glass-card" style="padding: 4rem 2rem; text-align: center;">
-                    <p style="font-size: 1.1rem; color: var(--text-secondary);">No shared tasks yet. Ask someone to
-                        share their tasks with you from Settings.</p>
+                    <p style="font-size: 1.1rem; color: var(--text-secondary);">No shared tasks yet.<br><span
+                            style="font-size: 0.9rem;">Share a task using the 🔗 button next to any task, or ask someone
+                            to share theirs with you from Settings.</span></p>
                 </div>
                 {% endif %}
             </div>

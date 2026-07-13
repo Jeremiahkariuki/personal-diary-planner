@@ -148,7 +148,31 @@ def task_list(request):
             if owner_tasks:
                 shared_tasks_by_owner.append({'owner': owner_user, 'tasks': owner_tasks})
 
-    return render(request, 'tasks.html', {'tasks': tasks, 'shared_tasks_by_owner': shared_tasks_by_owner})
+    # Tasks I have shared with others
+    my_shared_permissions = SharePermission.objects.filter(
+        owner=request.user,
+        share_type='specific_task',
+        task__isnull=False
+    ).select_related('task', 'shared_with_user').order_by('shared_with_email', 'task__created_at')
+
+    from collections import defaultdict
+    my_shared_by_recipient = defaultdict(list)
+    recipient_label = {}
+    for perm in my_shared_permissions:
+        key = perm.shared_with_email
+        recipient_label[key] = perm.shared_with_user.username if perm.shared_with_user else perm.shared_with_email
+        my_shared_by_recipient[key].append(perm.task)
+
+    my_shared_tasks = [
+        {'email': email, 'label': recipient_label[email], 'tasks': task_list_}
+        for email, task_list_ in my_shared_by_recipient.items()
+    ]
+
+    return render(request, 'tasks.html', {
+        'tasks': tasks,
+        'shared_tasks_by_owner': shared_tasks_by_owner,
+        'my_shared_tasks': my_shared_tasks,
+    })
 
 # --- API ViewSets ---
 
