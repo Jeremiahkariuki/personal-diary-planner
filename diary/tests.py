@@ -261,3 +261,11 @@ class SharingTests(TestCase):
         response = self.client_recipient.get(url_tasks)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Owner's private task")
+
+    def test_dashboard_upcoming_events_rendering(self):
+        # Owner has self.event, which is upcoming, and should be displayed on dashboard
+        response = self.client_owner.get(reverse('index'))
+        self.assertEqual(response.status_code, 200)
+        # Verify the template tag doesn't leak
+        self.assertNotContains(response, '{{ upcoming_events.0.date|date')
+        self.assertContains(response, "Owner's meeting")

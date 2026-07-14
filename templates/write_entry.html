@@ -289,20 +289,39 @@
             <form method="POST" enctype="multipart/form-data" id="diaryEntryForm">
                 {% csrf_token %}
                 <div class="mood-selector">
-                    <input type="radio" name="mood" value="happy" id="moodHappy" {% if not entry or entry.mood=='happy'
-                        %}checked{% endif %}>
+                    {% if not entry or entry.mood == 'happy' %}
+                    <input type="radio" name="mood" value="happy" id="moodHappy" checked>
+                    {% else %}
+                    <input type="radio" name="mood" value="happy" id="moodHappy">
+                    {% endif %}
                     <label for="moodHappy" title="Happy">😊</label>
-                    <input type="radio" name="mood" value="neutral" id="moodNeutral" {% if entry.mood=='neutral'
-                        %}checked{% endif %}>
+
+                    {% if entry.mood == 'neutral' %}
+                    <input type="radio" name="mood" value="neutral" id="moodNeutral" checked>
+                    {% else %}
+                    <input type="radio" name="mood" value="neutral" id="moodNeutral">
+                    {% endif %}
                     <label for="moodNeutral" title="Neutral">😐</label>
-                    <input type="radio" name="mood" value="sad" id="moodSad" {% if entry.mood=='sad' %}checked{% endif
-                        %}>
+
+                    {% if entry.mood == 'sad' %}
+                    <input type="radio" name="mood" value="sad" id="moodSad" checked>
+                    {% else %}
+                    <input type="radio" name="mood" value="sad" id="moodSad">
+                    {% endif %}
                     <label for="moodSad" title="Sad">😔</label>
-                    <input type="radio" name="mood" value="excited" id="moodExcited" {% if entry.mood=='excited'
-                        %}checked{% endif %}>
+
+                    {% if entry.mood == 'excited' %}
+                    <input type="radio" name="mood" value="excited" id="moodExcited" checked>
+                    {% else %}
+                    <input type="radio" name="mood" value="excited" id="moodExcited">
+                    {% endif %}
                     <label for="moodExcited" title="Excited">🤩</label>
-                    <input type="radio" name="mood" value="stressed" id="moodStressed" {% if entry.mood=='stressed'
-                        %}checked{% endif %}>
+
+                    {% if entry.mood == 'stressed' %}
+                    <input type="radio" name="mood" value="stressed" id="moodStressed" checked>
+                    {% else %}
+                    <input type="radio" name="mood" value="stressed" id="moodStressed">
+                    {% endif %}
                     <label for="moodStressed" title="Stressed">😫</label>
                 </div>
 
