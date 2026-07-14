@@ -263,9 +263,17 @@ class SharingTests(TestCase):
         self.assertNotContains(response, "Owner's private task")
 
     def test_dashboard_upcoming_events_rendering(self):
-        # Owner has self.event, which is upcoming, and should be displayed on dashboard
+        # Create an event that is clearly in the future so it appears in the dashboard's upcoming events
+        future_date = datetime.date.today() + datetime.timedelta(days=7)
+        Event.objects.create(
+            user=self.owner,
+            title="Future Board Meeting",
+            date=future_date,
+            event_time="23:00"
+        )
         response = self.client_owner.get(reverse('index'))
         self.assertEqual(response.status_code, 200)
-        # Verify the template tag doesn't leak
+        # Verify the template tag literal is NOT leaked in the rendered HTML
         self.assertNotContains(response, '{{ upcoming_events.0.date|date')
-        self.assertContains(response, "Owner's meeting")
+        # Verify the event title appears on the dashboard
+        self.assertContains(response, "Future Board Meeting")
