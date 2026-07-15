@@ -277,3 +277,33 @@ class SharingTests(TestCase):
         self.assertNotContains(response, '{{ upcoming_events.0.date|date')
         # Verify the event title appears on the dashboard
         self.assertContains(response, "Future Board Meeting")
+
+
+class NavbarCustomiseColorsTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testnavbaruser', password='password123')
+        self.client = Client()
+        self.client.login(username='testnavbaruser', password='password123')
+        Quote.objects.create(text="Test quote", author="Author")
+        Profile.objects.get_or_create(user=self.user)
+
+    def test_customise_colors_button_in_navbars(self):
+        # List of views that render a navbar with customize colors icon
+        views_to_test = [
+            'index',
+            'task_list',
+            'events_page',
+            'diary_history',
+            'profile',
+            'settings_view',
+            'system_history',
+            'write_entry'
+        ]
+        for view_name in views_to_test:
+            with self.subTest(view_name=view_name):
+                url = reverse(view_name)
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                # Verify that customiseNavBtn is in the HTML response
+                self.assertContains(response, 'id="customiseNavBtn"')
+

@@ -41,6 +41,18 @@
 
         if (lightBtn) lightBtn.addEventListener('click', () => applyTheme('light'));
         if (darkBtn)  darkBtn.addEventListener('click',  () => applyTheme('dark'));
+
+        // Smooth scroll and highlight customize section if landed with hash
+        const customiseSection = document.getElementById('customiseSection');
+        if (customiseSection && window.location.hash === '#customiseSection') {
+            setTimeout(() => {
+                customiseSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                customiseSection.style.outline = '2px solid var(--accent-primary)';
+                setTimeout(() => {
+                    customiseSection.style.outline = 'none';
+                }, 1500);
+            }, 300);
+        }
     });
 
     // Handle system theme changes
