@@ -333,3 +333,40 @@ class SystemHistoryPaginationTests(TestCase):
         self.assertEqual(len(response2.context['logs']), 5)
 
 
+class AuthLoadingAndFacebookAlertTests(TestCase):
+    def test_login_page_under_process_and_facebook(self):
+        login_url = reverse('login')
+        response = self.client.get(login_url)
+        self.assertEqual(response.status_code, 200)
+        # Check for submitBtn elements
+        self.assertContains(response, 'id="submitBtn"')
+        self.assertContains(response, 'id="btnSpinner"')
+        self.assertContains(response, 'id="btnText"')
+        self.assertContains(response, 'Preparing your journal...')
+
+        # Check for Facebook Alert Overlay
+        self.assertContains(response, 'id="fbAlert"')
+        self.assertContains(response, 'We are aware of this issue.')
+        self.assertContains(response, 'id="facebookLoginBtn"')
+        self.assertContains(response, 'id="closeFbAlertBtn"')
+
+    def test_register_page_under_process_and_facebook(self):
+        register_url = reverse('register')
+        response = self.client.get(register_url)
+        self.assertEqual(response.status_code, 200)
+        # Check for form id signupForm
+        self.assertContains(response, 'id="signupForm"')
+        # Check for submitBtn elements
+        self.assertContains(response, 'id="submitBtn"')
+        self.assertContains(response, 'id="btnSpinner"')
+        self.assertContains(response, 'id="btnText"')
+        self.assertContains(response, 'Setting up your space...')
+
+        # Check for Facebook Alert Overlay
+        self.assertContains(response, 'id="fbAlert"')
+        self.assertContains(response, 'We are aware of this issue.')
+        self.assertContains(response, 'id="facebookSignupBtn"')
+        self.assertContains(response, 'id="closeFbAlertBtn"')
+
+
+
