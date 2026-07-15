@@ -307,3 +307,29 @@ class NavbarCustomiseColorsTests(TestCase):
                 # Verify that customiseNavBtn is in the HTML response
                 self.assertContains(response, 'id="customiseNavBtn"')
 
+
+class SystemHistoryPaginationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='paginationuser', password='password123')
+        self.client = Client()
+        self.client.login(username='paginationuser', password='password123')
+        Quote.objects.create(text="Test quote", author="Author")
+        Profile.objects.get_or_create(user=self.user)
+        # Create 15 system activity logs for this user to test pagination
+        for i in range(15):
+            log_activity(self.user, 'diary_write', f"Activity log {i}")
+
+    def test_logs_pagination_limit_ten(self):
+        url = reverse('system_history')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # We expect a maximum of 10 logs on the first page
+        self.assertEqual(len(response.context['logs']), 10)
+
+        # Check for page=2
+        response2 = self.client.get(url + '?page=2')
+        self.assertEqual(response2.status_code, 200)
+        # We expect exactly 5 logs on the second page
+        self.assertEqual(len(response2.context['logs']), 5)
+
+

@@ -418,6 +418,31 @@
                     {% endwith %}
                     {% endfor %}
                 </div>
+
+                <!-- PAGINATION -->
+                {% if logs.has_other_pages %}
+                <div class="pagination-container"
+                    style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2rem;">
+                    {% if logs.has_previous %}
+                    <a href="?filter={{ active_filter }}&page=1" class="filter-pill" title="First Page">&laquo;
+                        First</a>
+                    <a href="?filter={{ active_filter }}&page={{ logs.previous_page_number }}" class="filter-pill"
+                        title="Previous Page">&lsaquo; Prev</a>
+                    {% endif %}
+
+                    <span class="filter-pill active" style="cursor: default;">
+                        Page {{ logs.number }} of {{ logs.paginator.num_pages }}
+                    </span>
+
+                    {% if logs.has_next %}
+                    <a href="?filter={{ active_filter }}&page={{ logs.next_page_number }}" class="filter-pill"
+                        title="Next Page">Next &rsaquo;</a>
+                    <a href="?filter={{ active_filter }}&page={{ logs.paginator.num_pages }}" class="filter-pill"
+                        title="Last Page">Last &raquo;</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 {% else %}
                 <div class="empty-log glass-card">
                     <div class="empty-icon">🕐</div>

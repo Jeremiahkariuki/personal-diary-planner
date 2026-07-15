@@ -846,8 +846,19 @@ def system_history(request):
     events_count = all_user_logs.filter(action__in=filter_map['events']).count()
     profile_count = all_user_logs.filter(action__in=filter_map['profile']).count()
 
+    # Pagination logic
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    page = request.GET.get('page', 1)
+    paginator = Paginator(logs, 10)
+    try:
+        logs_page = paginator.page(page)
+    except PageNotAnInteger:
+        logs_page = paginator.page(1)
+    except EmptyPage:
+        logs_page = paginator.page(paginator.num_pages)
+
     context = {
-        'logs': logs[:200],  # cap at 200 most recent
+        'logs': logs_page,
         'active_filter': filter_action,
         'total_count': total_count,
         'login_count': login_count,
