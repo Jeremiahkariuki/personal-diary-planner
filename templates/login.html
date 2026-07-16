@@ -222,11 +222,7 @@
             </div>
 
             <div class="social-buttons" id="socialButtonsContainer">
-                {% get_providers as socialaccount_providers %}
-                {% regroup socialaccount_providers by id as providers_grouped %}
-
-                {# Google first, then Facebook #}
-                {% for group in providers_grouped %}{% if group.grouper == 'google' %}
+                {# Google - uses allauth provider URL #}
                 <a href="{% provider_login_url 'google' %}" class="social-btn google-btn" id="googleLoginBtn">
                     <div class="spinner"></div>
                     <svg viewBox="0 0 24 24" width="20" height="20">
@@ -245,10 +241,9 @@
                     </svg>
                     <span>Google</span>
                 </a>
-                {% endif %}{% endfor %}
 
-                {% for group in providers_grouped %}{% if group.grouper == 'facebook' %}
-                <a href="{% provider_login_url 'facebook' %}" class="social-btn facebook-btn" id="facebookLoginBtn">
+                {# Facebook - hardcoded button, always visible, shows "pending" alert #}
+                <a href="#" class="social-btn facebook-btn" id="facebookLoginBtn">
                     <div class="spinner"></div>
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="#1877F2">
                         <path
@@ -256,7 +251,6 @@
                     </svg>
                     <span>Facebook</span>
                 </a>
-                {% endif %}{% endfor %}
             </div>
 
             <footer class="auth-footer">

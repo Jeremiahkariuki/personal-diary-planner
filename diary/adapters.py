@@ -28,6 +28,9 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
 
     def list_apps(self, request, provider=None, client_id=None):
         apps = super().list_apps(request, provider=provider, client_id=client_id)
+        # Filter out invalid apps that have empty/blank client_ids
+        apps = [app for app in apps if app.client_id and app.client_id.strip()]
+
         deduped = {}
         for app in apps:
             key = (app.provider, app.client_id)
