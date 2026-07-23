@@ -79,27 +79,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.showNotification = function (title, message, playAudio = true) {
-        const toast = document.createElement('div');
-        toast.className = 'notification-toast';
-        toast.innerHTML = `
-            <div class="notif-icon">🔔</div>
-            <div class="notif-content">
-                <strong>${title}</strong>
-                <p>${message}</p>
-            </div>
-        `;
-        document.body.appendChild(toast);
+    // --- Singleton Toast Notification ---
+    let _toastEl = null;
+    let _toastHideTimer = null;
+    let _toastRemoveTimer = null;
 
-        if (!isMuted && playAudio) {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(() => console.log('Audio playback prevented'));
+    window.showNotification = function (title, message, playAudio = true) {
+        // Clear any pending hide/remove timers
+        if (_toastHideTimer) { clearTimeout(_toastHideTimer); _toastHideTimer = null; }
+        if (_toastRemoveTimer) { clearTimeout(_toastRemoveTimer); _toastRemoveTimer = null; }
+
+        // Create the toast element once and reuse it
+        if (!_toastEl) {
+            _toastEl = document.createElement('div');
+            _toastEl.className = 'notification-toast';
+            _toastEl.innerHTML = `
+                <div class="notif-icon"></div>
+                <div class="notif-content">
+                    <strong class="notif-title"></strong>
+                    <span class="notif-msg"></span>
+                </div>
+                <button class="notif-close" aria-label="Close">&times;</button>
+            `;
+            _toastEl.querySelector('.notif-close').addEventListener('click', () => {
+                _toastEl.classList.remove('notif-visible');
+                _toastHideTimer = null;
+                _toastRemoveTimer = setTimeout(() => { _toastEl.remove(); _toastEl = null; }, 400);
+            });
+            document.body.appendChild(_toastEl);
+        } else if (!_toastEl.parentNode) {
+            document.body.appendChild(_toastEl);
         }
 
-        setTimeout(() => {
-            toast.style.animation = 'slideIn 0.5s ease reverse forwards';
-            setTimeout(() => toast.remove(), 500);
-        }, 5000);
+        // Pick icon based on title
+        const icon = title.toLowerCase().includes('error') ? '⚠️'
+            : title.toLowerCase().includes('sound') ? (message.toLowerCase().includes('muted') ? '🔇' : '🔊')
+            : '✅';
+
+        // Update content
+        _toastEl.querySelector('.notif-icon').textContent = icon;
+        _toastEl.querySelector('.notif-title').textContent = title;
+        _toastEl.querySelector('.notif-msg').textContent = message;
+
+        // Force reflow then show (so re-triggering restarts the animation)
+        _toastEl.classList.remove('notif-visible');
+        void _toastEl.offsetWidth;
+        _toastEl.classList.add('notif-visible');
+
+        // Play audio
+        if (!isMuted && playAudio) {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(() => {});
+        }
+
+        // Auto-hide after 3 seconds
+        _toastHideTimer = setTimeout(() => {
+            if (_toastEl) _toastEl.classList.remove('notif-visible');
+            _toastRemoveTimer = setTimeout(() => {
+                if (_toastEl) { _toastEl.remove(); _toastEl = null; }
+            }, 400);
+        }, 3000);
     }
 
     // --- Tasks Logic ---
