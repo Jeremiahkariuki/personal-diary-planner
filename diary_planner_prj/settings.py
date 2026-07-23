@@ -189,8 +189,12 @@ if DEBUG:
     PASSWORD_HASHERS = [
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
-    # Reduce network timeouts for local requests
-    SOCIALACCOUNT_ADAPTER = 'diary.adapters.MySocialAccountAdapter'
+
+# Auto-configure the Django Sites domain for OAuth callbacks
+# On Render: uses RENDER_EXTERNAL_HOSTNAME (e.g., your-app.onrender.com)
+# Locally: uses 127.0.0.1:8000
+SITE_DOMAIN = RENDER_EXTERNAL_HOSTNAME or os.getenv('SITE_DOMAIN', '127.0.0.1:8080')
+SITE_NAME = os.getenv('SITE_NAME', 'Jdiary Planner')
 
 # WhiteNoise storage to compress and cache static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

@@ -41,14 +41,3 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
                 if getattr(app, 'pk', None) is not None:
                     deduped[key] = app
         return list(deduped.values())
-
-    def get_callback_url(self, request, provider):
-        callback_url = super().get_callback_url(request, provider)
-        from django.conf import settings
-        if settings.DEBUG and '127.0.0.1' in callback_url:
-            callback_url = callback_url.replace('127.0.0.1', 'localhost')
-        
-        if settings.DEBUG:
-            print(f"[OAuth Callback URI] Generated redirect_uri for Google/Facebook: {callback_url}")
-        return callback_url
-
