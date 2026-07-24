@@ -27,4 +27,5 @@ def quote_context(request):
         'quote_text': quote_text,
         'quote_author': quote_author,
         'quote_is_custom': quote_is_custom,
+        'profile': profile,
     }
