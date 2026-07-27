@@ -121,12 +121,13 @@
                     <button id="profileBtn" class="profile-btn" title="Account">
                         <div class="avatar">
                             {% if profile.avatar %}
-                                <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                            <img src="{{ profile.avatar.url }}" alt="Avatar"
+                                style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                             {% else %}
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
                             {% endif %}
                         </div>
                     </button>
@@ -134,12 +135,13 @@
                         <div class="dropdown-header">
                             <div class="avatar-sm">
                                 {% if profile.avatar %}
-                                    <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                <img src="{{ profile.avatar.url }}" alt="Avatar"
+                                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                                 {% else %}
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="12" cy="7" r="4"></circle>
-                                    </svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
                                 {% endif %}
                             </div>
                             <div class="user-info">
@@ -199,7 +201,7 @@
             <div class="tabs-nav glass-card"
                 style="display: flex; gap: 0.5rem; padding: 0.4rem; border-radius: 12px; margin-bottom: 2rem; max-width: fit-content; border: 1px solid var(--glass-border); background: var(--glass-bg);">
                 <button id="tabMyTasks" class="add-btn tab-btn active"
-                    style="padding: 0.5rem 1.2rem; font-size: 0.9rem; border-radius: 8px; background: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(129, 140, 248, 0.3); border: 1px solid transparent; cursor: pointer; transition: all 0.3s ease;">My
+                    style="padding: 0.5rem 1.2rem; font-size: 0.9rem; border-radius: 8px; background: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(129, 140, 248, 0.3); border: 1px solid transparent; cursor: pointer; transition: all 0.3s ease;">All
                     Tasks</button>
                 <button id="tabSharedTasks" class="add-btn tab-btn"
                     style="padding: 0.5rem 1.2rem; font-size: 0.9rem; border-radius: 8px; background: transparent; border: 1px solid transparent; cursor: pointer; transition: all 0.3s ease;">Shared

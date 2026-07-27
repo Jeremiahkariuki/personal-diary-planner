@@ -540,18 +540,36 @@ def settings_view(request):
             else:
                 messages.error(request, 'Please correct the error(s) below in the password form.')
         else:
-            email = request.POST.get('email')
             avatar = request.FILES.get('avatar')
             is_ajax = request.POST.get('ajax') == '1'
-            
-            print(f"[SETTINGS POST] is_ajax={is_ajax}, email={email}, avatar={avatar}")
+            is_profile_form = request.POST.get('profile_form') == '1'
+
+            print(f"[SETTINGS POST] is_ajax={is_ajax}, is_profile_form={is_profile_form}, avatar={avatar}")
             print(f"[SETTINGS POST] FILES keys: {list(request.FILES.keys())}")
             print(f"[SETTINGS POST] POST keys: {list(request.POST.keys())}")
-            
-            if email:
-                user.email = email
-                user.save()
-                
+
+            if is_profile_form:
+                # Profile Settings form submitted
+                email = request.POST.get('email', '').strip()
+                first_name = request.POST.get('first_name', '').strip()
+                last_name = request.POST.get('last_name', '').strip()
+
+                changed = False
+                if email and email != user.email:
+                    user.email = email
+                    changed = True
+                if first_name != user.first_name:
+                    user.first_name = first_name
+                    changed = True
+                if last_name != user.last_name:
+                    user.last_name = last_name
+                    changed = True
+                if changed:
+                    user.save()
+
+                messages.success(request, 'Profile updated successfully!')
+                return redirect('settings_view')
+
             if avatar:
                 print(f"[SETTINGS POST] Saving avatar: {avatar.name}, size={avatar.size}")
                 try:
@@ -567,16 +585,15 @@ def settings_view(request):
                         return JsonResponse({'status': 'error', 'message': error_msg}, status=400)
                     messages.error(request, error_msg)
                     return redirect('settings_view')
-                    
-            if email or avatar:
+
                 if is_ajax:
                     avatar_url = profile.avatar.url if profile.avatar else None
                     print(f"[SETTINGS POST] Returning JSON ok, avatar_url={avatar_url}")
                     return JsonResponse({'status': 'ok', 'avatar_url': avatar_url})
-                messages.success(request, 'Settings updated successfully!')
+                messages.success(request, 'Profile photo updated!')
                 return redirect('settings_view')
             else:
-                print("[SETTINGS POST] No email or avatar found in request — nothing saved!")
+                print("[SETTINGS POST] No profile_form or avatar found in request — nothing saved!")
             
     shares_granted_qs = SharePermission.objects.filter(owner=user).select_related('shared_with_user', 'diary_entry', 'event', 'task')
     shares_received = SharePermission.objects.filter(Q(shared_with_email=user.email) | Q(shared_with_user=user)).select_related('owner', 'diary_entry', 'event', 'task')
