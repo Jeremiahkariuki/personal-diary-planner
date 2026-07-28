@@ -45,3 +45,6 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif not getattr(settings, '_use_r2', False):
+    # In production without R2 enabled, still serve local media (fallback)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

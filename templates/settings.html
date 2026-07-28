@@ -197,19 +197,27 @@
                 <div class="user-menu-container">
                     <button id="profileBtn" class="profile-btn" title="Account">
                         <div class="avatar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
+                            {% if profile.avatar %}
+                                <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                            {% else %}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            {% endif %}
                         </div>
                     </button>
                     <div id="profileDropdown" class="glass-card dropdown-menu hidden">
                         <div class="dropdown-header">
                             <div class="avatar-sm">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
+                                {% if profile.avatar %}
+                                    <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                                {% else %}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                {% endif %}
                             </div>
                             <div class="user-info">
                                 <strong>{{ user.username }}</strong>
@@ -632,44 +640,80 @@
         const avatarInput = document.getElementById('avatarInput');
         const avatarPreview = document.getElementById('avatarPreview');
         const avatarInitials = document.getElementById('avatarInitials');
+
+        function updateAllAvatarImages(dataUrl) {
+            // 1. Big avatar in settings header
+            if (avatarPreview) {
+                avatarPreview.src = dataUrl;
+                avatarPreview.style.display = 'block';
+                avatarPreview.style.width = '100%';
+                avatarPreview.style.height = '100%';
+                avatarPreview.style.objectFit = 'cover';
+                avatarPreview.style.borderRadius = '50%';
+            }
+            if (avatarInitials) avatarInitials.style.display = 'none';
+
+            // 2. Navbar top-right avatar button
+            const navAvatars = document.querySelectorAll('.profile-btn .avatar, .dropdown-header .avatar-sm');
+            navAvatars.forEach(container => {
+                let img = container.querySelector('img');
+                if (!img) {
+                    img = document.createElement('img');
+                    img.alt = 'Avatar';
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+                    // Hide SVG fallback
+                    const svg = container.querySelector('svg');
+                    if (svg) svg.style.display = 'none';
+                    container.appendChild(img);
+                }
+                img.src = dataUrl;
+                img.style.display = 'block';
+            });
+        }
+
         if (editAvatarBtn && avatarInput) {
             editAvatarBtn.addEventListener('click', () => {
                 avatarInput.click();
             });
             avatarInput.addEventListener('change', async () => {
                 if (avatarInput.files.length > 0) {
-                    console.log('[AVATAR] File selected:', avatarInput.files[0].name, avatarInput.files[0].size);
+                    const file = avatarInput.files[0];
+                    console.log('[AVATAR] File selected:', file.name, file.size);
+
+                    // Instant Client-side Preview (works for big, small, or any aspect ratio image)
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        updateAllAvatarImages(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Send to server
                     const formData = new FormData();
-                    formData.append('avatar', avatarInput.files[0]);
+                    formData.append('avatar', file);
                     formData.append('ajax', '1');
+
                     const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
                     if (!csrfEl) { alert('CSRF token not found! Cannot upload.'); return; }
                     const csrfToken = csrfEl.value;
-                    console.log('[AVATAR] CSRF token found:', csrfToken ? 'YES' : 'NO');
+
                     try {
-                        console.log('[AVATAR] Sending fetch to /settings/...');
                         const res = await fetch("{% url 'settings_view' %}", {
                             method: 'POST',
                             headers: { 'X-CSRFToken': csrfToken },
                             body: formData
                         });
-                        console.log('[AVATAR] Response status:', res.status, res.ok);
                         let data;
                         try {
                             data = await res.json();
-                            console.log('[AVATAR] Response JSON:', data);
                         } catch (err) {
-                            alert("Server returned an invalid response. See console.");
                             console.error('[AVATAR] JSON parse error:', err);
                             return;
                         }
                         if (!res.ok || data.status === 'error') {
                             alert(data.message || "Error uploading avatar.");
                         } else if (data.status === 'ok' && data.avatar_url) {
-                            console.log('[AVATAR] Upload OK, reloading page to show new avatar...');
-                            window.location.reload();
-                        } else {
-                            console.warn('[AVATAR] Unexpected response:', data);
+                            console.log('[AVATAR] Upload OK. Avatar URL:', data.avatar_url);
+                            updateAllAvatarImages(data.avatar_url + '?t=' + new Date().getTime());
                         }
                     } catch (e) {
                         alert('Network Error uploading avatar: ' + e.message);

@@ -196,38 +196,38 @@ if DEBUG:
 SITE_DOMAIN = RENDER_EXTERNAL_HOSTNAME or os.getenv('SITE_DOMAIN', '127.0.0.1:8080')
 SITE_NAME = os.getenv('SITE_NAME', 'Jdiary Planner')
 
-# WhiteNoise storage to compress and cache static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 # Cloud Storage Configuration (Cloudflare R2 / S3)
-AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME')
-AWS_S3_ENDPOINT_URL = os.getenv('R2_ENDPOINT_URL')
+USE_R2 = os.getenv('USE_R2', 'False').strip().lower() in ('true', '1', 'yes')
+AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY', '')
+AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', '')
+AWS_S3_ENDPOINT_URL = os.getenv('R2_ENDPOINT_URL', '')
 AWS_S3_REGION_NAME = 'auto'  # R2 uses 'auto'
-AWS_S3_CUSTOM_DOMAIN = os.getenv('R2_CUSTOM_DOMAIN') # e.g. pub-123.r2.dev or your custom domain
+AWS_S3_CUSTOM_DOMAIN = os.getenv('R2_CUSTOM_DOMAIN', '')  # e.g. pub-123.r2.dev or your custom domain
+AWS_S3_FILE_OVERWRITE = True
+AWS_S3_SIGNATURE_VERSION = 's3v4'  # Required for R2
+AWS_QUERYSTRING_AUTH = False  # Use public URLs (no signed URLs by default)
 
-if AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID:
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    AWS_S3_FILE_OVERWRITE = True
-    AWS_S3_SIGNATURE_VERSION = 's3v4' # Required for R2
-    
-    # Allow enabling query string authentication (signed URLs) via environment
-    AWS_QUERYSTRING_AUTH = os.getenv('R2_QUERYSTRING_AUTH', 'False').strip() == 'True'
-    
-    if AWS_QUERYSTRING_AUTH:
-        # In signed mode, do not use AWS_S3_CUSTOM_DOMAIN so django-storages signs URL properly
-        AWS_S3_CUSTOM_DOMAIN = None
-        MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
+_use_r2 = USE_R2 and bool(AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID)
+
+# Django 5.x STORAGES configuration
+STORAGES = {
+    'default': {
+        'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage' if _use_r2 else 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+if _use_r2:
+    if AWS_S3_CUSTOM_DOMAIN:
+        # Use your public R2 custom domain (e.g. media.yourdomain.com or pub-xxx.r2.dev)
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
     else:
-        if AWS_S3_CUSTOM_DOMAIN:
-            MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
-        else:
-            # Default R2 public URL format if no custom domain
-            # AWS_S3_ENDPOINT_URL typically looks like https://<account_id>.r2.cloudflarestorage.com
-            MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
+        # Fallback: construct URL from endpoint + bucket
+        MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
 else:
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_URL = '/media/'
 
 # Production Security Settings
