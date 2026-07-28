@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
     <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=9">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -219,51 +219,57 @@
                     </div>
                 </section>
 
-                <div class="dashboard-side-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; align-items: stretch; width: 100%;">
-                    <section class="reminders-section glass-card">
-                        <div class="section-header">
-                            <h2>Quick Reminders</h2>
-                            <a href="{% url 'task_list' %}" class="text-btn">View All</a>
-                        </div>
-                        <div class="task-list">
-                            {% for task in pending_tasks %}
-                            <div class="task-item" data-id="{{ task.id }}">
-                                <input type="checkbox" class="task-checkbox">
-                                <div class="task-info">
-                                    <span class="task-title">{{ task.title }}</span>
-                                    {% if task.due_date %}
-                                    <span class="task-due-date">📅 {{ task.due_date|date:"M d" }}</span>
-                                    {% endif %}
-                                </div>
+                <section class="reminders-agenda-container glass-card">
+                    <div class="two-col-grid">
+                        <div class="dashboard-sub-card">
+                            <div class="section-header">
+                                <h2>Quick Reminders</h2>
+                                <a href="{% url 'task_list' %}" class="text-btn">View All</a>
                             </div>
-                            {% empty %}
-                            <p class="empty-state">All caught up!</p>
-                            {% endfor %}
+                            <div class="task-list">
+                                {% for task in pending_tasks %}
+                                <div class="task-item" data-id="{{ task.id }}">
+                                    <input type="checkbox" class="task-checkbox">
+                                    <div class="task-info">
+                                        <span class="task-title">{{ task.title }}</span>
+                                        {% if task.due_date %}
+                                        <span class="task-due-date">📅 {{ task.due_date|date:"M d" }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="empty-agenda-box">
+                                    <p>All caught up!</p>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </section>
 
-                    <section class="agenda-section glass-card">
-                        <div class="section-header">
-                            <h2>Mini Agenda</h2>
-                        </div>
-                        <div class="event-list">
-                            {% for event in upcoming_events %}
-                            <div class="event-card">
-                                <div class="event-time">
-                                    <span>{{ event.event_time|time:"H:i" }}</span>
-                                    <span class="event-date-sub">{{ event.date|date:"M d" }}</span>
-                                </div>
-                                <div class="event-details">
-                                    <h3>{{ event.title }}</h3>
-                                    {% if event.location %}<p>{{ event.location }}</p>{% endif %}
-                                </div>
+                        <div class="dashboard-sub-card">
+                            <div class="section-header">
+                                <h2>Mini Agenda</h2>
                             </div>
-                            {% empty %}
-                            <p class="empty-state">No upcoming events</p>
-                            {% endfor %}
+                            <div class="event-list">
+                                {% for event in upcoming_events %}
+                                <div class="event-card">
+                                    <div class="event-time">
+                                        <span>{{ event.event_time|time:"H:i" }}</span>
+                                        <span class="event-date-sub">{{ event.date|date:"M d" }}</span>
+                                    </div>
+                                    <div class="event-details">
+                                        <h3>{{ event.title }}</h3>
+                                        {% if event.location %}<p>{{ event.location }}</p>{% endif %}
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="empty-agenda-box">
+                                    <p>No events scheduled.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
 
                 <!-- Diary removed to dedicated page -->
             </div>
