@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
     <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -219,7 +219,7 @@
                     </div>
                 </section>
 
-                <div class="dashboard-side-column">
+                <div class="dashboard-side-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; align-items: stretch; width: 100%;">
                     <section class="reminders-section glass-card">
                         <div class="section-header">
                             <h2>Quick Reminders</h2>

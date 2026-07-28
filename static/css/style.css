@@ -450,9 +450,22 @@ body {
 }
 
 .content-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
+}
+
+.dashboard-side-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: stretch;
+}
+
+@media (max-width: 900px) {
+    .dashboard-side-column {
+        grid-template-columns: 1fr;
+    }
 }
 
 h2 {
