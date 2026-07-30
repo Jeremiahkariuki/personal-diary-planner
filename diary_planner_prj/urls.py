@@ -43,8 +43,14 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
 ]
 
+from django.urls import re_path
+from django.views.static import serve
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 elif not getattr(settings, '_use_r2', False):
-    # In production without R2 enabled, still serve local media (fallback)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # In production without R2 enabled, serve local media using django.views.static.serve
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
+
