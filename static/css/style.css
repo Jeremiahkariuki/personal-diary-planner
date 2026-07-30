@@ -260,6 +260,27 @@ body {
     height: 20px;
 }
 
+.avatar-initial {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    user-select: none;
+}
+
+.avatar-sm-initial {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    user-select: none;
+}
+
+
 .dropdown-menu {
     position: absolute;
     top: calc(100% + 12px);
