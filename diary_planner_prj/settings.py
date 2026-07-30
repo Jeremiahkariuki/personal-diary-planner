@@ -197,7 +197,6 @@ SITE_DOMAIN = RENDER_EXTERNAL_HOSTNAME or os.getenv('SITE_DOMAIN', '127.0.0.1:80
 SITE_NAME = os.getenv('SITE_NAME', 'Jdiary Planner')
 
 # Cloud Storage Configuration (Cloudflare R2 / S3)
-USE_R2 = os.getenv('USE_R2', 'False').strip().lower() in ('true', '1', 'yes')
 AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY', '')
 AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', '')
@@ -208,7 +207,9 @@ AWS_S3_FILE_OVERWRITE = True
 AWS_S3_SIGNATURE_VERSION = 's3v4'  # Required for R2
 AWS_QUERYSTRING_AUTH = False  # Use public URLs (no signed URLs by default)
 
-_use_r2 = USE_R2 and bool(AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID)
+_has_r2_creds = bool(AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
+USE_R2 = os.getenv('USE_R2', 'True' if _has_r2_creds else 'False').strip().lower() in ('true', '1', 'yes')
+_use_r2 = USE_R2 and _has_r2_creds
 
 # Django 5.x STORAGES configuration
 STORAGES = {
@@ -221,6 +222,7 @@ STORAGES = {
 }
 
 if _use_r2:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     if AWS_S3_CUSTOM_DOMAIN:
         # Use your public R2 custom domain (e.g. media.yourdomain.com or pub-xxx.r2.dev)
         MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
