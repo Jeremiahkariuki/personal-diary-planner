@@ -200,9 +200,10 @@
                     <button id="profileBtn" class="profile-btn" title="Account">
                         <div class="avatar">
                             {% if profile.avatar %}
-                                <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                            <img src="{{ profile.avatar.url }}" alt="Avatar"
+                                style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                             {% else %}
-                                <span class="avatar-initial">{{ user.username|first }}</span>
+                            <span class="avatar-initial">{{ user.username|first }}</span>
                             {% endif %}
                         </div>
                     </button>
@@ -210,9 +211,10 @@
                         <div class="dropdown-header">
                             <div class="avatar-sm">
                                 {% if profile.avatar %}
-                                    <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                <img src="{{ profile.avatar.url }}" alt="Avatar"
+                                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                                 {% else %}
-                                    <span class="avatar-sm-initial">{{ user.username|first }}</span>
+                                <span class="avatar-sm-initial">{{ user.username|first }}</span>
                                 {% endif %}
                             </div>
                             <div class="user-info">
@@ -289,7 +291,7 @@
 
             <section class="stats-summary">
                 <div class="glass-card stat-item">
-                    <span class="label">Total Entries</span>
+                    <span class="label">Total Entrie</span>
                     <span class="value">{{ entry_count }}</span>
                 </div>
                 <div class="glass-card stat-item">
