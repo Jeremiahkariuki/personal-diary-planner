@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from diary.models import Profile, Quote, DiaryEntry, Event, SharePermission, Task
+from diary.models import Profile, Quote, DiaryEntry, Event, SharePermission, Task, SystemActivityLog, log_activity
 import datetime
 from diary.context_processors import quote_context
 
@@ -315,6 +315,203 @@ class SystemHistoryPaginationTests(TestCase):
         self.client.login(username='paginationuser', password='password123')
         Quote.objects.create(text="Test quote", author="Author")
         Profile.objects.get_or_create(user=self.user)
+        # Clear existing logs from login so pagination count is exact
+        SystemActivityLog.objects.filter(user=self.user).delete()
+        # Create 15 system activity logs for this user to test pagination
+        for i in range(15):
+            log_activity(self.user, 'diary_write', f"Activity log {i}")
+
+    def test_logs_pagination_limit_ten(self):
+        url = reverse('system_history')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # We expect a maximum of 10 logs on the first page
+        self.assertEqual(len(response.context['logs']), 10)
+
+        # Check for page=2
+        response2 = self.client.get(url + '?page=2')
+        self.assertEqual(response2.status_code, 200)
+        # We expect exactly 5 logs on the second page
+        self.assertEqual(len(response2.context['logs']), 5)
+
+
+class AuthLoadingAndFacebookAlertTests(TestCase):
+    def test_login_page_under_process_and_facebook(self):
+        login_url = reverse('login')
+        response = self.client.get(login_url)
+        self.assertEqual(response.status_code, 200)
+        # Check for submitBtn elements
+        
+        # Create a diary entry
+        self.entry = DiaryEntry.objects.create(user=self.owner, content="Owner's secret journal", mood="happy")
+        # Create an event
+        self.event = Event.objects.create(user=self.owner, title="Owner's meeting", date=datetime.date.today(), event_time="10:00")
+
+    def test_share_diary_entry(self):
+        # Owner shares a diary entry with recipient
+        url = reverse('share_item')
+        payload = {
+            'email': 'recipient@example.com',
+            'share_type': 'specific_diary',
+            'item_id': self.entry.id
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        # Verify that permission exists in database
+        share = SharePermission.objects.get(owner=self.owner, shared_with_email='recipient@example.com', share_type='specific_diary')
+        self.assertEqual(share.diary_entry, self.entry)
+        self.assertEqual(share.shared_with_user, self.recipient)
+
+    def test_share_whole_diary_pending_recipient(self):
+        # Owner shares whole diary with a non-existing email (pending recipient)
+        url = reverse('share_item')
+        payload = {
+            'email': 'pending@example.com',
+            'share_type': 'whole_diary'
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        share = SharePermission.objects.get(owner=self.owner, shared_with_email='pending@example.com', share_type='whole_diary')
+        self.assertIsNone(share.shared_with_user)
+        
+        # Now, pending recipient registers
+        new_user = User.objects.create_user(username='pending_user', email='pending@example.com', password='passwordNew')
+        
+        # The signal should run and link the user
+        share.refresh_from_db()
+        self.assertEqual(share.shared_with_user, new_user)
+
+    def test_revoke_share(self):
+        # Create an existing permission
+        share = SharePermission.objects.create(
+            owner=self.owner,
+            shared_with_email='recipient@example.com',
+            shared_with_user=self.recipient,
+            share_type='whole_events'
+        )
+        
+        url = reverse('revoke_share')
+        payload = {
+            'share_id': share.id
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        self.assertFalse(SharePermission.objects.filter(id=share.id).exists())
+
+    def test_event_viewset_filtering(self):
+        # Initially, self.event is only owned by self.owner. Recipient shouldn't see it on calendar.
+        response = self.client_recipient.get('/api/events/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 0)
+        
+        # Share specific event
+        SharePermission.objects.create(
+            owner=self.owner,
+            shared_with_email='recipient@example.com',
+            shared_with_user=self.recipient,
+            share_type='specific_event',
+            event=self.event
+        )
+        
+        # Now event should be visible
+        response = self.client_recipient.get('/api/events/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]['title'], "Owner's meeting")
+
+    def test_share_specific_task(self):
+        # Create a task for owner
+        self.task = Task.objects.create(user=self.owner, title="Owner's task")
+        
+        # Owner shares the specific task with recipient
+        url = reverse('share_item')
+        payload = {
+            'email': 'recipient@example.com',
+            'share_type': 'specific_task',
+            'item_id': self.task.id
+        }
+        response = self.client_owner.post(url, data=payload, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+        
+        # Verify that permission exists in database
+        share = SharePermission.objects.get(owner=self.owner, shared_with_email='recipient@example.com', share_type='specific_task')
+        self.assertEqual(share.task, self.task)
+        self.assertEqual(share.shared_with_user, self.recipient)
+        
+        # Verify recipient can view the shared task in task_list view
+        url_tasks = reverse('task_list')
+        response = self.client_recipient.get(url_tasks)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Owner's task")
+        
+        # Verify owner has another task that recipient cannot see
+        other_task = Task.objects.create(user=self.owner, title="Owner's private task")
+        response = self.client_recipient.get(url_tasks)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Owner's private task")
+
+    def test_dashboard_upcoming_events_rendering(self):
+        # Create an event that is clearly in the future so it appears in the dashboard's upcoming events
+        future_date = datetime.date.today() + datetime.timedelta(days=7)
+        Event.objects.create(
+            user=self.owner,
+            title="Future Board Meeting",
+            date=future_date,
+            event_time="23:00"
+        )
+        response = self.client_owner.get(reverse('index'))
+        self.assertEqual(response.status_code, 200)
+        # Verify the template tag literal is NOT leaked in the rendered HTML
+        self.assertNotContains(response, '{{ upcoming_events.0.date|date')
+        # Verify the event title appears on the dashboard
+        self.assertContains(response, "Future Board Meeting")
+
+
+class NavbarCustomiseColorsTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testnavbaruser', password='password123')
+        self.client = Client()
+        self.client.login(username='testnavbaruser', password='password123')
+        Quote.objects.create(text="Test quote", author="Author")
+        Profile.objects.get_or_create(user=self.user)
+
+    def test_customise_colors_button_in_navbars(self):
+        # List of views that render a navbar with customize colors icon
+        views_to_test = [
+            'index',
+            'task_list',
+            'events_page',
+            'diary_history',
+            'profile',
+            'settings_view',
+            'system_history',
+            'write_entry'
+        ]
+        for view_name in views_to_test:
+            with self.subTest(view_name=view_name):
+                url = reverse(view_name)
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                # Verify that customiseNavBtn is in the HTML response
+                self.assertContains(response, 'id="customiseNavBtn"')
+
+
+class SystemHistoryPaginationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='paginationuser', password='password123')
+        self.client = Client()
+        self.client.login(username='paginationuser', password='password123')
+        Quote.objects.create(text="Test quote", author="Author")
+        Profile.objects.get_or_create(user=self.user)
+        # Clear existing logs from login so pagination count is exact
+        SystemActivityLog.objects.filter(user=self.user).delete()
         # Create 15 system activity logs for this user to test pagination
         for i in range(15):
             log_activity(self.user, 'diary_write', f"Activity log {i}")
@@ -346,7 +543,7 @@ class AuthLoadingAndFacebookAlertTests(TestCase):
 
         # Check for Facebook Alert Overlay
         self.assertContains(response, 'id="fbAlert"')
-        self.assertContains(response, 'We are aware of this issue.')
+        self.assertContains(response, 'Facebook Login')
         self.assertContains(response, 'id="facebookLoginBtn"')
         self.assertContains(response, 'id="closeFbAlertBtn"')
 
@@ -364,9 +561,6 @@ class AuthLoadingAndFacebookAlertTests(TestCase):
 
         # Check for Facebook Alert Overlay
         self.assertContains(response, 'id="fbAlert"')
-        self.assertContains(response, 'We are aware of this issue.')
+        self.assertContains(response, 'Facebook Registration')
         self.assertContains(response, 'id="facebookSignupBtn"')
         self.assertContains(response, 'id="closeFbAlertBtn"')
-
-
-

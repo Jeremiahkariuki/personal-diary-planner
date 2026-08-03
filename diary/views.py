@@ -1012,11 +1012,40 @@ def revoke_share(request):
         try:
             data = json.loads(request.body)
             share_id = data.get('share_id')
-            share = SharePermission.objects.filter(owner=request.user, id=share_id).first()
-            if not share:
-                return JsonResponse({'error': 'Share permission not found or unauthorized.'}, status=404)
-            share.delete()
-            return JsonResponse({'status': 'ok'})
+            entry_id = data.get('entry_id')
+
+            if share_id:
+                share = SharePermission.objects.filter(
+                    Q(owner=request.user) | Q(shared_with_user=request.user) | Q(shared_with_email=request.user.email),
+                    id=share_id
+                ).first()
+                if not share:
+                    return JsonResponse({'error': 'Share permission not found or unauthorized.'}, status=404)
+                share.delete()
+                return JsonResponse({'status': 'ok'})
+
+            if entry_id:
+                shares = SharePermission.objects.filter(
+                    Q(shared_with_user=request.user) | Q(shared_with_email=request.user.email) | Q(owner=request.user),
+                    diary_entry_id=entry_id
+                )
+                if shares.exists():
+                    shares.delete()
+                    return JsonResponse({'status': 'ok'})
+
+                target_entry = DiaryEntry.objects.filter(id=entry_id).first()
+                if target_entry:
+                    whole_shares = SharePermission.objects.filter(
+                        owner=target_entry.user,
+                        share_type='whole_diary'
+                    ).filter(
+                        Q(shared_with_user=request.user) | Q(shared_with_email=request.user.email)
+                    )
+                    if whole_shares.exists():
+                        whole_shares.delete()
+                        return JsonResponse({'status': 'ok'})
+
+            return JsonResponse({'error': 'Share permission not found or unauthorized.'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Method not allowed.'}, status=405)

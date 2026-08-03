@@ -601,9 +601,18 @@
                                 <span class="mood-text"
                                     style="font-weight: 600; font-size: 0.85rem;">{{entry.mood|title}}</span>
                             </div>
-                            <span
-                                style="font-size: 0.85rem; opacity: 0.9; color: var(--accent-primary); font-weight: 600;">Shared
-                                by: {{ entry.user.username }}</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span
+                                    style="font-size: 0.85rem; opacity: 0.9; color: var(--accent-primary); font-weight: 600;">Shared
+                                    by: {{ entry.user.username }}</span>
+                                <button class="delete-shared-btn" title="Remove Shared Entry" data-id="{{entry.id}}"
+                                    style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 8px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="history-date"
                             style="color: var(--text-secondary); font-weight: 500; font-size: 0.85rem; margin-bottom: 5px;">
@@ -769,6 +778,47 @@
                         tabMyJournal.classList.remove('active');
                         myJournalGrid.style.display = 'none';
                         sharedJournalsGrid.style.display = 'block';
+                    });
+                }
+
+                if (sharedJournalsGrid) {
+                    sharedJournalsGrid.addEventListener('click', async (e) => {
+                        const deleteBtn = e.target.closest('.delete-shared-btn');
+                        if (!deleteBtn) return;
+                        const card = deleteBtn.closest('.history-card');
+                        const entryId = deleteBtn.dataset.id;
+                        if (await showConfirmModal('Remove Shared Entry', 'Are you sure you want to remove this shared entry from your view?')) {
+                            try {
+                                const response = await fetch("{% url 'revoke_share' %}", {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': csrfToken
+                                    },
+                                    body: JSON.stringify({ entry_id: entryId })
+                                });
+                                const data = await response.json();
+                                if (response.ok && data.status === 'ok') {
+                                    card.style.opacity = '0';
+                                    card.style.transform = 'scale(0.8)';
+                                    setTimeout(() => {
+                                        card.remove();
+                                        const grid = sharedJournalsGrid.querySelector('.history-grid');
+                                        if (!grid || grid.children.length === 0) {
+                                            sharedJournalsGrid.innerHTML = `
+                                                <div class="glass-card" style="padding: 4rem 2rem; text-align: center;">
+                                                    <p style="font-size: 1.1rem; color: var(--text-secondary);">No shared entries found.</p>
+                                                </div>
+                                            `;
+                                        }
+                                    }, 300);
+                                } else {
+                                    alert(data.error || 'Failed to remove shared entry.');
+                                }
+                            } catch (err) {
+                                console.error('Error:', err);
+                            }
+                        }
                     });
                 }
 
