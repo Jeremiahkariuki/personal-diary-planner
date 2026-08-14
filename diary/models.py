@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import date
+import uuid
 
 class Tag(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tags')
@@ -78,6 +79,7 @@ class Profile(models.Model):
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     custom_quote = models.TextField(blank=True, null=True)
     custom_quote_author = models.CharField(max_length=200, blank=True, null=True)
+    calendar_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
         return f"Profile for {self.user.username}"

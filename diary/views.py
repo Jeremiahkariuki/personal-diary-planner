@@ -4,6 +4,7 @@ from django.db.models import Q, Count
 from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.template.loader import get_template
@@ -174,7 +175,16 @@ def task_list(request):
         'my_shared_tasks': my_shared_tasks,
     })
 
-# --- API ViewSets ---
+@login_required
+@require_POST
+def clear_pending_tasks(request):
+    """Delete all pending (non-completed) tasks belonging to the logged-in user."""
+    deleted_count, _ = Task.objects.filter(user=request.user, completed=False).delete()
+    log_activity(request.user, 'task_view', f'Cleared {deleted_count} pending task(s)')
+    from django.http import JsonResponse
+    return JsonResponse({'status': 'ok', 'deleted': deleted_count})
+
+
 
 class DiaryEntryViewSet(viewsets.ModelViewSet):
     serializer_class = DiaryEntrySerializer
@@ -1050,3 +1060,13 @@ def revoke_share(request):
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Method not allowed.'}, status=405)
 
+import uuid
+from django.shortcuts import redirect
+from django.contrib import messages
+
+@login_required
+def regenerate_calendar_token(request):
+    request.user.profile.calendar_token = uuid.uuid4()
+    request.user.profile.save()
+    messages.success(request, "Calendar feed URL has been regenerated.")
+    return redirect('settings_view')

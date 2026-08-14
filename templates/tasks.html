@@ -460,6 +460,45 @@
         </div>
     </div>
 
+    <!-- Confirm Modal (used by app.js showConfirmModal for delete/clear actions) -->
+    <div id="confirmModal" class="modal-overlay hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(14px); z-index:1200; display:flex; align-items:center; justify-content:center;">
+        <div class="glass-card modal-content confirm-modal"
+            style="max-width:420px; width:90%; padding:2.4rem 2.2rem; text-align:center; border:1px solid rgba(255,255,255,0.13); background:rgba(12,17,36,0.88); border-radius:22px; box-shadow:0 30px 70px rgba(0,0,0,0.6); animation:confirmSlideUp 0.25s ease;">
+            <!-- Icon -->
+            <div style="width:60px; height:60px; border-radius:50%; background:rgba(239,68,68,0.12); border:2px solid rgba(239,68,68,0.3); display:flex; align-items:center; justify-content:center; margin:0 auto 1.3rem; animation:confirmPulse 2s ease infinite;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <h2 id="confirmTitle" style="font-size:1.25rem; font-weight:700; color:var(--text-primary); margin:0 0 0.6rem;">Confirm Action</h2>
+            <p id="confirmMessage" style="color:var(--text-secondary); font-size:0.92rem; line-height:1.65; margin:0 0 2rem;">Are you sure you want to proceed?</p>
+            <div class="confirm-actions" style="display:flex; gap:0.75rem; justify-content:center;">
+                <button id="cancelConfirmBtn"
+                    style="flex:1; max-width:130px; padding:0.7rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:var(--text-primary); font-size:0.9rem; font-weight:500; cursor:pointer; transition:background 0.2s;"
+                    onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">Cancel</button>
+                <button id="okConfirmBtn"
+                    style="flex:1; max-width:150px; padding:0.7rem 1rem; border-radius:12px; border:none; background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; font-size:0.9rem; font-weight:600; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 16px rgba(239,68,68,0.35);"
+                    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(239,68,68,0.5)'"
+                    onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(239,68,68,0.35)'">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        #confirmModal.hidden { display: none !important; }
+        @keyframes confirmSlideUp {
+            from { opacity:0; transform:translateY(18px) scale(0.97); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+        @keyframes confirmPulse {
+            0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.2); }
+            50%      { box-shadow:0 0 0 8px rgba(239,68,68,0); }
+        }
+    </style>
+
     <script>
         (function () {
             const CSRF = '{{ csrf_token }}';

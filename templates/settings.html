@@ -405,6 +405,33 @@
                     <button type="submit" class="add-btn primary-btn">Change Password</button>
                 </form>
             </section>
+            <section class="settings-section glass-card" id="calendarIntegrationSection">
+                <h2>External Calendar Integration</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Subscribe to your tasks and events feed in Google Calendar, Apple Calendar, or Outlook. This feed is read-only.</p>
+                
+                <div class="input-group">
+                    <label>Your Personal Calendar URL</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}{% url 'calendar_feed' user.profile.calendar_token %}" id="calendarFeedUrl" style="flex-grow: 1; opacity: 0.8;">
+                        <button type="button" class="add-btn primary-btn" style="width: auto;" onclick="copyCalendarUrl()">Copy URL</button>
+                    </div>
+                </div>
+                
+                <form action="{% url 'regenerate_calendar_token' %}" method="post" onsubmit="return confirm('Are you sure? This will invalidate the previous URL and you will need to update your calendar apps.');">
+                    {% csrf_token %}
+                    <button type="submit" class="add-btn" style="width: auto; border: 1px solid var(--glass-border); padding: 0.6rem 1.4rem;">Regenerate Token</button>
+                </form>
+
+                <script>
+                    function copyCalendarUrl() {
+                        var copyText = document.getElementById("calendarFeedUrl");
+                        copyText.select();
+                        copyText.setSelectionRange(0, 99999);
+                        navigator.clipboard.writeText(copyText.value);
+                        alert("Calendar feed URL copied to clipboard!");
+                    }
+                </script>
+            </section>
             <section class="settings-section glass-card" id="customiseSection">
                 <h2>Customise</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Personalise your Jdiary experience by

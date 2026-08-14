@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from diary import views
+from diary.feeds import CalendarFeed
 
 # DRF Router for API endpoints
 router = DefaultRouter()
@@ -24,6 +25,8 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('settings/', views.settings_view, name='settings_view'),
     path('tasks/', views.task_list, name='task_list'),
+    path('tasks/clear/', views.clear_pending_tasks, name='clear_pending_tasks'),
+
     path('events/', views.events_page, name='events_page'),
     path('diary/history/', views.diary_history, name='diary_history'),
     path('diary/write/', views.write_entry, name='write_entry'),
@@ -35,6 +38,10 @@ urlpatterns = [
     path('share/create/', views.share_item, name='share_item'),
     path('share/revoke/', views.revoke_share, name='revoke_share'),
     path('share/update/', views.update_share, name='update_share'),
+
+    # Calendar Integration
+    path('feed/calendar/<uuid:token>/', CalendarFeed(), name='calendar_feed'),
+    path('settings/regenerate-calendar-token/', views.regenerate_calendar_token, name='regenerate_calendar_token'),
 
     # REST API Endpoints
     path('api/', include(router.urls)),
