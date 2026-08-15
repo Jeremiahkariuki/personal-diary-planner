@@ -207,4 +207,57 @@ class Reminder(models.Model):
         return f"Reminder for {self.user.username} - {target} at {self.reminder_time.strftime('%Y-%m-%d %H:%M')}"
 
 
+class UserStreak(models.Model):
+    """Tracks a user's daily journaling streak."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='streak')
+    current_streak = models.PositiveIntegerField(default=0)
+    longest_streak = models.PositiveIntegerField(default=0)
+    last_entry_date = models.DateField(null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.user.username} — streak: {self.current_streak} days"
+
+    def update(self, entry_date):
+        """Update streak based on the date of a new diary entry."""
+        from datetime import timedelta
+        today = entry_date
+        if self.last_entry_date is None:
+            self.current_streak = 1
+        elif today == self.last_entry_date:
+            # Already journaled today, no change
+            pass
+        elif today == self.last_entry_date + timedelta(days=1):
+            # Consecutive day
+            self.current_streak += 1
+        else:
+            # Streak broken
+            self.current_streak = 1
+        self.last_entry_date = today
+        if self.current_streak > self.longest_streak:
+            self.longest_streak = self.current_streak
+        self.save()
+
+
+class Badge(models.Model):
+    """Defines an achievable badge."""
+    key = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=255)
+    emoji = models.CharField(max_length=10, default='🏅')
+
+    def __str__(self):
+        return f"{self.emoji} {self.name}"
+
+
+class UserBadge(models.Model):
+    """A badge earned by a user."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='earned_badges')
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name='earned_by')
+    earned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'badge')
+        ordering = ['-earned_at']
+
+    def __str__(self):
+        return f"{self.user.username} earned {self.badge.name}"

@@ -1,5 +1,5 @@
 import random
-from diary.models import Profile, Quote
+from diary.models import Profile, Quote, UserStreak, UserBadge
 
 def quote_context(request):
     if not request.user.is_authenticated:
@@ -23,9 +23,20 @@ def quote_context(request):
             quote_author = ''
         quote_is_custom = False
 
+    # Streak
+    try:
+        user_streak = request.user.streak
+    except UserStreak.DoesNotExist:
+        user_streak = None
+
+    # Recently earned badges (last 3)
+    recent_badges = list(UserBadge.objects.filter(user=request.user).select_related('badge')[:3])
+
     return {
         'quote_text': quote_text,
         'quote_author': quote_author,
         'quote_is_custom': quote_is_custom,
         'profile': profile,
+        'user_streak': user_streak,
+        'recent_badges': recent_badges,
     }

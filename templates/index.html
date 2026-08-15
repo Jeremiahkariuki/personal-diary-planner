@@ -266,6 +266,36 @@
                 </section>
 
                 <!-- Diary removed to dedicated page -->
+
+                <!-- ── Streak & Badges Widget ── -->
+                <section class="glass-card" style="margin-top:1.5rem;">
+                    <div class="section-header">
+                        <h2>🏆 Streak & Achievements</h2>
+                        <a href="{% url 'achievements' %}" class="text-btn">View All</a>
+                    </div>
+                    <div style="display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap; margin-bottom:{% if recent_badges %}1.2rem{% else %}0{% endif %};">
+                        <!-- Streak Counter -->
+                        <div style="display:flex; align-items:center; gap:0.6rem; background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.08)); border:1px solid rgba(251,146,60,0.3); border-radius:14px; padding:0.9rem 1.4rem;">
+                            <span style="font-size:2rem;">🔥</span>
+                            <div>
+                                <div style="font-size:1.8rem;font-weight:700;color:#fb923c;line-height:1;">{{ user_streak.current_streak|default:0 }}</div>
+                                <div style="font-size:0.78rem;color:var(--text-secondary);">day streak</div>
+                            </div>
+                        </div>
+                        <!-- Recent Badges -->
+                        {% for ub in recent_badges %}
+                        <div style="display:flex;align-items:center;gap:0.5rem;background:var(--glass-bg);border:1px solid var(--accent-primary);border-radius:12px;padding:0.7rem 1rem;" title="{{ ub.badge.description }}">
+                            <span style="font-size:1.5rem;">{{ ub.badge.emoji }}</span>
+                            <div>
+                                <div style="font-size:0.85rem;font-weight:600;">{{ ub.badge.name }}</div>
+                                <div style="font-size:0.72rem;color:var(--text-secondary);">{{ ub.earned_at|date:"M j" }}</div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div style="color:var(--text-secondary);font-size:0.9rem;">Write your first diary entry to start earning badges!</div>
+                        {% endfor %}
+                    </div>
+                </section>
             </div>
         </main>
     </div>

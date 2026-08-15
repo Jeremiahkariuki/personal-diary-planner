@@ -13,7 +13,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.models import User
-from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog, SharePermission, log_activity, Reminder
+from .models import DiaryEntry, Task, Event, Profile, Quote, SystemActivityLog, SharePermission, log_activity, Reminder, Badge, UserBadge, UserStreak
 from .serializers import (
     DiaryEntrySerializer, TaskSerializer, EventSerializer, 
     UserSerializer, QuoteSerializer, ReminderSerializer
@@ -1070,3 +1070,43 @@ def regenerate_calendar_token(request):
     request.user.profile.save()
     messages.success(request, "Calendar feed URL has been regenerated.")
     return redirect('settings_view')
+
+
+@login_required
+def badges_view(request):
+    """Display all badges and the user's earned achievements."""
+    from .badges import BADGE_CATALOGUE, ensure_badges, evaluate_and_award
+    ensure_badges()
+
+    # Re-evaluate on page load to catch any missed badges (e.g. completed tasks)
+    evaluate_and_award(request.user)
+
+    all_badges = Badge.objects.all()
+    earned_keys = set(
+        UserBadge.objects.filter(user=request.user).values_list('badge__key', flat=True)
+    )
+    earned_badges = UserBadge.objects.filter(user=request.user).select_related('badge').order_by('-earned_at')
+
+    # Streak info
+    try:
+        streak = request.user.streak
+    except UserStreak.DoesNotExist:
+        streak = None
+
+    # Next streak milestone
+    current = streak.current_streak if streak else 0
+    milestones = [3, 7, 14, 30, 60, 100]
+    next_milestone = next((m for m in milestones if m > current), None)
+    streak_progress = int((current / next_milestone * 100)) if next_milestone else 100
+
+    context = {
+        'all_badges': all_badges,
+        'earned_keys': earned_keys,
+        'earned_badges': earned_badges,
+        'streak': streak,
+        'next_milestone': next_milestone,
+        'streak_progress': streak_progress,
+        'total_earned': len(earned_keys),
+        'total_badges': all_badges.count(),
+    }
+    return render(request, 'achievements.html', context)

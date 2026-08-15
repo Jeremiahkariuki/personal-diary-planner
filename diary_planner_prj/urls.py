@@ -43,6 +43,9 @@ urlpatterns = [
     path('feed/calendar/<uuid:token>/', CalendarFeed(), name='calendar_feed'),
     path('settings/regenerate-calendar-token/', views.regenerate_calendar_token, name='regenerate_calendar_token'),
 
+    # Gamification & Achievements
+    path('achievements/', views.badges_view, name='achievements'),
+
     # REST API Endpoints
     path('api/', include(router.urls)),
 

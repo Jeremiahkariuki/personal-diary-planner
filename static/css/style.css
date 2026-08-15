@@ -230,6 +230,36 @@ body {
     position: relative;
 }
 
+/* ── Streak badge in navbar ── */
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, rgba(251,146,60,0.25), rgba(239,68,68,0.15));
+    border: 1px solid rgba(251,146,60,0.4);
+    color: #fb923c;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    letter-spacing: 0.3px;
+    animation: streakPulse 2.5s ease-in-out infinite;
+}
+
+.streak-badge:hover {
+    background: linear-gradient(135deg, rgba(251,146,60,0.4), rgba(239,68,68,0.3));
+    border-color: rgba(251,146,60,0.7);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(251,146,60,0.4);
+}
+
+@keyframes streakPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(251,146,60,0.3); }
+    50%       { box-shadow: 0 0 16px rgba(251,146,60,0.6); }
+}
+
 .profile-btn {
     background: transparent;
     border: none;
