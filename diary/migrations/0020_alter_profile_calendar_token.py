@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("diary", "0019_profile_calendar_token"),
+        ("diary", "0019_5_fix_calendar_token_duplicates"),
     ]
 
     operations = [
