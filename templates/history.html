@@ -60,6 +60,138 @@
             color: var(--accent-primary);
         }
 
+        /* ── Weekly AI Summary ── */
+        .ai-summary-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .ai-summary-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.6);
+        }
+
+        .ai-summary-btn:active { transform: translateY(0); }
+        .ai-summary-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none !important; }
+
+        .ai-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .ai-modal-content {
+            background: rgba(20, 24, 40, 0.92);
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(168, 85, 247, 0.25);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 620px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 2.2rem;
+            position: relative;
+            color: var(--text-primary);
+            animation: modalPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .ai-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-modal-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .ai-modal-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .ai-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .ai-summary-body { display: flex; flex-direction: column; gap: 1.5rem; }
+
+        .ai-section-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+        }
+
+        .ai-section-box h4 {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #c084fc;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-section-box p { font-size: 1rem; line-height: 1.65; color: var(--text-primary); }
+
+        .ai-themes-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.4rem; }
+
+        .ai-theme-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2));
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            color: #e9d5ff;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
         .analytics-row {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -434,7 +566,12 @@
                         {% if quote_author %}<span class="header-quote-author">— {{ quote_author }}</span>{% endif %}
                     </div>
                 </div>
-                <div class="header-stats">
+                <div class="header-stats" style="align-items: center;">
+                    <button type="button" id="weeklySummaryBtn" class="ai-summary-btn">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                        <span id="weeklyBtnText">Weekly AI Summary</span>
+                        <span class="ai-spinner" id="weeklySpinner" style="display:none;"></span>
+                    </button>
                     <div class="stat-pill glass-card">
                         <span class="stat-label">Total Entries</span>
                         <span class="stat-value">{{ total_entries }}</span>
@@ -646,6 +783,38 @@
                     <p style="font-size: 1.1rem; color: var(--text-secondary);">No shared entries found.</p>
                 </div>
                 {% endif %}
+            </div>
+        </div>
+
+        <!-- AI Weekly Summary Modal -->
+        <div class="ai-modal-overlay" id="aiSummaryModal">
+            <div class="ai-modal-content">
+                <div class="ai-modal-header">
+                    <div class="ai-modal-title">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                        Weekly AI Insights
+                    </div>
+                    <button type="button" class="ai-modal-close" id="closeSummaryModal">✕</button>
+                </div>
+                <p id="aiSummaryMeta" style="font-size:0.85rem; color:var(--text-secondary); margin-top:-10px; margin-bottom:1.5rem;"></p>
+                <div class="ai-summary-body">
+                    <div class="ai-section-box">
+                        <h4>📖 Overview</h4>
+                        <p id="aiOverviewText"></p>
+                    </div>
+                    <div class="ai-section-box">
+                        <h4>💡 Key Themes</h4>
+                        <div class="ai-themes-container" id="aiThemesContainer"></div>
+                    </div>
+                    <div class="ai-section-box">
+                        <h4>🌱 Emotional Journey</h4>
+                        <p id="aiMoodInsightText"></p>
+                    </div>
+                    <div class="ai-section-box">
+                        <h4>⭐ Key Highlight</h4>
+                        <p id="aiHighlightText"></p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1026,6 +1195,61 @@
                     setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
                 }
             })();
+
+            // ── AI Weekly Summary Logic ──
+            const weeklySummaryBtn = document.getElementById('weeklySummaryBtn');
+            const weeklyBtnText    = document.getElementById('weeklyBtnText');
+            const weeklySpinner    = document.getElementById('weeklySpinner');
+            const aiSummaryModal   = document.getElementById('aiSummaryModal');
+            const closeSummaryModal= document.getElementById('closeSummaryModal');
+
+            weeklySummaryBtn.addEventListener('click', async () => {
+                weeklySummaryBtn.disabled = true;
+                weeklyBtnText.textContent = 'Generating…';
+                if (weeklySpinner) weeklySpinner.style.display = 'inline-block';
+
+                try {
+                    const res = await fetch('{% url "ai_weekly_summary" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+                    });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        document.getElementById('aiSummaryMeta').textContent = `${data.date_range} • ${data.entry_count} entries analyzed`;
+                        document.getElementById('aiOverviewText').textContent = data.summary || '';
+                        document.getElementById('aiMoodInsightText').textContent = data.mood_insight || '';
+                        document.getElementById('aiHighlightText').textContent = data.highlight || '';
+
+                        const themesContainer = document.getElementById('aiThemesContainer');
+                        themesContainer.innerHTML = '';
+                        if (data.themes && data.themes.length) {
+                            data.themes.forEach(theme => {
+                                const pill = document.createElement('span');
+                                pill.className = 'ai-theme-pill';
+                                pill.textContent = '✨ ' + theme;
+                                themesContainer.appendChild(pill);
+                            });
+                        }
+                        aiSummaryModal.style.display = 'flex';
+                    } else {
+                        alert(data.error || 'Could not generate weekly summary.');
+                    }
+                } catch (err) {
+                    alert('Network error. Please try again.');
+                } finally {
+                    weeklySummaryBtn.disabled = false;
+                    weeklyBtnText.textContent = 'Weekly AI Summary';
+                    if (weeklySpinner) weeklySpinner.style.display = 'none';
+                }
+            });
+
+            closeSummaryModal.addEventListener('click', () => {
+                aiSummaryModal.style.display = 'none';
+            });
+            aiSummaryModal.addEventListener('click', (e) => {
+                if (e.target === aiSummaryModal) aiSummaryModal.style.display = 'none';
+            });
         </script>
 
     {% include 'partials/_footer.html' %}

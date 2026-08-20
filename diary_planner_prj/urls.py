@@ -46,6 +46,11 @@ urlpatterns = [
     # Gamification & Achievements
     path('achievements/', views.badges_view, name='achievements'),
 
+    # AI-Powered Features
+    path('ai/prompt/', views.generate_prompt, name='ai_generate_prompt'),
+    path('ai/weekly-summary/', views.weekly_summary, name='ai_weekly_summary'),
+    path('ai/suggest-tags/', views.suggest_tags, name='ai_suggest_tags'),
+
     # REST API Endpoints
     path('api/', include(router.urls)),
 
@@ -63,4 +68,5 @@ elif not getattr(settings, '_use_r2', False):
     urlpatterns += [
         re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     ]
+
 

@@ -1110,3 +1110,137 @@ def badges_view(request):
         'total_badges': all_badges.count(),
     }
     return render(request, 'achievements.html', context)
+
+
+# ─────────────────────────────────────────────
+# AI-Powered Features (Google Gemini)
+# ─────────────────────────────────────────────
+
+def _get_gemini_client():
+    """Return a configured Gemini GenerativeModel, or None if key is missing."""
+    import os
+    try:
+        import google.generativeai as genai
+        api_key = os.getenv('GEMINI_API_KEY', '')
+        if not api_key:
+            return None
+        genai.configure(api_key=api_key)
+        return genai.GenerativeModel('gemini-1.5-flash')
+    except Exception:
+        return None
+
+
+@login_required
+@require_POST
+def generate_prompt(request):
+    """Return a thoughtful journaling prompt from Gemini."""
+    model = _get_gemini_client()
+    if not model:
+        return JsonResponse({'error': 'AI not configured. Please add GEMINI_API_KEY to your environment.'}, status=503)
+
+    try:
+        response = model.generate_content(
+            "Generate a single, thoughtful and emotionally resonant journaling prompt for a personal diary app. "
+            "The prompt should encourage self-reflection, be open-ended, and feel warm and inviting. "
+            "Return ONLY the prompt question itself — no preamble, no quotes, no extra text. "
+            "Make it unique and inspiring, between 1-2 sentences."
+        )
+        prompt_text = response.text.strip().strip('"').strip("'")
+        return JsonResponse({'prompt': prompt_text})
+    except Exception as e:
+        return JsonResponse({'error': f'AI request failed: {str(e)}'}, status=500)
+
+
+@login_required
+@require_POST
+def weekly_summary(request):
+    """Summarise the user's last 7 days of diary entries using Gemini."""
+    model = _get_gemini_client()
+    if not model:
+        return JsonResponse({'error': 'AI not configured. Please add GEMINI_API_KEY to your environment.'}, status=503)
+
+    today = date.today()
+    week_ago = today - datetime.timedelta(days=7)
+    entries = DiaryEntry.objects.filter(
+        user=request.user,
+        created_at__date__gte=week_ago,
+        created_at__date__lte=today
+    ).order_by('created_at')
+
+    if not entries.exists():
+        return JsonResponse({'error': 'No diary entries found for the past week. Start journaling to get a summary!'}, status=404)
+
+    # Build a readable digest of entries
+    entries_text = ""
+    for entry in entries:
+        date_str = entry.created_at.strftime('%A, %B %d')
+        entries_text += f"\n--- {date_str} (mood: {entry.mood}) ---\n{entry.content[:800]}\n"
+
+    prompt = (
+        "You are a compassionate personal diary assistant. Analyze the following diary entries from the past week "
+        "and provide a warm, insightful summary. Structure your response as valid JSON with exactly these keys:\n"
+        '{"summary": "2-3 sentence narrative overview of the week", '
+        '"themes": ["theme1", "theme2", "theme3"], '
+        '"mood_insight": "1-2 sentence observation about the emotional journey this week", '
+        '"highlight": "The most significant moment or thought from the week in 1 sentence"}\n\n'
+        f"Diary entries:\n{entries_text}\n\n"
+        "Return ONLY the JSON object, nothing else."
+    )
+
+    try:
+        response = model.generate_content(prompt)
+        raw = response.text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'):
+                raw = raw[4:]
+        data = json.loads(raw.strip())
+        data['entry_count'] = entries.count()
+        data['date_range'] = f"{week_ago.strftime('%b %d')} – {today.strftime('%b %d, %Y')}"
+        return JsonResponse(data)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'AI returned an unexpected format. Please try again.'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': f'AI request failed: {str(e)}'}, status=500)
+
+
+@login_required
+@require_POST
+def suggest_tags(request):
+    """Suggest relevant tags for a diary entry based on its content."""
+    model = _get_gemini_client()
+    if not model:
+        return JsonResponse({'error': 'AI not configured.'}, status=503)
+
+    try:
+        data = json.loads(request.body)
+        content = data.get('content', '').strip()
+    except (json.JSONDecodeError, AttributeError):
+        content = request.POST.get('content', '').strip()
+
+    if len(content) < 20:
+        return JsonResponse({'tags': []})
+
+    prompt = (
+        "Analyze this diary entry and suggest 4-6 concise, relevant tags. "
+        "Tags should be single words or short hyphenated phrases (e.g. family, self-care, work, gratitude, travel). "
+        "Return ONLY a JSON array of tag strings, nothing else. Example: [\"gratitude\", \"family\", \"growth\"]\n\n"
+        f"Diary entry:\n{content[:1500]}"
+    )
+
+    try:
+        response = model.generate_content(prompt)
+        raw = response.text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'):
+                raw = raw[4:]
+        tags = json.loads(raw.strip())
+        if isinstance(tags, list):
+            tags = [str(t).lower().strip() for t in tags[:6]]
+        else:
+            tags = []
+        return JsonResponse({'tags': tags})
+    except Exception as e:
+        return JsonResponse({'tags': [], 'error': str(e)})

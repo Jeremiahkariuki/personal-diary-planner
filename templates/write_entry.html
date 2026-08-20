@@ -153,6 +153,183 @@
                 transform: translateY(0);
             }
         }
+
+        /* ── AI Features ── */
+        .ai-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .ai-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-btn-prompt {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
+        }
+
+        .ai-btn-prompt:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
+        }
+
+        .ai-btn-prompt:active { transform: translateY(0); }
+
+        .ai-btn-tags {
+            background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(14, 165, 233, 0.35);
+        }
+
+        .ai-btn-tags:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(14, 165, 233, 0.5);
+        }
+
+        .ai-btn-tags:active { transform: translateY(0); }
+
+        .ai-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .ai-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .ai-prompt-card {
+            display: none;
+            background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.08) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 16px;
+            padding: 18px 22px;
+            margin-bottom: 18px;
+            position: relative;
+            animation: fadeSlideIn 0.4s ease-out;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(-12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-prompt-card .ai-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #8b5cf6;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-prompt-card .prompt-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            font-style: italic;
+        }
+
+        .ai-prompt-card .use-prompt-btn {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            padding: 6px 14px;
+            background: rgba(99,102,241,0.2);
+            border: 1px solid rgba(99,102,241,0.4);
+            border-radius: 20px;
+            color: #a5b4fc;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .ai-prompt-card .use-prompt-btn:hover {
+            background: rgba(99,102,241,0.35);
+            color: #fff;
+        }
+
+        .ai-prompt-card .close-prompt {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .ai-prompt-card .close-prompt:hover { opacity: 1; }
+
+        .tag-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            min-height: 0;
+        }
+
+        .tag-chip {
+            padding: 5px 13px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(99,102,241,0.15));
+            border: 1px solid rgba(14,165,233,0.3);
+            color: #7dd3fc;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .tag-chip:hover {
+            background: linear-gradient(135deg, rgba(14,165,233,0.3), rgba(99,102,241,0.3));
+            border-color: rgba(14,165,233,0.6);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .tag-chip.added {
+            background: rgba(34,197,94,0.15);
+            border-color: rgba(34,197,94,0.4);
+            color: #86efac;
+        }
+
+        .ai-error-msg {
+            font-size: 0.82rem;
+            color: #f87171;
+            margin-top: 8px;
+            display: none;
+        }
     </style>
 </head>
 
@@ -342,14 +519,41 @@
                     <label for="moodStressed" title="Stressed">😫</label>
                 </div>
 
+                <!-- AI Toolbar -->
+                <div class="ai-toolbar">
+                    <button type="button" id="generatePromptBtn" class="ai-btn ai-btn-prompt">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                        <span class="btn-label">Generate Prompt</span>
+                        <span class="ai-spinner" id="promptSpinner"></span>
+                    </button>
+                    <button type="button" id="suggestTagsBtn" class="ai-btn ai-btn-tags">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        <span class="btn-label">Suggest Tags</span>
+                        <span class="ai-spinner" id="tagsSpinner"></span>
+                    </button>
+                </div>
+
+                <!-- AI Prompt Card -->
+                <div class="ai-prompt-card" id="aiPromptCard">
+                    <button type="button" class="close-prompt" id="closePromptCard" aria-label="Dismiss">✕</button>
+                    <div class="ai-badge">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                        AI Journaling Prompt
+                    </div>
+                    <p class="prompt-text" id="promptText"></p>
+                    <button type="button" class="use-prompt-btn" id="usePromptBtn">✍️ Use this prompt</button>
+                </div>
+
                 <div class="glass-card editor-card">
-                    <textarea name="content" class="diary-textarea" placeholder="How was your day? Start typing..."
+                    <textarea name="content" id="diaryContent" class="diary-textarea" placeholder="How was your day? Start typing..."
                         required>{{ entry.content }}</textarea>
 
                     <div class="tag-input-container">
                         <label style="font-size: 0.9rem; opacity: 0.7;">Tags (comma separated)</label>
-                        <input type="text" name="tags" class="tag-input"
+                        <input type="text" name="tags" id="tagsInput" class="tag-input"
                             placeholder="e.g. travel, thoughts, productivity" value="{{ existing_tags }}">
+                        <div class="tag-suggestions" id="tagSuggestions"></div>
+                        <p class="ai-error-msg" id="tagsError"></p>
                     </div>
 
                     <div class="image-upload-section">
@@ -404,6 +608,125 @@
                 }
             });
             form.addEventListener('submit', () => formChanged = false);
+
+            // ── AI: Generate Journaling Prompt ──
+            const generatePromptBtn = document.getElementById('generatePromptBtn');
+            const promptSpinner     = document.getElementById('promptSpinner');
+            const aiPromptCard      = document.getElementById('aiPromptCard');
+            const promptText        = document.getElementById('promptText');
+            const usePromptBtn      = document.getElementById('usePromptBtn');
+            const closePromptCard   = document.getElementById('closePromptCard');
+            const diaryContent      = document.getElementById('diaryContent');
+
+            function getCsrf() {
+                return document.querySelector('[name=csrfmiddlewaretoken]').value;
+            }
+
+            generatePromptBtn.addEventListener('click', async () => {
+                generatePromptBtn.disabled = true;
+                promptSpinner.style.display = 'block';
+                generatePromptBtn.querySelector('.btn-label').textContent = 'Generating…';
+                try {
+                    const res  = await fetch('{% url "ai_generate_prompt" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.prompt) {
+                        promptText.textContent = data.prompt;
+                        aiPromptCard.style.display = 'block';
+                    } else {
+                        alert(data.error || 'Could not generate a prompt. Try again.');
+                    }
+                } catch (err) {
+                    alert('Network error. Please try again.');
+                } finally {
+                    generatePromptBtn.disabled = false;
+                    promptSpinner.style.display = 'none';
+                    generatePromptBtn.querySelector('.btn-label').textContent = 'Generate Prompt';
+                }
+            });
+
+            usePromptBtn.addEventListener('click', () => {
+                const current = diaryContent.value.trim();
+                const insert  = promptText.textContent;
+                diaryContent.value = current
+                    ? current + '\n\n' + insert + '\n'
+                    : insert + '\n';
+                aiPromptCard.style.display = 'none';
+                diaryContent.focus();
+                formChanged = true;
+            });
+
+            closePromptCard.addEventListener('click', () => {
+                aiPromptCard.style.display = 'none';
+            });
+
+            // ── AI: Suggest Tags ──
+            const suggestTagsBtn  = document.getElementById('suggestTagsBtn');
+            const tagsSpinner     = document.getElementById('tagsSpinner');
+            const tagsInput       = document.getElementById('tagsInput');
+            const tagSuggestions  = document.getElementById('tagSuggestions');
+            const tagsError       = document.getElementById('tagsError');
+
+            suggestTagsBtn.addEventListener('click', async () => {
+                const content = diaryContent.value.trim();
+                if (content.length < 20) {
+                    tagsError.textContent = 'Write a bit more before suggesting tags.';
+                    tagsError.style.display = 'block';
+                    setTimeout(() => { tagsError.style.display = 'none'; }, 3000);
+                    return;
+                }
+                suggestTagsBtn.disabled = true;
+                tagsSpinner.style.display = 'block';
+                suggestTagsBtn.querySelector('.btn-label').textContent = 'Analysing…';
+                tagSuggestions.innerHTML = '';
+                tagsError.style.display = 'none';
+
+                try {
+                    const res  = await fetch('{% url "ai_suggest_tags" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content })
+                    });
+                    const data = await res.json();
+                    if (data.tags && data.tags.length) {
+                        renderTagChips(data.tags);
+                    } else {
+                        tagsError.textContent = data.error || 'No tags suggested. Try writing more.';
+                        tagsError.style.display = 'block';
+                    }
+                } catch (err) {
+                    tagsError.textContent = 'Network error. Please try again.';
+                    tagsError.style.display = 'block';
+                } finally {
+                    suggestTagsBtn.disabled = false;
+                    tagsSpinner.style.display = 'none';
+                    suggestTagsBtn.querySelector('.btn-label').textContent = 'Suggest Tags';
+                }
+            });
+
+            function renderTagChips(tags) {
+                tagSuggestions.innerHTML = '';
+                tags.forEach(tag => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'tag-chip';
+                    chip.textContent = '+ ' + tag;
+                    chip.addEventListener('click', () => {
+                        const current = tagsInput.value.trim();
+                        const existing = current ? current.split(',').map(t => t.trim()).filter(Boolean) : [];
+                        if (!existing.includes(tag)) {
+                            tagsInput.value = existing.length ? existing.join(', ') + ', ' + tag : tag;
+                            formChanged = true;
+                        }
+                        chip.classList.add('added');
+                        chip.textContent = '✓ ' + tag;
+                        chip.disabled = true;
+                    });
+                    tagSuggestions.appendChild(chip);
+                });
+            }
         </script>
         <script src="{% static 'js/theme.js' %}"></script>
         <script src="{% static 'js/app.js' %}?v=5"></script>

@@ -14,3 +14,4 @@ dj-database-url
 django-allauth[socialaccount]
 
 django-ical==1.9.2
+google-generativeai
