@@ -1128,9 +1128,21 @@ def _get_gemini_client():
             warnings.simplefilter("ignore", category=FutureWarning)
             import google.generativeai as genai
             genai.configure(api_key=api_key)
-            return genai.GenerativeModel('gemini-1.5-flash')
+            for model_name in ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash']:
+                try:
+                    return genai.GenerativeModel(model_name)
+                except Exception:
+                    continue
+            return genai.GenerativeModel('gemini-3.6-flash')
     except Exception:
         return None
+
+
+def _format_ai_error(e):
+    err_str = str(e)
+    if 'API_KEY_INVALID' in err_str or 'API key not valid' in err_str:
+        return 'Invalid Gemini API key. Please obtain a free API key at https://aistudio.google.com/ and update GEMINI_API_KEY in your .env file.'
+    return f'AI request failed: {err_str}'
 
 
 @login_required
@@ -1151,7 +1163,7 @@ def generate_prompt(request):
         prompt_text = response.text.strip().strip('"').strip("'")
         return JsonResponse({'prompt': prompt_text})
     except Exception as e:
-        return JsonResponse({'error': f'AI request failed: {str(e)}'}, status=500)
+        return JsonResponse({'error': _format_ai_error(e)}, status=500)
 
 
 @login_required
@@ -1205,7 +1217,7 @@ def weekly_summary(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'AI returned an unexpected format. Please try again.'}, status=500)
     except Exception as e:
-        return JsonResponse({'error': f'AI request failed: {str(e)}'}, status=500)
+        return JsonResponse({'error': _format_ai_error(e)}, status=500)
 
 
 @login_required
@@ -1246,4 +1258,4 @@ def suggest_tags(request):
             tags = []
         return JsonResponse({'tags': tags})
     except Exception as e:
-        return JsonResponse({'tags': [], 'error': str(e)})
+        return JsonResponse({'tags': [], 'error': _format_ai_error(e)})
