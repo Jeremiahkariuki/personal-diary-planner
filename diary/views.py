@@ -1119,13 +1119,16 @@ def badges_view(request):
 def _get_gemini_client():
     """Return a configured Gemini GenerativeModel, or None if key is missing."""
     import os
+    import warnings
     try:
-        import google.generativeai as genai
         api_key = os.getenv('GEMINI_API_KEY', '')
         if not api_key:
             return None
-        genai.configure(api_key=api_key)
-        return genai.GenerativeModel('gemini-1.5-flash')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            return genai.GenerativeModel('gemini-1.5-flash')
     except Exception:
         return None
 

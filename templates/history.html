@@ -1203,46 +1203,50 @@
             const aiSummaryModal   = document.getElementById('aiSummaryModal');
             const closeSummaryModal= document.getElementById('closeSummaryModal');
 
-            weeklySummaryBtn.addEventListener('click', async () => {
-                weeklySummaryBtn.disabled = true;
-                weeklyBtnText.textContent = 'Generating…';
-                if (weeklySpinner) weeklySpinner.style.display = 'inline-block';
+            if (weeklySummaryBtn) {
+                weeklySummaryBtn.addEventListener('click', async () => {
+                    const csrfToken = '{{ csrf_token }}';
+                    weeklySummaryBtn.disabled = true;
+                    weeklyBtnText.textContent = 'Generating…';
+                    if (weeklySpinner) weeklySpinner.style.display = 'inline-block';
 
-                try {
-                    const res = await fetch('{% url "ai_weekly_summary" %}', {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
-                    });
-                    const data = await res.json();
+                    try {
+                        const res = await fetch('{% url "ai_weekly_summary" %}', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+                        });
+                        const data = await res.json();
 
-                    if (res.ok) {
-                        document.getElementById('aiSummaryMeta').textContent = `${data.date_range} • ${data.entry_count} entries analyzed`;
-                        document.getElementById('aiOverviewText').textContent = data.summary || '';
-                        document.getElementById('aiMoodInsightText').textContent = data.mood_insight || '';
-                        document.getElementById('aiHighlightText').textContent = data.highlight || '';
+                        if (res.ok) {
+                            document.getElementById('aiSummaryMeta').textContent = `${data.date_range} • ${data.entry_count} entries analyzed`;
+                            document.getElementById('aiOverviewText').textContent = data.summary || '';
+                            document.getElementById('aiMoodInsightText').textContent = data.mood_insight || '';
+                            document.getElementById('aiHighlightText').textContent = data.highlight || '';
 
-                        const themesContainer = document.getElementById('aiThemesContainer');
-                        themesContainer.innerHTML = '';
-                        if (data.themes && data.themes.length) {
-                            data.themes.forEach(theme => {
-                                const pill = document.createElement('span');
-                                pill.className = 'ai-theme-pill';
-                                pill.textContent = '✨ ' + theme;
-                                themesContainer.appendChild(pill);
-                            });
+                            const themesContainer = document.getElementById('aiThemesContainer');
+                            themesContainer.innerHTML = '';
+                            if (data.themes && data.themes.length) {
+                                data.themes.forEach(theme => {
+                                    const pill = document.createElement('span');
+                                    pill.className = 'ai-theme-pill';
+                                    pill.textContent = '✨ ' + theme;
+                                    themesContainer.appendChild(pill);
+                                });
+                            }
+                            aiSummaryModal.style.display = 'flex';
+                        } else {
+                            alert(data.error || 'Could not generate weekly summary.');
                         }
-                        aiSummaryModal.style.display = 'flex';
-                    } else {
-                        alert(data.error || 'Could not generate weekly summary.');
+                    } catch (err) {
+                        console.error('AI Weekly Summary error:', err);
+                        alert(err.message || 'Could not generate summary. Please try again.');
+                    } finally {
+                        weeklySummaryBtn.disabled = false;
+                        weeklyBtnText.textContent = 'Weekly AI Summary';
+                        if (weeklySpinner) weeklySpinner.style.display = 'none';
                     }
-                } catch (err) {
-                    alert('Network error. Please try again.');
-                } finally {
-                    weeklySummaryBtn.disabled = false;
-                    weeklyBtnText.textContent = 'Weekly AI Summary';
-                    if (weeklySpinner) weeklySpinner.style.display = 'none';
-                }
-            });
+                });
+            }
 
             closeSummaryModal.addEventListener('click', () => {
                 aiSummaryModal.style.display = 'none';
