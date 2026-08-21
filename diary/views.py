@@ -674,23 +674,70 @@ def diary_history(request):
     
     entries = entries.order_by('-created_at')
 
-    # Fetch shared entries
-    whole_diary_owners = SharePermission.objects.filter(
+    # Fetch shared entries (both received and granted)
+    received_whole_owners = SharePermission.objects.filter(
         Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
         share_type='whole_diary'
-    ).values_list('owner', flat=True)
-    specific_entry_ids = SharePermission.objects.filter(
+    ).exclude(owner=request.user).values_list('owner', flat=True)
+
+    received_specific_ids = SharePermission.objects.filter(
         Q(shared_with_email=request.user.email) | Q(shared_with_user=request.user),
         share_type='specific_diary'
+    ).exclude(owner=request.user).values_list('diary_entry_id', flat=True)
+
+    granted_specific_ids = SharePermission.objects.filter(
+        owner=request.user,
+        share_type='specific_diary'
     ).values_list('diary_entry_id', flat=True)
-    
-    shared_entries = DiaryEntry.objects.filter(
-        Q(user__in=whole_diary_owners) |
-        Q(id__in=specific_entry_ids)
-    ).prefetch_related('tags').distinct().order_by('-created_at')
-    
+
+    granted_whole_exists = SharePermission.objects.filter(
+        owner=request.user,
+        share_type='whole_diary'
+    ).exists()
+
+    if granted_whole_exists:
+        shared_qs = DiaryEntry.objects.filter(
+            Q(user__in=received_whole_owners) |
+            Q(id__in=received_specific_ids) |
+            Q(user=request.user)
+        )
+    else:
+        shared_qs = DiaryEntry.objects.filter(
+            Q(user__in=received_whole_owners) |
+            Q(id__in=received_specific_ids) |
+            Q(id__in=granted_specific_ids)
+        )
+
     if query:
-        shared_entries = shared_entries.filter(Q(content__icontains=query) | Q(tags__name__icontains=query)).distinct()
+        shared_qs = shared_qs.filter(Q(content__icontains=query) | Q(tags__name__icontains=query))
+
+    shared_entries = list(shared_qs.prefetch_related('tags').distinct().order_by('-created_at'))
+
+    granted_permissions = SharePermission.objects.filter(
+        owner=request.user,
+        share_type__in=['specific_diary', 'whole_diary']
+    ).select_related('shared_with_user')
+
+    entry_recipients = {}
+    whole_recipients = []
+    for sp in granted_permissions:
+        label = sp.shared_with_user.username if sp.shared_with_user else sp.shared_with_email
+        if sp.share_type == 'whole_diary':
+            whole_recipients.append(label)
+        elif sp.share_type == 'specific_diary' and sp.diary_entry_id:
+            entry_recipients.setdefault(sp.diary_entry_id, []).append(label)
+
+    for entry in shared_entries:
+        if entry.user == request.user:
+            recips = entry_recipients.get(entry.id, []) + whole_recipients
+            unique_recips = list(set(recips))
+            if unique_recips:
+                entry.shared_label = f"Shared by You with {', '.join(unique_recips)}"
+            else:
+                entry.shared_label = "Shared by You"
+        else:
+            entry.shared_label = f"Shared by: {entry.user.username}"
+
     log_activity(request.user, 'diary_view', f'Viewed diary history ({entries.count()} entries)')
 
     # Mood Trends Analytics
