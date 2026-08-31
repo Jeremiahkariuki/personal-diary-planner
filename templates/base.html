@@ -208,9 +208,84 @@
     {% include 'partials/_footer.html' %}
 
 
+    <!-- ═══════════════════════ MEMORY BOOK EXPORT MODAL ═══════════════════════ -->
+    <div id="memoryBookModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center;">
+        <div class="glass-card" style="max-width: 460px; width: 90%; padding: 2rem; border: 1px solid var(--glass-border); background: var(--bg-color, #0f172a);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+                <h3 style="font-size: 1.25rem; margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📖</span> Memory Book PDF Exporter
+                </h3>
+                <button type="button" id="closeMemoryBookModalBtn" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5;">
+                Export your journal entries, mood statistics, and photos into a digital Memory Book PDF.
+            </p>
+
+            <form action="{% url 'export_pdf' %}" method="GET" target="_blank">
+                <div class="input-group" style="margin-bottom: 1.2rem;">
+                    <label style="display: block; margin-bottom: 0.4rem; color: var(--text-primary); font-size: 0.88rem; font-weight: 600;">Select Date Range</label>
+                    <select name="preset" id="pdfPresetSelect" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-primary);">
+                        <option value="all">📚 All Time (Entire Archive)</option>
+                        <option value="30days">🗓️ Last 30 Days</option>
+                        <option value="this_year">🌟 This Year</option>
+                        <option value="custom">⚙️ Custom Date Range...</option>
+                    </select>
+                </div>
+
+                <div id="customDateFields" style="display: none; gap: 1rem; margin-bottom: 1.2rem;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 0.4rem; color: var(--text-secondary); font-size: 0.82rem;">Start Date</label>
+                        <input type="date" name="start_date" style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-primary);">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 0.4rem; color: var(--text-secondary); font-size: 0.82rem;">End Date</label>
+                        <input type="date" name="end_date" style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-primary);">
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.8rem; margin-top: 1.5rem;">
+                    <button type="button" id="cancelMemoryBookBtn" class="add-btn" style="border: 1px solid var(--glass-border);">Cancel</button>
+                    <button type="submit" class="add-btn primary-btn" style="padding: 0.7rem 1.4rem;">Download PDF 📥</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Shared scripts (loaded on every page) -->
     <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/app.js' %}?v=5"></script>
+
+    <script>
+        function openMemoryBookModal() {
+            const modal = document.getElementById('memoryBookModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        (function() {
+            const modal = document.getElementById('memoryBookModal');
+            const closeBtn = document.getElementById('closeMemoryBookModalBtn');
+            const cancelBtn = document.getElementById('cancelMemoryBookBtn');
+            const presetSelect = document.getElementById('pdfPresetSelect');
+            const customFields = document.getElementById('customDateFields');
+
+            function closeModal() {
+                if (modal) modal.style.display = 'none';
+            }
+
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+            if (presetSelect && customFields) {
+                presetSelect.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customFields.style.display = 'flex';
+                    } else {
+                        customFields.style.display = 'none';
+                    }
+                });
+            }
+        })();
+    </script>
 
     <!-- Per-page extra scripts -->
     {% block extra_scripts %}{% endblock %}

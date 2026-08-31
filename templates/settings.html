@@ -647,15 +647,14 @@
             </section>
             <section class="settings-section glass-card">
                 <h2>Data Management</h2>
-                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Download a copy of your diary entries,
-                    tasks, and events in a readable PDF format for your personal archives.</p>
-                <a href="{% url 'export_pdf' %}" class="add-btn"
-                    style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05);">
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Download a formatted digital Memory Book PDF of your diary entries, tasks, and events with date filters and mood statistics.</p>
+                <button type="button" onclick="openMemoryBookModal()" class="add-btn primary-btn"
+                    style="display: inline-flex; align-items: center; gap: 0.5rem; width: auto; padding: 0.7rem 1.4rem;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
                     </svg>
-                    Export Data (PDF)
-                </a>
+                    📖 Export Memory Book (PDF)
+                </button>
             </section>
         </div>
     </div>

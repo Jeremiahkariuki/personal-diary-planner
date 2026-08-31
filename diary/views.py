@@ -90,6 +90,50 @@ def index(request):
         else:
             mood_trend_data.append(None)
             
+    # 3. "On This Day" Flashbacks
+    flashback_entry = None
+    flashback_label = ""
+    
+    # Priority 1: Same month & day in past years
+    past_year_entries = DiaryEntry.objects.filter(
+        user=request.user,
+        created_at__month=today.month,
+        created_at__day=today.day,
+        created_at__year__lt=today.year
+    ).order_by('-created_at')
+
+    if past_year_entries.exists():
+        flashback_entry = past_year_entries.first()
+        years_diff = today.year - flashback_entry.created_at.year
+        flashback_label = f"{years_diff} Year{'s' if years_diff > 1 else ''} Ago Today"
+    else:
+        # Priority 2: Exactly 30 days ago (1 month ago)
+        one_month_ago = today - datetime.timedelta(days=30)
+        month_ago_entries = DiaryEntry.objects.filter(
+            user=request.user,
+            created_at__date=one_month_ago
+        ).order_by('-created_at')
+        
+        if month_ago_entries.exists():
+            flashback_entry = month_ago_entries.first()
+            flashback_label = "1 Month Ago"
+        else:
+            # Priority 3: Random memory from at least 7 days ago
+            older_than_7_days = today - datetime.timedelta(days=7)
+            random_past_entries = DiaryEntry.objects.filter(
+                user=request.user,
+                created_at__date__lte=older_than_7_days
+            ).order_by('?')
+            if random_past_entries.exists():
+                flashback_entry = random_past_entries.first()
+                days_diff = (today - flashback_entry.created_at.date()).days
+                if days_diff >= 365:
+                    flashback_label = f"{days_diff // 365} Year{'s' if (days_diff // 365) > 1 else ''} Ago"
+                elif days_diff >= 30:
+                    flashback_label = f"{days_diff // 30} Month{'s' if (days_diff // 30) > 1 else ''} Ago"
+                else:
+                    flashback_label = f"{days_diff} Days Ago"
+
     context = {
         'latest_entry': latest_entry,
         'upcoming_events': upcoming_events,
@@ -102,6 +146,8 @@ def index(request):
         'chart_labels': labels,
         'mood_trend': mood_trend_data,
         'task_stats': [completed_tasks_count, pending_tasks_count],
+        'flashback_entry': flashback_entry,
+        'flashback_label': flashback_label,
     }
     log_activity(request.user, 'dashboard_view', 'Viewed the main dashboard')
     return render(request, 'index.html', context)
@@ -859,36 +905,121 @@ def delete_custom_quote(request):
     return JsonResponse({'error': 'Method not allowed.'}, status=405)
 
 @login_required
-@login_required
 def export_pdf(request):
+    """Generate and download a styled Memory Book PDF archive."""
     from django.template.loader import get_template
     from xhtml2pdf import pisa
     from django.http import HttpResponse
+    from django.conf import settings
+    import os
     
+    # 1. Parse date filters
+    preset = request.GET.get('preset', '')
+    start_date_str = request.GET.get('start_date', '')
+    end_date_str = request.GET.get('end_date', '')
+    
+    today = date.today()
+    start_date = None
+    end_date = None
+    
+    if preset == '30days':
+        start_date = today - datetime.timedelta(days=30)
+        end_date = today
+    elif preset == 'this_year':
+        start_date = date(today.year, 1, 1)
+        end_date = today
+    else:
+        if start_date_str:
+            try:
+                start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        if end_date_str:
+            try:
+                end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+
+    # 2. Filter queryset
     entries = DiaryEntry.objects.filter(user=request.user).order_by('-created_at')
     tasks = Task.objects.filter(user=request.user).order_by('completed', 'due_date')
     events = Event.objects.filter(user=request.user).order_by('date', 'event_time')
     
+    if start_date:
+        entries = entries.filter(created_at__date__gte=start_date)
+        tasks = tasks.filter(created_at__date__gte=start_date)
+        events = events.filter(date__gte=start_date)
+    if end_date:
+        entries = entries.filter(created_at__date__lte=end_date)
+        tasks = tasks.filter(created_at__date__lte=end_date)
+        events = events.filter(date__lte=end_date)
+
+    # 3. Calculate Mood Stats
+    total_entries = entries.count()
+    mood_counts = {
+        'happy': entries.filter(mood='happy').count(),
+        'excited': entries.filter(mood='excited').count(),
+        'neutral': entries.filter(mood='neutral').count(),
+        'sad': entries.filter(mood='sad').count(),
+        'stressed': entries.filter(mood='stressed').count(),
+    }
+    
+    # Identify top mood
+    top_mood = 'neutral'
+    max_c = -1
+    for m, c in mood_counts.items():
+        if c > max_c:
+            max_c = c
+            top_mood = m
+            
+    mood_emojis = {
+        'happy': '😊',
+        'excited': '🤩',
+        'neutral': '😐',
+        'sad': '😔',
+        'stressed': '😫',
+    }
+
+    # 4. Callback to locate static & media files for pisa PDF renderer
+    def fetch_resources(uri, rel):
+        if uri.startswith(settings.MEDIA_URL):
+            path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        elif uri.startswith(settings.STATIC_URL):
+            path = os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        elif uri.startswith('/static/'):
+            path = os.path.join(settings.BASE_DIR, uri.lstrip('/'))
+        elif uri.startswith('/media/'):
+            path = os.path.join(settings.MEDIA_ROOT, uri.replace('/media/', ''))
+        else:
+            path = os.path.join(settings.BASE_DIR, uri)
+        return path if os.path.isfile(path) else uri
+
     template_path = 'pdf_export.html'
     context = {
         'user': request.user,
         'entries': entries,
         'tasks': tasks,
         'events': events,
-        'today': date.today(),
+        'today': today,
+        'start_date': start_date,
+        'end_date': end_date,
+        'total_entries': total_entries,
+        'mood_counts': mood_counts,
+        'top_mood': top_mood,
+        'top_mood_emoji': mood_emojis.get(top_mood, '📝'),
     }
     
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="jdiary_archive_{request.user.username}.pdf"'
+    filename = f"Memory_Book_{request.user.username}_{today.strftime('%Y%m%d')}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     template = get_template(template_path)
     html = template.render(context)
     
-    # create a pdf
-    pisa_status = pisa.CreatePDF(html, dest=response)
+    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=fetch_resources)
     
     if pisa_status.err:
-       return HttpResponse('We had some errors <pre>' + html + '</pre>')
+        return HttpResponse('Error generating PDF memory book: <pre>' + html + '</pre>')
     return response
 
 

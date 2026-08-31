@@ -100,9 +100,10 @@
                     <button id="profileBtn" class="profile-btn" title="Account">
                         <div class="avatar">
                             {% if profile.avatar %}
-                                <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                            <img src="{{ profile.avatar.url }}" alt="Avatar"
+                                style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                             {% else %}
-                                <span class="avatar-initial">{{ user.username|first }}</span>
+                            <span class="avatar-initial">{{ user.username|first }}</span>
                             {% endif %}
                         </div>
                     </button>
@@ -110,9 +111,10 @@
                         <div class="dropdown-header">
                             <div class="avatar-sm">
                                 {% if profile.avatar %}
-                                    <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                <img src="{{ profile.avatar.url }}" alt="Avatar"
+                                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                                 {% else %}
-                                    <span class="avatar-sm-initial">{{ user.username|first }}</span>
+                                <span class="avatar-sm-initial">{{ user.username|first }}</span>
                                 {% endif %}
                             </div>
                             <div class="user-info">
@@ -191,7 +193,8 @@
                         {% endif %}
                     </span>
                     {% if upcoming_events %}
-                    <span class="stat-sub">{{ upcoming_events.0.title|truncatechars:24 }} · {{ upcoming_events.0.date|date:"M d" }}</span>
+                    <span class="stat-sub">{{ upcoming_events.0.title|truncatechars:24 }} · {{
+                        upcoming_events.0.date|date:"M d" }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -265,34 +268,83 @@
                     </div>
                 </section>
 
-                <!-- Diary removed to dedicated page -->
+                <!-- ── On This Day Flashback Widget ── -->
+                {% if flashback_entry %}
+                <section class="glass-card" style="margin-top:1.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.05)); border: 1px solid rgba(168, 85, 247, 0.25);">
+                    <div class="section-header">
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <span style="font-size:1.4rem;">✨</span>
+                            <h2>On This Day Memory</h2>
+                            <span class="badge" style="background: linear-gradient(135deg, #818cf8, #c084fc); color: white; padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">{{ flashback_label }}</span>
+                        </div>
+                        <a href="{% url 'diary_list' %}" class="text-btn">View Journal</a>
+                    </div>
+                    <div style="display: flex; gap: 1.2rem; align-items: flex-start; flex-wrap: wrap;">
+                        {% if flashback_entry.image %}
+                        <div style="width: 90px; height: 90px; border-radius: 14px; overflow: hidden; flex-shrink: 0; border: 1px solid var(--glass-border);">
+                            <img src="{{ flashback_entry.image.url }}" alt="Memory photo" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        {% endif %}
+                        <div style="flex: 1; min-width: 240px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-secondary);">
+                                <span>📅 {{ flashback_entry.created_at|date:"F j, Y" }}</span>
+                                <span>•</span>
+                                <span>Mood: 
+                                    {% if flashback_entry.mood == 'happy' %}😊 Happy
+                                    {% elif flashback_entry.mood == 'excited' %}🤩 Excited
+                                    {% elif flashback_entry.mood == 'neutral' %}😐 Neutral
+                                    {% elif flashback_entry.mood == 'sad' %}😔 Sad
+                                    {% elif flashback_entry.mood == 'stressed' %}😫 Stressed
+                                    {% else %}{{ flashback_entry.mood|title }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-primary);">
+                                {{ flashback_entry.title|default:"Memory Log" }}
+                            </h3>
+                            <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.5; margin-bottom: 0.8rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                {{ flashback_entry.content }}
+                            </p>
+                            <a href="{% url 'diary_list' %}" class="text-btn" style="font-size: 0.85rem; font-weight: 600; color: var(--accent-primary);">
+                                Read Full Memory →
+                            </a>
+                        </div>
+                    </div>
+                </section>
+                {% endif %}
 
                 <!-- ── Streak & Badges Widget ── -->
                 <section class="glass-card" style="margin-top:1.5rem;">
                     <div class="section-header">
-                        <h2>🏆 Streak & Achievements</h2>
+                        <h2>🏆 Streaks & Achievements</h2>
                         <a href="{% url 'achievements' %}" class="text-btn">View All</a>
                     </div>
-                    <div style="display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap; margin-bottom:{% if recent_badges %}1.2rem{% else %}0{% endif %};">
+                    <div
+                        style="display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap; margin-bottom:{% if recent_badges %}1.2rem{% else %}0{% endif %};">
                         <!-- Streak Counter -->
-                        <div style="display:flex; align-items:center; gap:0.6rem; background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.08)); border:1px solid rgba(251,146,60,0.3); border-radius:14px; padding:0.9rem 1.4rem;">
+                        <div
+                            style="display:flex; align-items:center; gap:0.6rem; background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.08)); border:1px solid rgba(251,146,60,0.3); border-radius:14px; padding:0.9rem 1.4rem;">
                             <span style="font-size:2rem;">🔥</span>
                             <div>
-                                <div style="font-size:1.8rem;font-weight:700;color:#fb923c;line-height:1;">{{ user_streak.current_streak|default:0 }}</div>
+                                <div style="font-size:1.8rem;font-weight:700;color:#fb923c;line-height:1;">{{
+                                    user_streak.current_streak|default:0 }}</div>
                                 <div style="font-size:0.78rem;color:var(--text-secondary);">day streak</div>
                             </div>
                         </div>
                         <!-- Recent Badges -->
                         {% for ub in recent_badges %}
-                        <div style="display:flex;align-items:center;gap:0.5rem;background:var(--glass-bg);border:1px solid var(--accent-primary);border-radius:12px;padding:0.7rem 1rem;" title="{{ ub.badge.description }}">
+                        <div style="display:flex;align-items:center;gap:0.5rem;background:var(--glass-bg);border:1px solid var(--accent-primary);border-radius:12px;padding:0.7rem 1rem;"
+                            title="{{ ub.badge.description }}">
                             <span style="font-size:1.5rem;">{{ ub.badge.emoji }}</span>
                             <div>
                                 <div style="font-size:0.85rem;font-weight:600;">{{ ub.badge.name }}</div>
-                                <div style="font-size:0.72rem;color:var(--text-secondary);">{{ ub.earned_at|date:"M j" }}</div>
+                                <div style="font-size:0.72rem;color:var(--text-secondary);">{{ ub.earned_at|date:"M j"
+                                    }}</div>
                             </div>
                         </div>
                         {% empty %}
-                        <div style="color:var(--text-secondary);font-size:0.9rem;">Write your first diary entry to start earning badges!</div>
+                        <div style="color:var(--text-secondary);font-size:0.9rem;">Write your first diary entry to start
+                            earning badges!</div>
                         {% endfor %}
                     </div>
                 </section>

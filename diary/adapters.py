@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.account.utils import user_email
 from django.contrib.auth.models import User
@@ -26,18 +27,14 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
         # Force auto-signup to skip the signup form
         return True
 
-    def list_apps(self, request, provider=None, client_id=None):
-        apps = super().list_apps(request, provider=provider, client_id=client_id)
-        # Filter out invalid apps that have empty/blank client_ids
-        apps = [app for app in apps if app.client_id and app.client_id.strip()]
+    def get_app(self, request, provider, client_id=None):
+        apps = self.list_apps(request, provider=provider, client_id=client_id)
+        if not apps:
+            from allauth.socialaccount.models import SocialApp
+            app, _ = SocialApp.objects.get_or_create(
+                provider=provider,
+                defaults={'name': provider.capitalize(), 'client_id': 'placeholder', 'secret': 'placeholder'}
+            )
+            return app
+        return apps[0]
 
-        deduped = {}
-        for app in apps:
-            key = (app.provider, app.client_id)
-            if key not in deduped:
-                deduped[key] = app
-            else:
-                # Prioritize database-backed apps (they have a primary key/id)
-                if getattr(app, 'pk', None) is not None:
-                    deduped[key] = app
-        return list(deduped.values())
