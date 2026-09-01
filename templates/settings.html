@@ -645,6 +645,44 @@
                     <p style="color:var(--text-secondary);">Loading reminders…</p>
                 </div>
             </section>
+            <!-- ── Two-Factor Authentication (2FA) Section ── -->
+            <section class="settings-section glass-card" id="twoFactorSection">
+                <h2>🔒 Two-Factor Authentication (2FA)</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                    Protect your personal diary with an additional layer of security using Google Authenticator, Authy, or Microsoft Authenticator.
+                </p>
+
+                <div id="twoFactorStatusContainer" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1.2rem; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px;">
+                    <div>
+                        <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                            Status: 
+                            {% if profile.is_2fa_enabled %}
+                            <span style="color: #22c55e; font-weight: 600;">ENABLED ✅</span>
+                            {% else %}
+                            <span style="color: #ef4444; font-weight: 600;">DISABLED ❌</span>
+                            {% endif %}
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            {% if profile.is_2fa_enabled %}
+                            Your account is protected with 2FA TOTP authentication.
+                            {% else %}
+                            Enable 2FA to require a 6-digit code from your phone whenever you sign in.
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if profile.is_2fa_enabled %}
+                    <button type="button" id="disable2faBtn" class="add-btn danger-btn" style="width: auto; padding: 0.6rem 1.4rem; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444;">
+                        Disable 2FA
+                    </button>
+                    {% else %}
+                    <button type="button" id="enable2faBtn" class="add-btn primary-btn" style="width: auto; padding: 0.6rem 1.4rem;">
+                        Enable 2FA Protection
+                    </button>
+                    {% endif %}
+                </div>
+            </section>
+
             <section class="settings-section glass-card">
                 <h2>Data Management</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Download a formatted digital Memory Book PDF of your diary entries, tasks, and events with date filters and mood statistics.</p>
@@ -656,6 +694,63 @@
                     📖 Export Memory Book (PDF)
                 </button>
             </section>
+        </div>
+    </div>
+
+    <!-- 2FA Setup Modal -->
+    <div id="twoFactorModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); z-index: 2100; display: none; align-items: center; justify-content: center;">
+        <div class="glass-card" style="max-width: 480px; width: 90%; padding: 2.2rem; border: 1px solid var(--glass-border); background: var(--bg-color, #0f172a); max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+                <h3 style="font-size: 1.3rem; margin: 0; color: var(--text-primary);">🔒 Set Up 2FA Authenticator</h3>
+                <button type="button" id="close2faModalBtn" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Step 1: Scan QR Code -->
+            <div id="2faStep1">
+                <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.2rem; line-height: 1.5;">
+                    1. Open your authenticator app (Google Authenticator, Authy, 1Password).<br>
+                    2. Scan this QR Code or manually enter the secret key:
+                </p>
+
+                <div id="qrCodeWrapper" style="background: white; padding: 1rem; border-radius: 14px; text-align: center; margin: 1rem auto; max-width: 200px; display: flex; justify-content: center; align-items: center;">
+                    <!-- SVG injected via JS -->
+                </div>
+
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Secret Key (Manual Entry)</div>
+                    <code id="twoFactorSecretText" style="font-size: 0.95rem; letter-spacing: 2px; color: var(--accent-primary); font-weight: bold; background: rgba(255,255,255,0.06); padding: 5px 12px; border-radius: 6px; user-select: all;">loading...</code>
+                </div>
+
+                <div class="input-group" style="margin-bottom: 1.2rem;">
+                    <label style="display: block; margin-bottom: 0.4rem; color: var(--text-primary); font-size: 0.88rem; font-weight: 600;">Enter 6-Digit Code from App</label>
+                    <input type="text" id="confirm2faCodeInput" placeholder="123456" maxlength="6" style="width: 100%; text-align: center; font-size: 1.4rem; letter-spacing: 4px; font-family: monospace; padding: 0.6rem; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-primary);">
+                </div>
+
+                <div id="2faErrorMessage" style="display: none; color: #ef4444; font-size: 0.85rem; margin-bottom: 1rem; text-align: center;"></div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.8rem;">
+                    <button type="button" id="cancel2faBtn" class="add-btn" style="border: 1px solid var(--glass-border);">Cancel</button>
+                    <button type="button" id="verify2faConfirmBtn" class="add-btn primary-btn" style="padding: 0.7rem 1.4rem;">Verify & Enable</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Emergency Backup Codes -->
+            <div id="2faStep2" style="display: none;">
+                <div style="text-align: center; margin-bottom: 1.2rem;">
+                    <div style="font-size: 2.5rem;">🎉</div>
+                    <h4 style="font-size: 1.2rem; color: #22c55e; margin: 0.4rem 0;">2FA Successfully Enabled!</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5;">
+                        Save these <strong>5 Emergency Backup Codes</strong> in a safe place. Each code can be used once if you lose access to your phone.
+                    </p>
+                </div>
+
+                <div id="backupCodesList" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; font-family: monospace; font-size: 1.05rem; text-align: center; color: var(--accent-primary); font-weight: bold;">
+                </div>
+
+                <button type="button" id="finish2faSetupBtn" class="add-btn primary-btn" style="width: 100%; padding: 0.8rem;">
+                    I Have Saved My Backup Codes
+                </button>
+            </div>
         </div>
     </div>
     <script src="{% static 'js/theme.js' %}"></script>
@@ -1140,6 +1235,128 @@
                 }
             }
             loadReminders();
+        })();
+    </script>
+
+    <script>
+        // ── Two-Factor Authentication (2FA) Handler ───────────────
+        (function () {
+            const csrfToken = '{{ csrf_token }}';
+            const enableBtn = document.getElementById('enable2faBtn');
+            const disableBtn = document.getElementById('disable2faBtn');
+            const modal = document.getElementById('twoFactorModal');
+            const closeBtn = document.getElementById('close2faModalBtn');
+            const cancelBtn = document.getElementById('cancel2faBtn');
+            const confirmBtn = document.getElementById('verify2faConfirmBtn');
+            const finishBtn = document.getElementById('finish2faSetupBtn');
+            const codeInput = document.getElementById('confirm2faCodeInput');
+            const qrWrapper = document.getElementById('qrCodeWrapper');
+            const secretText = document.getElementById('twoFactorSecretText');
+            const errorMsg = document.getElementById('2faErrorMessage');
+            const step1 = document.getElementById('2faStep1');
+            const step2 = document.getElementById('2faStep2');
+            const backupList = document.getElementById('backupCodesList');
+
+            function closeModal() {
+                if (modal) modal.style.display = 'none';
+            }
+
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            if (finishBtn) finishBtn.addEventListener('click', () => location.reload());
+
+            if (enableBtn) {
+                enableBtn.addEventListener('click', async () => {
+                    enableBtn.disabled = true;
+                    enableBtn.textContent = 'Loading Setup...';
+                    try {
+                        const res = await fetch('{% url "setup_2fa" %}', {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const data = await res.json();
+                        if (data.status === 'ok') {
+                            secretText.textContent = data.secret;
+                            qrWrapper.innerHTML = data.qr_svg;
+                            step1.style.display = 'block';
+                            step2.style.display = 'none';
+                            errorMsg.style.display = 'none';
+                            codeInput.value = '';
+                            modal.style.display = 'flex';
+                        }
+                    } catch (err) {
+                        alert('Error setting up 2FA: ' + err.message);
+                    } finally {
+                        enableBtn.disabled = false;
+                        enableBtn.textContent = 'Enable 2FA Protection';
+                    }
+                });
+            }
+
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', async () => {
+                    const code = codeInput.value.trim();
+                    if (!code || code.length < 6) {
+                        errorMsg.textContent = 'Please enter the 6-digit code from your authenticator app.';
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+                    confirmBtn.disabled = true;
+                    confirmBtn.textContent = 'Verifying...';
+                    errorMsg.style.display = 'none';
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('action', 'confirm');
+                        formData.append('code', code);
+
+                        const res = await fetch('{% url "setup_2fa" %}', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrfToken },
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.status === 'ok') {
+                            step1.style.display = 'none';
+                            step2.style.display = 'block';
+                            backupList.innerHTML = data.backup_codes.map(c => `<div>${c}</div>`).join('');
+                        } else {
+                            errorMsg.textContent = data.message || 'Invalid code. Please try again.';
+                            errorMsg.style.display = 'block';
+                        }
+                    } catch (err) {
+                        errorMsg.textContent = 'Network error verifying code.';
+                        errorMsg.style.display = 'block';
+                    } finally {
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Verify & Enable';
+                    }
+                });
+            }
+
+            if (disableBtn) {
+                disableBtn.addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to disable Two-Factor Authentication? Your account security will be reduced.')) return;
+                    disableBtn.disabled = true;
+                    disableBtn.textContent = 'Disabling...';
+                    try {
+                        const res = await fetch('{% url "disable_2fa" %}', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrfToken }
+                        });
+                        const data = await res.json();
+                        if (data.status === 'ok') {
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Error disabling 2FA.');
+                        }
+                    } catch (err) {
+                        alert('Network error disabling 2FA.');
+                    } finally {
+                        disableBtn.disabled = false;
+                        disableBtn.textContent = 'Disable 2FA';
+                    }
+                });
+            }
         })();
     </script>
 

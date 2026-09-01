@@ -80,6 +80,11 @@ class Profile(models.Model):
     custom_quote = models.TextField(blank=True, null=True)
     custom_quote_author = models.CharField(max_length=200, blank=True, null=True)
     calendar_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    
+    # Two-Factor Authentication (2FA)
+    is_2fa_enabled = models.BooleanField(default=False)
+    two_factor_secret = models.CharField(max_length=64, blank=True, null=True)
+    backup_codes = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return f"Profile for {self.user.username}"

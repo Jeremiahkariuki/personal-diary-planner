@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2FA Verification | Jdiary</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 3rem;
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .otp-input-field {
+            font-size: 1.6rem !important;
+            letter-spacing: 6px !important;
+            text-align: center !important;
+            font-family: monospace, monospace !important;
+            padding: 0.8rem !important;
+            border-radius: 12px !important;
+            border: 1px solid var(--glass-border) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: var(--text-primary) !important;
+            text-transform: uppercase !important;
+        }
+
+        .otp-input-field:focus {
+            border-color: var(--accent-primary) !important;
+            box-shadow: 0 0 15px rgba(129, 140, 248, 0.3) !important;
+        }
+
+        .error-toast {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .auth-footer {
+            margin-top: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+        }
+
+        .auth-footer a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="glass-card auth-card">
+            <header class="auth-header">
+                <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">🔐</div>
+                <h1>Two-Factor Security</h1>
+                <p>Enter the 6-digit authentication code from your app (Google Authenticator / Authy) for account <strong>{{ username }}</strong>.</p>
+            </header>
+
+            {% if error_message %}
+            <div class="error-toast">
+                ⚠️ {{ error_message }}
+            </div>
+            {% endif %}
+
+            <form method="post" class="auth-form" autocomplete="off">
+                {% csrf_token %}
+                <div class="input-group" style="margin-bottom: 1.5rem;">
+                    <label for="id_code" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;">AUTHENTICATION OR BACKUP CODE</label>
+                    <input type="text" name="code" id="id_code" class="otp-input-field" placeholder="123456" maxlength="12" required autofocus autocomplete="one-time-code">
+                </div>
+
+                <button type="submit" class="add-btn primary-btn" style="width: 100%; padding: 0.85rem; font-size: 1rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <span>Verify & Continue</span> →
+                </button>
+            </form>
+
+            <footer class="auth-footer">
+                Need to use a different account? <a href="{% url 'login' %}">Back to Sign In</a>
+            </footer>
+        </div>
+    </div>
+</body>
+
+</html>

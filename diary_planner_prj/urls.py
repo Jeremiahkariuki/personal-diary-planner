@@ -20,10 +20,13 @@ urlpatterns = [
     # Standard Template Views
     path('', views.index, name='index'),
     path('login/', views.login_view, name='login'),
+    path('login/2fa/', views.verify_2fa, name='verify_2fa'),
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile_view, name='profile'),
     path('settings/', views.settings_view, name='settings_view'),
+    path('settings/2fa/setup/', views.setup_2fa, name='setup_2fa'),
+    path('settings/2fa/disable/', views.disable_2fa, name='disable_2fa'),
     path('tasks/', views.task_list, name='task_list'),
     path('tasks/clear/', views.clear_pending_tasks, name='clear_pending_tasks'),
 

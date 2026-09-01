@@ -508,11 +508,134 @@ def login_view(request):
             password = form.cleaned_data.get('password')
             user = authenticate(username=username, password=password)
             if user is not None:
+                from .models import Profile
+                profile, _ = Profile.objects.get_or_create(user=user)
+                if profile.is_2fa_enabled and profile.two_factor_secret:
+                    request.session['pre_2fa_user_id'] = user.id
+                    return redirect('verify_2fa')
                 login(request, user)
+                log_activity(user, 'login', 'Logged in via standard authentication')
                 return redirect('index')
     else:
         form = AuthenticationForm()
     return render(request, 'login.html', {'form': form})
+
+def verify_2fa(request):
+    """2FA Verification View for users with 2FA enabled."""
+    user_id = request.session.get('pre_2fa_user_id')
+    if not user_id:
+        return redirect('login')
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return redirect('login')
+
+    from .models import Profile
+    profile, _ = Profile.objects.get_or_create(user=user)
+    if not profile.is_2fa_enabled or not profile.two_factor_secret:
+        login(request, user)
+        del request.session['pre_2fa_user_id']
+        return redirect('index')
+
+    error_message = None
+
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip().replace(' ', '')
+        import pyotp
+        totp = pyotp.TOTP(profile.two_factor_secret)
+        
+        # 1. Verify TOTP 6-digit code
+        if totp.verify(code, valid_window=1):
+            login(request, user)
+            del request.session['pre_2fa_user_id']
+            log_activity(user, 'login', 'Logged in via 2FA (TOTP Code)')
+            return redirect('index')
+
+        # 2. Verify Emergency Backup Code
+        backup_codes = profile.backup_codes or []
+        if code.upper() in [b.upper() for b in backup_codes]:
+            # Remove used code
+            profile.backup_codes = [b for b in backup_codes if b.upper() != code.upper()]
+            profile.save()
+            
+            login(request, user)
+            del request.session['pre_2fa_user_id']
+            log_activity(user, 'login', 'Logged in via 2FA (Backup Code)')
+            messages.warning(request, f"You logged in using an emergency backup code. Remaining codes: {len(profile.backup_codes)}")
+            return redirect('index')
+
+        error_message = "Invalid 6-digit authentication code or backup code. Please check your Authenticator app."
+
+    return render(request, 'verify_2fa.html', {'error_message': error_message, 'username': user.username})
+
+@login_required
+def setup_2fa(request):
+    """Generate TOTP secret, QR code SVG, and process initial 2FA confirmation."""
+    from .models import Profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    import pyotp
+    import qrcode
+    import qrcode.image.svg
+    import io
+    import secrets
+
+    secret = profile.two_factor_secret
+    if not secret or not profile.is_2fa_enabled:
+        secret = pyotp.random_base32()
+        profile.two_factor_secret = secret
+        profile.save()
+
+    totp = pyotp.TOTP(secret)
+    provisioning_uri = totp.provisioning_uri(
+        name=request.user.email or request.user.username,
+        issuer_name="Jdiary Planner"
+    )
+
+    img = qrcode.make(provisioning_uri, image_factory=qrcode.image.svg.SvgPathImage)
+    stream = io.BytesIO()
+    img.save(stream)
+    qr_svg = stream.getvalue().decode('utf-8')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'confirm':
+            code = request.POST.get('code', '').strip().replace(' ', '')
+            if totp.verify(code, valid_window=1):
+                backup_codes = [secrets.token_hex(4).upper() for _ in range(5)]
+                profile.is_2fa_enabled = True
+                profile.backup_codes = backup_codes
+                profile.save()
+                
+                log_activity(request.user, 'settings_view', 'Enabled Two-Factor Authentication (2FA)')
+                return JsonResponse({
+                    'status': 'ok',
+                    'message': 'Two-Factor Authentication is now ENABLED!',
+                    'backup_codes': backup_codes
+                })
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Invalid verification code. Scan the QR code and enter the 6 digits from your authenticator app.'}, status=400)
+
+    return JsonResponse({
+        'status': 'ok',
+        'secret': secret,
+        'qr_svg': qr_svg,
+        'is_enabled': profile.is_2fa_enabled,
+    })
+
+@login_required
+def disable_2fa(request):
+    """Disable 2FA for the logged-in user."""
+    if request.method == 'POST':
+        from .models import Profile
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile.is_2fa_enabled = False
+        profile.two_factor_secret = None
+        profile.backup_codes = []
+        profile.save()
+        log_activity(request.user, 'settings_view', 'Disabled Two-Factor Authentication (2FA)')
+        return JsonResponse({'status': 'ok', 'message': 'Two-Factor Authentication disabled successfully.'})
+    return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
 
 def register_view(request):
     if request.method == 'POST':
