@@ -134,6 +134,10 @@ def index(request):
                 else:
                     flashback_label = f"{days_diff} Days Ago"
 
+    from .models import UserStreak, UserBadge
+    user_streak, _ = UserStreak.objects.get_or_create(user=request.user)
+    recent_badges = UserBadge.objects.filter(user=request.user).select_related('badge')[:3]
+
     context = {
         'latest_entry': latest_entry,
         'upcoming_events': upcoming_events,
@@ -142,6 +146,8 @@ def index(request):
         'completed_task_count': completed_tasks_count,
         'event_count': upcoming_events.count(),
         'mood_streak': streak,
+        'user_streak': user_streak,
+        'recent_badges': recent_badges,
         'today': today,
         'chart_labels': labels,
         'mood_trend': mood_trend_data,
