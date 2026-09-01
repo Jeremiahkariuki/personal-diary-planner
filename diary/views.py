@@ -534,7 +534,7 @@ def verify_2fa(request):
     from .models import Profile
     profile, _ = Profile.objects.get_or_create(user=user)
     if not profile.is_2fa_enabled or not profile.two_factor_secret:
-        login(request, user)
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         del request.session['pre_2fa_user_id']
         return redirect('index')
 
@@ -547,7 +547,7 @@ def verify_2fa(request):
         
         # 1. Verify TOTP 6-digit code
         if totp.verify(code, valid_window=1):
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             del request.session['pre_2fa_user_id']
             log_activity(user, 'login', 'Logged in via 2FA (TOTP Code)')
             return redirect('index')
@@ -559,7 +559,7 @@ def verify_2fa(request):
             profile.backup_codes = [b for b in backup_codes if b.upper() != code.upper()]
             profile.save()
             
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             del request.session['pre_2fa_user_id']
             log_activity(user, 'login', 'Logged in via 2FA (Backup Code)')
             messages.warning(request, f"You logged in using an emergency backup code. Remaining codes: {len(profile.backup_codes)}")
@@ -642,7 +642,7 @@ def register_view(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return redirect('index')
     else:
         form = UserCreationForm()
